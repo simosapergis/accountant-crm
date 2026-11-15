@@ -1,0 +1,29 @@
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/ACCOUNTANT_CRM/vendor/
+
+# User data and generated output
+/ACCOUNTANT_CRM/uploads/
+/ACCOUNTANT_CRM/exports/*.csv
+/ACCOUNTANT_CRM/exports/*.xlsx
+/ACCOUNTANT_CRM/exports/*.pdf
+
+# Logs and local databases
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Machine-specific local setup notes
+/DOCKER_CODEX_STEPS.txt
+/DOCKER_CODEX_GROUP_FIX.txt
