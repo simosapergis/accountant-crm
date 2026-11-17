@@ -24,12 +24,12 @@
 | Καταγραφή | Αποτέλεσμα |
 |---|---|
 | Αρχικό σημείο αναφοράς | `27a805fbafcab86d0673c1f7f4911a45c1fcc8f1`; branch `codex/crm-w01-bootstrap`. |
-| Τρέχον Git σημείο | Checked-in HEAD `9885c58`; υπάρχουν μη καταχωρισμένες αλλαγές W02 για CSRF, POST mutations, diary ownership, XSS output, tests και evidence. |
+| Τρέχον Git σημείο | Checked-in HEAD `d0e5b90`; το working tree είναι clean στο handoff checkpoint. |
 | Specs και οδηγίες | Το `docs/crm-specs/` εισήχθη ως canonical αντίγραφο. Ενημερώθηκε το `AGENTS.md` για το canonical spec path και την επιβεβαιωμένη συμπεριφορά recurring tasks χωρίς scheduled end date. |
 | W01 baseline | [w01-baseline.md](evidence/w01-baseline.md): 34 tests, 5 PASS / 29 RED πριν από τις W02 διορθώσεις. Καταγράφηκαν δημόσια routes/data exposure, redirects εκτός `/crm/` και cookie policy gaps. |
 | W02 RED | [w02-csrf.md](evidence/w02-csrf.md): πριν από την υλοποίηση, 38 tests / 3 failures για POST χωρίς CSRF, token field που έλειπε και GET διαγραφή πελάτη που εκτελούνταν. |
-| W02 ROL-03 RED/GREEN | [w02-diary-ownership.md](evidence/w02-diary-ownership.md): 47 tests / 2 RED failures for foreign update/delete returning success; latest suite is GREEN at 47 tests / 126 assertions. |
-| W02 SEC-05 RED/GREEN | [w02-xss.md](evidence/w02-xss.md): raw header fullname, diary inline JavaScript and active-professional attribute values reproduced as RED; current suite GREEN at 50 tests / 144 assertions and autocomplete E2E PASS. The pre-fix autocomplete browser attempt was interrupted, so its RED was not observed. |
+| W02 ROL-03 RED/GREEN | [w02-diary-ownership.md](evidence/w02-diary-ownership.md): 47 tests / 2 RED failures for foreign update/delete returning success; suite was GREEN at that checkpoint at 47 tests / 126 assertions. |
+| W02 SEC-05 RED/GREEN | [w02-xss.md](evidence/w02-xss.md): raw header fullname, diary inline JavaScript and active-professional attribute values reproduced as RED at that checkpoint; the latest suite is GREEN at 59 tests / 195 assertions and autocomplete E2E PASS. The pre-fix autocomplete browser attempt was interrupted, so its RED was not observed. |
 | W02 SEC-05 import follow-up | [w02-xss.md](evidence/w02-xss.md): duplicate-code import feedback reproduced as raw text containing an attribute payload; output is now escaped and parser exceptions return a generic message. Focused regression PASS, 1 test / 5 assertions. |
 | W02 SEC-05 AJAX follow-up | [w02-xss.md](evidence/w02-xss.md): a submitted `</script>` payload was reproduced in the `save_client_ajax.php` response before the fix; JSON_HEX encoding now protects the handoff. Full PHPUnit suite PASS, 52 tests / 155 assertions. |
 | W02 SEC-05 document title and export | [w02-xss.md](evidence/w02-xss.md): partner fullname broke out of the shared `<title>` and appeared as raw HTML in the partner Excel export. Both sinks now escape the name. Full PHPUnit suite PASS, 54 tests / 165 assertions. |
@@ -68,7 +68,7 @@
 - ROL-03 / AT-04: read filtering already passed; RED for foreign diary event update/delete returning success responses, then GREEN with owner check and 404 rejection. Κατάσταση PARTIAL λόγω μη ολοκληρωμένου συνολικού route matrix.
 - SEC-05 / AT-06: RED for raw header fullname, malicious diary values in inline JS and active-professional attribute values; GREEN with context-specific escaping, `data-*` handoff and text-only autocomplete rendering. Autocomplete pre-fix RED was not captured after its browser run was interrupted. Κατάσταση PARTIAL.
 - SEC-12: browser regression επιβεβαίωσε POST logout και ακύρωση του session· οι cache headers σε προσωπικές σελίδες/exports δεν έχουν ελεγχθεί.
-- Test evidence: `tests/integration/W01EnvironmentTest.php`, `tests/integration/W02CsrfTest.php`, `tests/unit/W01RuntimeTest.php`, `tests/e2e/login-page.test.cjs`· τελευταία εκτέλεση 50/50 PHPUnit tests PASS; latest relevant browser suite passed autocomplete and login/session checks.
+- Test evidence: `tests/integration/W01EnvironmentTest.php`, `tests/integration/W02CsrfTest.php`, `tests/unit/W01RuntimeTest.php`, `tests/e2e/login-page.test.cjs`· τελευταία πλήρης εκτέλεση 59/59 PHPUnit tests PASS (195 assertions); latest relevant browser suite passed autocomplete and login/session checks.
 - Μη καλυμμένα ακόμη: πλήρης role/authorization και diary ownership matrix, συνολικό XSS/SQL review, password policy, throttling/security events και cache behavior.
 
 ## Bugs, αποφάσεις και περιορισμοί
