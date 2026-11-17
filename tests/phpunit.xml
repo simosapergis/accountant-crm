@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit colors="true" cacheDirectory="/tmp/phpunit-cache">
+    <testsuites>
+        <testsuite name="W01 unit smoke">
+            <directory suffix="Test.php">/opt/crm-tests/unit</directory>
+        </testsuite>
+        <testsuite name="W01 database and HTTP integration">
+            <directory suffix="Test.php">/opt/crm-tests/integration</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="CRM_BASE_URL" value="http://app/crm" force="false"/>
+    </php>
+</phpunit>

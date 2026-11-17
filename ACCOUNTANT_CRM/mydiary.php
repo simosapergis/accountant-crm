@@ -1,8 +1,8 @@
 <?php
+require_once __DIR__ . '/includes/auth.php';
 $pageTitle = "MyDiary";
 require_once "includes/db.php";
 require_once "includes/functions.php";
-require_once "includes/auth.php";
 
 /* ================= USER ================= */
 

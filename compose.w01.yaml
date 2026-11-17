@@ -1,0 +1,64 @@
+services:
+  app:
+    image: accountant-crm-w01:local
+    build:
+      context: .
+      dockerfile: Dockerfile.w01
+    ports:
+      - "127.0.0.1:18080:80"
+      - "127.0.0.1:18443:443"
+    environment:
+      APP_BASE_PATH: /crm
+      APP_ENV: test
+      DB_HOST: test-db
+      DB_NAME: crm_w01_test
+      DB_USER: crm_w01_user
+      DB_PASSWORD: crm_w01_only_password
+    depends_on:
+      test-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$response = @get_headers('http://127.0.0.1/crm/login.php'); exit($$response === false ? 1 : 0);"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  test-db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: crm_w01_test
+      MARIADB_USER: crm_w01_user
+      MARIADB_PASSWORD: crm_w01_only_password
+      MARIADB_ROOT_PASSWORD: crm_w01_root_only_password
+    volumes:
+      - test_db_data:/var/lib/mysql
+      - ./accountant_crm.sql:/docker-entrypoint-initdb.d/001-accountant_crm.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  tests:
+    image: accountant-crm-w01:local
+    build:
+      context: .
+      dockerfile: Dockerfile.w01
+    entrypoint: ["sh", "-lc"]
+    command: ["php /opt/crm-tests/bin/assert-test-db.php && php /opt/crm-tests/bin/seed-w01-fixtures.php && /opt/crm-tests/vendor/bin/phpunit -c /opt/crm-tests/phpunit.xml"]
+    environment:
+      APP_BASE_PATH: /crm
+      APP_ENV: test
+      DB_HOST: test-db
+      DB_NAME: crm_w01_test
+      DB_USER: crm_w01_user
+      DB_PASSWORD: crm_w01_only_password
+      CRM_BASE_URL: http://app/crm
+    depends_on:
+      app:
+        condition: service_healthy
+      test-db:
+        condition: service_healthy
+
+volumes:
+  test_db_data:

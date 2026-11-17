@@ -1,8 +1,8 @@
 <?php
+require_once __DIR__ . '/includes/auth.php';
 $pageTitle = 'Αρχική';
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
-require_once "includes/auth.php";
 
 /* ---------------- DASHBOARD STATS ---------------- */
 $res = $mysqli->query("

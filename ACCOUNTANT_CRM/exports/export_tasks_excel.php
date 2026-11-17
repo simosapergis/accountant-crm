@@ -1,7 +1,7 @@
 <?php
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
-require_once '../includes/auth.php';
 
 
 header("Content-Type: application/vnd.ms-excel; charset=utf-8");

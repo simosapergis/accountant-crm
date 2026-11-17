@@ -1,7 +1,7 @@
 <?php
+require_once __DIR__ . '/includes/auth.php';
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
-require_once "includes/auth.php";
 
 $id = (int)($_GET['id'] ?? 0);
 $stmt = $mysqli->prepare("SELECT * FROM partners WHERE id=?");

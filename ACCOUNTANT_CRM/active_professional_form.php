@@ -1,8 +1,8 @@
 <?php
+require_once __DIR__ . '/includes/auth.php';
 $pageTitle = "Επαγγελματίας";
 require_once "includes/db.php";
 require_once "includes/functions.php";
-require_once "includes/auth.php";
 
 /* ============================================================
    ΦΟΡΤΩΣΗ ΔΕΔΟΜΕΝΩΝ (ΑΝ ΕΙΝΑΙ EDIT)

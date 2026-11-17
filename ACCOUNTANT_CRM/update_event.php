@@ -1,6 +1,6 @@
 <?php
+require_once __DIR__ . '/includes/auth.php';
 require_once "includes/db.php";
-require_once "includes/auth.php";
 
 $userId = $_SESSION['user_id'] ?? 0;
 if (!$userId) {

@@ -1,0 +1,10 @@
+{
+  "name": "accountant-crm-w01-e2e",
+  "private": true,
+  "scripts": {
+    "test": "node login-page.test.cjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.37.1"
+  }
+}

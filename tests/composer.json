@@ -1,0 +1,10 @@
+{
+    "name": "accountant-crm/w01-tests",
+    "description": "Test-only dependencies for the isolated CRM W01 harness",
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -1,0 +1,26 @@
+FROM php:8.3.36-apache
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libfreetype6-dev libjpeg62-turbo-dev libpng-dev libzip-dev libonig-dev unzip openssl \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" mysqli gd mbstring zip \
+    && a2enmod rewrite ssl headers \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
+COPY ACCOUNTANT_CRM/ /var/www/html/crm/
+RUN composer install --working-dir=/var/www/html/crm --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+COPY tests/composer.json tests/composer.lock /opt/crm-tests/
+RUN composer install --working-dir=/opt/crm-tests --prefer-dist --no-interaction
+COPY tests/ /opt/crm-tests/
+COPY docker/w01/apache-vhosts.conf /etc/apache2/sites-available/000-default.conf
+RUN openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout /etc/ssl/private/crm-w01-test.key \
+        -out /etc/ssl/certs/crm-w01-test.crt \
+        -subj '/CN=crm-w01.test' \
+    && chmod 600 /etc/ssl/private/crm-w01-test.key \
+    && a2ensite 000-default
+
+EXPOSE 80 443

@@ -1,6 +1,5 @@
 <?php 
 if (!isset($pageTitle)) $pageTitle = "Accountant CRM"; 
-session_start();
 ?>
 <!DOCTYPE html>
 <html lang="el">
