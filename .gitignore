@@ -23,6 +23,10 @@
 Thumbs.db
 .idea/
 .vscode/
+/.~lock.*#
+
+# Machine-specific environment snapshot
+/system-info.md
 
 # Machine-specific local setup notes
 /DOCKER_CODEX_STEPS.txt

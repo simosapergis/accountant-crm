@@ -10,6 +10,17 @@ The examples use the local development defaults from `compose.yaml`:
 
 If a `.env` file overrides these values, use the values in that file instead.
 
+## Start the app
+
+Create the local environment file if it does not already exist, then build and start the app and database in the background:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+```
+
+Open the app at <http://localhost:8080>. Omit the `cp` command when `.env` already exists.
+
 ## Container status
 
 ```bash
