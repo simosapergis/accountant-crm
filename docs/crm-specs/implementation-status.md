@@ -6,13 +6,13 @@
 
 ## Εξαίρεση σειράς εργασιών
 
-Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να αναβληθεί η ολοκλήρωση των υπολοίπων W02 security checks, να προχωρήσουν τα νέα features και να επιστρέψει η εργασία στο security baseline μετά από αυτά. Αυτό αποτελεί ρητή εξαίρεση από την κανονική πύλη `G01` στο `tasks.md`: το W02 παραμένει `IN_PROGRESS`, το G01 δεν έχει PASS και τα παρακάτω security criteria παραμένουν ανοιχτά/αναβλημένα. Η εξαίρεση δεν αποτελεί security sign-off ή άδεια για production deployment.
+Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να αναβληθεί η ολοκλήρωση των υπολοίπων W02/W03/W04/W08 και του G01, να υλοποιηθούν πρώτα τα νέα features W05/W06/W07 σε ξεχωριστό branch από το W02 και να επιστρέψει η εργασία στα υπολειπόμενα πακέτα μετά την ολοκλήρωση των features. Αυτό αποτελεί ρητή εξαίρεση από την κανονική πύλη `G01` στο `tasks.md`. Τα W02/W03/W04/W08 παραμένουν ανοιχτά, το G01 δεν έχει PASS και δεν γίνεται production sign-off ή deployment.
 
 Το αρχείο καταγράφει την πραγματική πρόοδο και τα αποδεικτικά. Δεν πιστοποιεί πρόσβαση ή εγκατάσταση στην παραγωγή.
 
 ## Σύνοψη τρέχουσας προόδου
 
-- Τρέχον πακέτο: W02, σε εξέλιξη — κοινή authentication/session υποδομή και ευρύτεροι έλεγχοι ασφάλειας.
+- Τρέχον πακέτο: W05/W06/W07 feature implementation on `codex/crm-w05-w07-features`, branched from the current W02 checkpoint. W02 security remainder is deferred by explicit user direction.
 - Ολοκληρωμένα πακέτα υλοποίησης: 1 από 10 (W01). Το G01 παραμένει `NOT_EVALUATED`.
 - W01: απομονωμένο Docker περιβάλλον, test DB guards/fixtures, PHPUnit και browser runners, frozen clock και baseline evidence.
 - W02 μέχρι τώρα: κοινό session bootstrap, session cookie policy, session ID rotation στο login, idle timeout, auth guards και `/crm/` redirects· CSRF validation για POST, POST-only logout/AJAX mutations και POST deletion forms.
@@ -28,14 +28,14 @@
 - PAY-08 / AT-27: task fee/collection input now parses to integer cents and persists canonical decimal strings; valid forms and invalid no-write behavior are covered.
 - Latest full PHPUnit run: PASS, 97 tests / 354 assertions in isolated `test-db / crm_w01_test`. Focused money/session tests: PASS, 5 tests / 28 assertions; sensitive-path matrix: PASS, 8 tests / 24 assertions; expanded delete, output-XSS and corrupt-import regressions pass. Browser/E2E was not rerun because these changes are server-side.
 - Deferred W02 items: complete AT-04/05 route matrices; finish broader AT-06/07 output and query coverage; exercise CLI account creation for AT-08/09; verify AT-16 against actual hosting/webroot and backup/log paths; broaden corrupt import cases for AT-17; open real spreadsheet exports in a compatible application for AT-18; audit broader money displays/totals under AT-27.
-- Next sequencing: per the user’s requested exception, proceed with the planned new feature work while keeping W02/G01 open, then return to the deferred security items before calling the existing-application baseline complete. Do not deploy or claim a security pass.
+- Next sequencing: implement W05, W06 and W07 on the feature branch; then return to deferred W02, W03, W04 and W08 work before G01. Do not merge to `main`, deploy, or claim a security pass while required criteria remain open.
 
 ## Καταγραφή τρέχουσας εργασίας
 
 | Καταγραφή | Αποτέλεσμα |
 |---|---|
 | Αρχικό σημείο αναφοράς | `27a805fbafcab86d0673c1f7f4911a45c1fcc8f1`; branch `codex/crm-w01-bootstrap`. |
-| Τρέχον Git σημείο | Branch `codex/crm-w02-security-audit`; export commits `1a1e4e2` / `237d795` and security implementation commit `ad3be5b`. W02 remains in progress and the latest verified suite is documented below. |
+| Τρέχον Git σημείο | W02 branch `codex/crm-w02-security-audit` at `cf4d519`; export commits `1a1e4e2` / `237d795`, implementation `ad3be5b`, and progress/evidence `cf4d519`. Feature branch `codex/crm-w05-w07-features` will be created from the updated W02 checkpoint. |
 | Specs και οδηγίες | Το `docs/crm-specs/` εισήχθη ως canonical αντίγραφο. Ενημερώθηκε το `AGENTS.md` για το canonical spec path και την επιβεβαιωμένη συμπεριφορά recurring tasks χωρίς scheduled end date. |
 | W01 baseline | [w01-baseline.md](evidence/w01-baseline.md): 34 tests, 5 PASS / 29 RED πριν από τις W02 διορθώσεις. Καταγράφηκαν δημόσια routes/data exposure, redirects εκτός `/crm/` και cookie policy gaps. |
 | W02 RED | [w02-csrf.md](evidence/w02-csrf.md): πριν από την υλοποίηση, 38 tests / 3 failures για POST χωρίς CSRF, token field που έλειπε και GET διαγραφή πελάτη που εκτελούνταν. |
@@ -64,15 +64,15 @@
 | W04 | NOT_STARTED | — |
 | W08 | NOT_STARTED | — |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
-| W05 | NOT_STARTED | Προϋπόθεση G01 PASS. |
-| W06 | NOT_STARTED | Προϋπόθεση G01 PASS. |
-| W07 | NOT_STARTED | Προϋποθέσεις G01 PASS και W06. |
+| W05 | IN_PROGRESS | User-directed sequencing exception before G01; implement catalogs, payment method snapshots and task integrations. Feature branch is being created from W02. |
+| W06 | NOT_STARTED | User-directed sequencing exception before G01; follows W05 for recurrence rules, temporal versions and edit/stop/restart behavior. |
+| W07 | NOT_STARTED | User-directed sequencing exception before G01; follows W06 for scheduler, catch-up, concurrency and idempotency. |
 | W09 | NOT_STARTED | Προϋπόθεση ολοκλήρωση προηγούμενων πακέτων. |
 | W10 | NOT_STARTED | Προϋποθέσεις W09 PASS, preflight και ανάθεση deployment. |
 
 ## Ακριβές επόμενο βήμα
 
-Με βάση τη ρητή εξαίρεση σειράς εργασιών, ξεκίνα το επόμενο προγραμματισμένο feature package χωρίς να κλείσεις το W02/G01. Επιστροφή στα deferred W02 criteria πριν από το G01 PASS· πρόσθεσε admin checks όταν δημιουργηθούν οι κατάλογοι στο W05.
+Start W05 on `codex/crm-w05-w07-features` from the current W02 checkpoint. Implement W05 -> W06 -> W07 with the approved acceptance criteria; keep W02/W03/W04/W08 and G01 open and return to them after the feature work.
 
 ## Τελευταίο βήμα TDD
 
