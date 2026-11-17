@@ -1,6 +1,6 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
-Τελευταία ενημέρωση: 17 Νοεμβρίου 2026.
+Τελευταία ενημέρωση: 18 Νοεμβρίου 2026.
 Κατάσταση: W01 ολοκληρώθηκε· W02 σε εξέλιξη.
 Έκδοση specs: 1.6.
 
@@ -14,17 +14,18 @@
 - W02 μέχρι τώρα: κοινό session bootstrap, session cookie policy, session ID rotation στο login, idle timeout, auth guards και `/crm/` redirects· CSRF validation για POST, POST-only logout/AJAX mutations και POST deletion forms.
 - W02 / SEC-04 / AT-05: PARTIAL — tests cover missing/invalid/foreign CSRF tokens, valid update/delete, login/logout and representative GET deletions. Δεν έχει ολοκληρωθεί ολόκληρο το route matrix ή το συνολικό W02 security audit.
 - W02 / ROL-03 / AT-04: PARTIAL — private diary read filtering and foreign event update/delete rejection have tests and implementation.
-- W02 / SEC-05 / AT-06: PARTIAL — header fullname/title, MyDiary inline event data, client autocomplete, active-professional form attributes, import feedback, AJAX script handoff, and partner Excel export have targeted escaping/rendering regressions.
-- W02 / SEC-06 / AT-07: PARTIAL — client, partner, task, active-professional, autocomplete and MyDiary queries now bind variable values; ordering remains fixed or allowlisted. SQL-like search and diary apostrophe regressions cover changed paths.
-- Τελευταίοι έλεγχοι: PHPUnit 59 tests / 195 assertions PASS, including null contact rendering, partner title and Excel export regressions, SQL-like searches and MyDiary apostrophe round trip; browser login/logout/autocomplete checks PASS from the previous E2E run· focused PHP syntax lint PASS.
-- Επόμενο βήμα: continue SEC-06 / AT-07 audit for diary queries and export filters/IDs; broader SEC-05 output review remains incomplete.
+- W02 / SEC-05 / AT-06: PARTIAL — existing header, diary, autocomplete, import feedback, AJAX handoff and partner Excel fixes have regressions. This audit also escaped active-professional PDF HTML fields and export-link attributes; the Dompdf route remains unavailable in the test image.
+- W02 / SEC-06 / AT-07: PARTIAL — client, partner, task, active-professional, autocomplete, MyDiary and all remaining export query families use prepared statements for values. Export identifiers are strictly validated; sort clauses are fixed or allowlisted. New export regression suite passes 12 tests / 32 assertions.
+- ROL-02 / AT-03: PARTIAL — a logged-in `user` can edit a shared task with valid CSRF; recurrence and catalog flows do not yet exist. AT-02 has no current catalog route to exercise and remains a W05 acceptance item.
+- Latest full PHPUnit run: PASS, 72 tests / 231 assertions in isolated `test-db / crm_w01_test`. Focused export suite: PASS, 12 tests / 32 assertions. Browser/E2E was not rerun because changes are server-side; prior login/session/autocomplete browser results remain as recorded.
+- Επόμενο βήμα: continue the remaining W02 baseline criteria (AT-08/09, AT-14/16/17/18/27) and finish output/access review; do not mark W02 or G01 complete while required criteria and evidence remain open.
 
 ## Καταγραφή τρέχουσας εργασίας
 
 | Καταγραφή | Αποτέλεσμα |
 |---|---|
 | Αρχικό σημείο αναφοράς | `27a805fbafcab86d0673c1f7f4911a45c1fcc8f1`; branch `codex/crm-w01-bootstrap`. |
-| Τρέχον Git σημείο | Checked-in HEAD `d0e5b90`; το working tree είναι clean στο handoff checkpoint. |
+| Τρέχον Git σημείο | Branch `codex/crm-w02-security-audit`, based on `48209a8`; export audit changes are verified and awaiting checkpoint commit. |
 | Specs και οδηγίες | Το `docs/crm-specs/` εισήχθη ως canonical αντίγραφο. Ενημερώθηκε το `AGENTS.md` για το canonical spec path και την επιβεβαιωμένη συμπεριφορά recurring tasks χωρίς scheduled end date. |
 | W01 baseline | [w01-baseline.md](evidence/w01-baseline.md): 34 tests, 5 PASS / 29 RED πριν από τις W02 διορθώσεις. Καταγράφηκαν δημόσια routes/data exposure, redirects εκτός `/crm/` και cookie policy gaps. |
 | W02 RED | [w02-csrf.md](evidence/w02-csrf.md): πριν από την υλοποίηση, 38 tests / 3 failures για POST χωρίς CSRF, token field που έλειπε και GET διαγραφή πελάτη που εκτελούνταν. |
@@ -34,7 +35,9 @@
 | W02 SEC-05 AJAX follow-up | [w02-xss.md](evidence/w02-xss.md): a submitted `</script>` payload was reproduced in the `save_client_ajax.php` response before the fix; JSON_HEX encoding now protects the handoff. Full PHPUnit suite PASS, 52 tests / 155 assertions. |
 | W02 SEC-05 document title and export | [w02-xss.md](evidence/w02-xss.md): partner fullname broke out of the shared `<title>` and appeared as raw HTML in the partner Excel export. Both sinks now escape the name. Full PHPUnit suite PASS, 54 tests / 165 assertions. |
 | W02 SEC-06 query slice | [w02-sql.md](evidence/w02-sql.md): client, partner, task, active-professional and autocomplete searches use prepared statements; MyDiary note/event writes and reads also bind values. SQL-like input and apostrophe round-trip regressions pass. Full PHPUnit suite PASS, 59 tests / 195 assertions. |
+| W02 export and output follow-up | [w02-exports.md](evidence/w02-exports.md): remaining export filter values use prepared statements; partner-analysis IDs are strictly validated; active-professional export filters align with list-page names. Focused export suite PASS, 12 tests / 32 assertions; latest full suite PASS, 72 tests / 231 assertions. Dompdf output remains blocked by the known missing dependency. |
 | W02 PHPUnit | `docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 build app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 up -d app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 run --rm tests` — latest full PASS: 59 tests / 195 assertions. Runner verified `test-db / crm_w01_test` and used fictional fixtures. |
+| W02 PHPUnit latest | `docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 build app`; `docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 run --rm tests` — PASS, 72 tests / 231 assertions. Runner verified `test-db / crm_w01_test`; fixtures are fictional. |
 | W02 browser | `CRM_BASE_URL=https://127.0.0.1:18443/crm npm --prefix tests/e2e --cache /tmp/crm-w01-npm-cache test` — PASS: login/session ID rotation, POST logout, blocked re-entry with old session, hostile autocomplete name rendered as text, Secure, HttpOnly, SameSite=Lax και cookie path `/crm/`. Το Chrome εκτελέστηκε εκτός sandbox εξαιτίας socket restriction. |
 | W02 syntax | `php -l` passed for the modified header, diary, update-event and CSRF files; PHPUnit parsed and exercised the latest active-professional form change. A broader application-wide PHP lint passed before these latest output changes. |
 | Περιβάλλον | Host PHP/Composer δεν είναι διαθέσιμα· οι PHP έλεγχοι εκτελούνται στο απομονωμένο Compose project. Chrome browser check απαιτεί εκτέλεση εκτός sandbox. |
@@ -58,7 +61,7 @@
 
 ## Ακριβές επόμενο βήμα
 
-Συνέχισε το W02 με SEC-06 / AT-07 source audit for remaining export filters and partner-analysis export IDs; replace escaped SQL interpolation with prepared statements and preserve allowlists for dynamic sort columns. Broader SEC-05 / AT-06 output review remains open. Add targeted coverage for each changed query family and role/access boundary checks for existing routes. Μην εφαρμόσεις role rules σε μελλοντικούς catalog routes που δεν υπάρχουν ακόμη· κατέγραψε τα ως μελλοντική απαίτηση του σχετικού feature.
+Συνέχισε το W02 με τα baseline criteria AT-08/09, AT-14/16/17/18/27 και την υπόλοιπη AT-06/07 κάλυψη. Πρόσθεσε role tests μόνο για υπάρχοντα όρια εξουσιοδότησης· εφάρμοσε admin checks όταν δημιουργηθούν οι κατάλογοι στο W05.
 
 ## Τελευταίο βήμα TDD
 
@@ -70,6 +73,9 @@
 - SEC-12: browser regression επιβεβαίωσε POST logout και ακύρωση του session· οι cache headers σε προσωπικές σελίδες/exports δεν έχουν ελεγχθεί.
 - Test evidence: `tests/integration/W01EnvironmentTest.php`, `tests/integration/W02CsrfTest.php`, `tests/unit/W01RuntimeTest.php`, `tests/e2e/login-page.test.cjs`· τελευταία πλήρης εκτέλεση 59/59 PHPUnit tests PASS (195 assertions); latest relevant browser suite passed autocomplete and login/session checks.
 - Μη καλυμμένα ακόμη: πλήρης role/authorization και diary ownership matrix, συνολικό XSS/SQL review, password policy, throttling/security events και cache behavior.
+- SEC-06 / AT-07 export follow-up: prepared filters and strict partner IDs pass focused tests; client sorting uses an explicit allowlist. See [w02-exports.md](evidence/w02-exports.md). Current full suite: 72 tests / 231 assertions PASS.
+- SEC-05 / AT-06 remains PARTIAL: active-professional PDF HTML and list export-link attributes were additionally reviewed and escaped; Dompdf is absent in the test image, and further output review is required.
+- ROL-02 / AT-03 existing-flow check: `user` role can edit a shared task with a valid CSRF token. Catalog permissions are not testable until W05 creates those routes.
 
 ## Bugs, αποφάσεις και περιορισμοί
 

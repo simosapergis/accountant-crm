@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once "../includes/db.php";
 require_once "../vendor/autoload.php"; // Dompdf
 
@@ -9,37 +10,40 @@ use Dompdf\Dompdf;
 // -------------------------------------------------------------
 // ΦΙΛΤΡΑ
 // -------------------------------------------------------------
-$partner_id = $_GET['partner_id'] ?? '';
-$activeOnly = $_GET['active'] ?? '';
-$vatFilter  = $_GET['vat'] ?? '';
-$vatType    = $_GET['vat_type'] ?? '';
-$payroll    = $_GET['payroll'] ?? '';
+$activeOnly = crm_export_string_filter('active', crm_export_string_filter('is_active'));
+$vatFilter  = crm_export_string_filter('vat', crm_export_string_filter('has_vat'));
+$vatType    = crm_export_string_filter('vat_type');
+$payroll    = crm_export_string_filter('payroll');
 
 // -------------------------------------------------------------
 // WHERE
 // -------------------------------------------------------------
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($activeOnly === "1") {
-    $where .= " AND is_active = 1 ";
+    $conditions[] = 'is_active = 1';
+} elseif ($activeOnly === "0") {
+    $conditions[] = 'is_active = 0';
 }
 
-if ($vatFilter === "yes") {
-    $where .= " AND has_vat = 1 ";
-} elseif ($vatFilter === "no") {
-    $where .= " AND has_vat = 0 ";
+if ($vatFilter === "yes" || $vatFilter === "1") {
+    $conditions[] = 'has_vat = 1';
+} elseif ($vatFilter === "no" || $vatFilter === "0") {
+    $conditions[] = 'has_vat = 0';
 }
 
 if ($vatType !== "") {
-    $vt = $mysqli->real_escape_string($vatType);
-    $where .= " AND vat_type = '$vt' ";
+    $conditions[] = 'vat_type = ?';
+    $params[] = $vatType;
 }
 
 if ($payroll === "yes") {
-    $where .= " AND has_payroll = 1 ";
+    $conditions[] = 'has_payroll = 1';
 } elseif ($payroll === "no") {
-    $where .= " AND has_payroll = 0 ";
+    $conditions[] = 'has_payroll = 0';
 }
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 // -------------------------------------------------------------
 // QUERY
@@ -50,7 +54,9 @@ $sql = "
     $where
     ORDER BY code ASC
 ";
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
 
 // -------------------------------------------------------------
 // HTML TEMPLATE ΓΙΑ PDF
@@ -112,15 +118,21 @@ $html = '
 // -------------------------------------------------------------
 while ($row = $res->fetch_assoc()) {
 
+    $code = htmlspecialchars((string)($row['code'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $fullname = htmlspecialchars((string)$row['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $startDate = htmlspecialchars((string)($row['start_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $endDate = htmlspecialchars((string)($row['end_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $vatTypeOutput = htmlspecialchars((string)($row['vat_type'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
     $html .= "
     <tr>
-        <td>{$row['code']}</td>
-        <td>".htmlspecialchars($row['fullname'])."</td>
+        <td>{$code}</td>
+        <td>{$fullname}</td>
         <td>".($row['is_active'] ? "ΝΑΙ" : "ΟΧΙ")."</td>
-        <td>{$row['start_date']}</td>
-        <td>{$row['end_date']}</td>
+        <td>{$startDate}</td>
+        <td>{$endDate}</td>
         <td>".($row['has_vat'] ? 'ΝΑΙ' : 'ΟΧΙ')."</td>
-        <td>{$row['vat_type']}</td>
+        <td>{$vatTypeOutput}</td>
         <td>".($row['has_payroll'] ? 'ΝΑΙ' : 'ΟΧΙ')."</td>
     </tr>";
 }

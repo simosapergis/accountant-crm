@@ -1,24 +1,32 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 
-$search = $_GET['search'] ?? '';
-$category = $_GET['category'] ?? '';
-$balanceFilter = $_GET['balance'] ?? '';
+$search = crm_export_string_filter('search');
+$category = crm_export_string_filter('category');
+$balanceFilter = crm_export_string_filter('balance');
 
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search !== '') {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND c.name LIKE '%$s%'";
+    $conditions[] = 'c.name LIKE ?';
+    $params[] = '%' . $search . '%';
 }
 
 if ($category !== '') {
-    $cat = $mysqli->real_escape_string($category);
-    $where .= " AND c.category = '$cat'";
+    $conditions[] = 'c.category = ?';
+    $params[] = $category;
 }
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
+$having = match ($balanceFilter) {
+    'positive', 'with' => ' HAVING total_fees > total_collected',
+    'zero' => ' HAVING total_fees = total_collected',
+    default => '',
+};
 
 $sql = "
     SELECT c.*,
@@ -28,9 +36,12 @@ $sql = "
     LEFT JOIN tasks t ON t.client_id = c.id
     $where
     GROUP BY c.id
+    $having
     ORDER BY c.name
 ";
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
 ?>
 <!doctype html>
 <html lang="el">

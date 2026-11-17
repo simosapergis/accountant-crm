@@ -189,13 +189,13 @@ require "includes/header.php";
             ⬆ Εισαγωγή από Excel
         </a>
 
-        <a href="exports/export_active_professionals_excel.php?<?= http_build_query($_GET) ?>"
+        <a href="exports/export_active_professionals_excel.php?<?= htmlspecialchars(http_build_query($_GET), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
            target="_blank"
            class="btn btn-primary">
            ⬇ Εξαγωγή Excel
         </a>
 
-        <a href="exports/export_active_professionals_pdf.php?<?= http_build_query($_GET) ?>"
+        <a href="exports/export_active_professionals_pdf.php?<?= htmlspecialchars(http_build_query($_GET), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
            target="_blank"
            class="btn btn-danger">
            ⬇ Εξαγωγή PDF

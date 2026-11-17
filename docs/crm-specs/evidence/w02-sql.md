@@ -18,6 +18,6 @@ Integration cases send SQL-like text (`' OR 1=1 --`) through client, partner, ta
 
 The MyDiary regression first failed because an apostrophe in a fictional event title/description did not round-trip to the database. The latest full PHPUnit run passes 59 tests / 195 assertions against the guarded `test-db / crm_w01_test` environment.
 
-## Remaining scope
+## Follow-up
 
-SEC-06 is partial. Continue the review in task/client/professional exports and partner-analysis export ID filters. Keep dynamic SQL identifiers or ordering limited to explicit allowlists. AT-07 also needs broader coverage for IDs, custom date filters and sort inputs. G01 remains `NOT_EVALUATED`.
+The remaining task/client/professional export filters and partner-analysis export identifiers were reviewed in [w02-exports.md](w02-exports.md). Those export query values are now bound, invalid partner IDs are rejected, and client sorting is allowlisted. SEC-06 / AT-07 remains partial until the broader route, ID, custom-date and sort matrix is complete. G01 remains `NOT_EVALUATED`.

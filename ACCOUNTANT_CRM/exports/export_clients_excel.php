@@ -1,40 +1,33 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 
-header("Content-Type: application/vnd.ms-excel; charset=utf-8");
-header("Content-Disposition: attachment; filename=clients_" . date('Ymd_His') . ".xls");
-echo "<meta charset='UTF-8'>";
+$search   = crm_export_string_filter('search');
+$category = crm_export_string_filter('category');
+$balance  = crm_export_string_filter('balance');
+$sort     = crm_export_string_filter('sort');
 
-$search   = $_GET['search'] ?? '';
-$category = $_GET['category'] ?? '';
-$balance  = $_GET['balance'] ?? '';
-$sort     = $_GET['sort'] ?? '';
-
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search !== '') {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND (
-        c.name  LIKE '%$s%' OR
-        c.afm   LIKE '%$s%' OR
-        c.phone LIKE '%$s%' OR
-        c.email LIKE '%$s%'
-    )";
+    $conditions[] = '(c.name LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+    $pattern = '%' . $search . '%';
+    array_push($params, $pattern, $pattern, $pattern, $pattern);
 }
 if ($category !== '') {
-    $cat = $mysqli->real_escape_string($category);
-    $where .= " AND c.category = '$cat'";
+    $conditions[] = 'c.category = ?';
+    $params[] = $category;
 }
-if ($balance === 'with') {
-    $where .= " AND (COALESCE(t.fee,0) - COALESCE(t.collected,0)) > 0";
-}
-if ($balance === 'zero') {
-    $where .= " AND (COALESCE(t.fee,0) - COALESCE(t.collected,0)) = 0";
-}
-
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
+$having = match ($balance) {
+    'positive', 'with' => ' HAVING balance > 0',
+    'zero' => ' HAVING balance = 0',
+    default => '',
+};
 $sql = "
     SELECT c.*,
            COALESCE(SUM(t.fee),0) AS total_fees,
@@ -45,17 +38,24 @@ $sql = "
     LEFT JOIN tasks t ON t.client_id = c.id
     $where
     GROUP BY c.id
+    $having
 ";
 
-switch ($sort) {
-    case 'name_asc':  $sql .= " ORDER BY c.name ASC"; break;
-    case 'name_desc': $sql .= " ORDER BY c.name DESC"; break;
-    case 'balance':   $sql .= " ORDER BY balance DESC"; break;
-    case 'tasks':     $sql .= " ORDER BY task_count DESC"; break;
-    default:          $sql .= " ORDER BY c.name ASC";
-}
+$orderBy = match ($sort) {
+    'name_desc' => ' ORDER BY c.name DESC',
+    'balance' => ' ORDER BY balance DESC',
+    'tasks' => ' ORDER BY task_count DESC',
+    default => ' ORDER BY c.name ASC',
+};
+$sql .= $orderBy;
 
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
+
+header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+header("Content-Disposition: attachment; filename=clients_" . date('Ymd_His') . ".xls");
+echo "<meta charset='UTF-8'>";
 
 echo "<table border='1'>";
 echo "<tr>

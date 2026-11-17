@@ -1,36 +1,39 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 
 // Φίλτρα (ίδια λογική με tasks.php)
-$search     = $_GET['search'] ?? '';
-$status     = $_GET['status'] ?? '';
-$client_id  = $_GET['client'] ?? '';
-$partner_id = $_GET['partner'] ?? '';
+$search     = crm_export_string_filter('search');
+$status     = crm_export_string_filter('status');
+$client_id  = crm_export_optional_id('client');
+$partner_id = crm_export_optional_id('partner');
 
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search != "") {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND t.title LIKE '%$s%'";
+    $conditions[] = 't.title LIKE ?';
+    $params[] = '%' . $search . '%';
 }
 
 if ($status != "") {
-    $s = $mysqli->real_escape_string($status);
-    $where .= " AND t.status = '$s'";
+    $conditions[] = 't.status = ?';
+    $params[] = $status;
 }
 
-if ($client_id != "") {
-    $cid = (int)$client_id;
-    $where .= " AND t.client_id = $cid";
+if ($client_id !== null) {
+    $conditions[] = 't.client_id = ?';
+    $params[] = $client_id;
 }
 
-if ($partner_id != "") {
-    $pid = (int)$partner_id;
-    $where .= " AND t.partner_id = $pid";
+if ($partner_id !== null) {
+    $conditions[] = 't.partner_id = ?';
+    $params[] = $partner_id;
 }
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 $sql = "
     SELECT t.*, c.name AS client_name, p.fullname AS partner_name
@@ -40,7 +43,9 @@ $sql = "
     $where
     ORDER BY t.task_date DESC
 ";
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
 ?>
 <!doctype html>
 <html lang="el">

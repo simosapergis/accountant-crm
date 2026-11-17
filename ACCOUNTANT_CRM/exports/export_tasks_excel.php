@@ -1,56 +1,54 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 
-header("Content-Type: application/vnd.ms-excel; charset=utf-8");
-header("Content-Disposition: attachment; filename=tasks_" . date('Ymd_His') . ".xls");
-echo "<meta charset='UTF-8'>";
+$search     = crm_export_string_filter('search');
+$status     = crm_export_string_filter('status');
+$client_id  = crm_export_optional_id('client');
+$partner_id = crm_export_optional_id('partner');
 
-$search     = $_GET['search'] ?? '';
-$status     = $_GET['status'] ?? '';
-$client_id  = $_GET['client'] ?? '';
-$partner_id = $_GET['partner'] ?? '';
+$date_range_type = crm_export_string_filter('date_range_type');
+$date_from       = crm_export_string_filter('date_from');
+$date_to         = crm_export_string_filter('date_to');
 
-$date_range_type = $_GET['date_range_type'] ?? '';
-$date_from       = $_GET['date_from'] ?? '';
-$date_to         = $_GET['date_to'] ?? '';
-
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search !== '') {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND t.title LIKE '%$s%'";
+    $conditions[] = 't.title LIKE ?';
+    $params[] = '%' . $search . '%';
 }
 if ($status !== '') {
-    $s = $mysqli->real_escape_string($status);
-    $where .= " AND t.status = '$s'";
+    $conditions[] = 't.status = ?';
+    $params[] = $status;
 }
-if ($client_id !== '') {
-    $cid = (int)$client_id;
-    $where .= " AND t.client_id = $cid";
+if ($client_id !== null) {
+    $conditions[] = 't.client_id = ?';
+    $params[] = $client_id;
 }
-if ($partner_id !== '') {
-    $pid = (int)$partner_id;
-    $where .= " AND t.partner_id = $pid";
+if ($partner_id !== null) {
+    $conditions[] = 't.partner_id = ?';
+    $params[] = $partner_id;
 }
 
 // Ημερομηνίες
 if ($date_range_type == "today") {
-    $where .= " AND t.task_date = CURDATE() ";
+    $conditions[] = 't.task_date = CURDATE()';
 } elseif ($date_range_type == "this_week") {
-    $where .= " AND YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1) ";
+    $conditions[] = 'YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1)';
 } elseif ($date_range_type == "this_month") {
-    $where .= " AND MONTH(t.task_date)=MONTH(CURDATE()) AND YEAR(t.task_date)=YEAR(CURDATE()) ";
+    $conditions[] = 'MONTH(t.task_date)=MONTH(CURDATE()) AND YEAR(t.task_date)=YEAR(CURDATE())';
 } elseif ($date_range_type == "prev_month") {
-    $where .= " AND MONTH(t.task_date)=MONTH(CURDATE() - INTERVAL 1 MONTH)
-                AND YEAR(t.task_date)=YEAR(CURDATE() - INTERVAL 1 MONTH) ";
+    $conditions[] = 'MONTH(t.task_date)=MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(t.task_date)=YEAR(CURDATE() - INTERVAL 1 MONTH)';
 } elseif ($date_range_type == "custom" && $date_from && $date_to) {
-    $f = $mysqli->real_escape_string($date_from);
-    $t = $mysqli->real_escape_string($date_to);
-    $where .= " AND t.task_date BETWEEN '$f' AND '$t' ";
+    $conditions[] = 't.task_date BETWEEN ? AND ?';
+    $params[] = $date_from;
+    $params[] = $date_to;
 }
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 $sql = "
     SELECT t.*,
@@ -63,7 +61,13 @@ $sql = "
     ORDER BY t.task_date DESC, t.id DESC
 ";
 
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
+
+header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+header("Content-Disposition: attachment; filename=tasks_" . date('Ymd_His') . ".xls");
+echo "<meta charset='UTF-8'>";
 
 echo "<table border='1'>";
 echo "<tr>

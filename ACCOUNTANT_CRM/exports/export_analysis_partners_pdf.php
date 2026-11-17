@@ -1,17 +1,19 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
 
 
-$partner_id = $_GET['partner_id'] ?? null;
+$partner_id = crm_export_optional_id('partner_id');
 $partner_name = 'Όλοι οι συνεργάτες';
 
 $where = '';
-if ($partner_id) {
-    $partner_id = (int)$partner_id;
-    $where = " WHERE t.partner_id = $partner_id ";
-    $p = $mysqli->query("SELECT fullname FROM partners WHERE id = $partner_id")->fetch_assoc();
+if ($partner_id !== null) {
+    $where = ' WHERE t.partner_id = ? ';
+    $partnerStmt = $mysqli->prepare('SELECT fullname FROM partners WHERE id = ?');
+    $partnerStmt->execute([$partner_id]);
+    $p = $partnerStmt->get_result()->fetch_assoc();
     if ($p) {
         $partner_name = $p['fullname'];
     }
@@ -25,7 +27,9 @@ $sql = "
     ORDER BY t.task_date DESC
 ";
 
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($partner_id !== null ? [$partner_id] : []);
+$res = $stmt->get_result();
 
 $total_fee = 0;
 $total_collected = 0;

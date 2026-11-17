@@ -144,6 +144,30 @@ final class W02CsrfTest extends TestCase
         self::assertSame('W02 Authorized Client Update', $this->clientName(910099));
     }
 
+    public function testUserRoleCanEditSharedTaskWithValidCsrfToken(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/task_form.php?id=910001', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $response = $this->request('/task_form.php?id=910001', 'POST', [
+            'id' => 910001,
+            'task_date' => '2026-11-17',
+            'title' => 'W02 User Role Task Edit',
+            'client_id' => 910001,
+            'partner_id' => 910001,
+            'status' => 'Σε εξέλιξη',
+            'fee' => '100.00',
+            'collected' => '0.00',
+            'notes' => 'fictional role regression',
+            'save_task' => '1',
+            '_csrf_token' => $token,
+        ], $session['cookie']);
+        $task = $this->db->query('SELECT title FROM tasks WHERE id = 910001')->fetch_assoc();
+
+        self::assertSame(302, $response['status']);
+        self::assertSame('W02 User Role Task Edit', $task['title'] ?? null);
+    }
+
     public function testClientSearchDoesNotBroadenForSqlLikeInput(): void
     {
         $session = $this->login();
