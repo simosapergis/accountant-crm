@@ -314,6 +314,47 @@ final class W02CsrfTest extends TestCase
         self::assertSame('W01 Fixture Task', $task['title'] ?? null);
     }
 
+    public function testGetDeletionIsRejectedAcrossPartnerProfessionalAndDiaryRoutes(): void
+    {
+        $session = $this->login();
+        $requests = [
+            '/partner_form.php?delete=910001',
+            '/active_professional_form.php?delete=910099',
+            '/active_professionals.php?delete=910099',
+            '/mydiary.php?delete_event=910099',
+        ];
+
+        foreach ($requests as $path) {
+            self::assertSame(405, $this->request($path, 'GET', [], $session['cookie'])['status'], $path);
+        }
+
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM partners WHERE id = 910001')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM active_professionals WHERE id = 910099')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM diary_events WHERE id = 910099')->fetch_row()[0]);
+    }
+
+    public function testDeletePostsWithoutCsrfAreRejectedAcrossAllExistingDeleteRoutes(): void
+    {
+        $session = $this->login();
+        $requests = [
+            ['/client_form.php', ['delete_client' => 910099]],
+            ['/partner_form.php', ['delete_partner' => 910001]],
+            ['/task_form.php', ['delete_task' => 910001]],
+            ['/active_professional_form.php', ['delete_professional' => 910099]],
+            ['/mydiary.php', ['delete_event' => 910099]],
+        ];
+
+        foreach ($requests as [$path, $payload]) {
+            self::assertSame(403, $this->request($path, 'POST', $payload, $session['cookie'])['status'], $path);
+        }
+
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM clients WHERE id = 910099')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM partners WHERE id = 910001')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM tasks WHERE id = 910001')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM active_professionals WHERE id = 910099')->fetch_row()[0]);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM diary_events WHERE id = 910099')->fetch_row()[0]);
+    }
+
     public function testValidCsrfPostCanDeleteTask(): void
     {
         $session = $this->login();
@@ -435,6 +476,35 @@ final class W02CsrfTest extends TestCase
         );
     }
 
+    public function testStoredNamesAndTaskTitlesAreEscapedAcrossListAndCalendarViews(): void
+    {
+        $payload = 'W02 XSS "><script>window.crmXss=1</script>';
+        $client = $this->db->prepare('UPDATE clients SET name = ? WHERE id = 910099');
+        $client->bind_param('s', $payload);
+        $client->execute();
+        $partner = $this->db->prepare('UPDATE partners SET fullname = ? WHERE id = 910001');
+        $partner->bind_param('s', $payload);
+        $partner->execute();
+        $task = $this->db->prepare('UPDATE tasks SET title = ? WHERE id = 910001');
+        $task->bind_param('s', $payload);
+        $task->execute();
+
+        $session = $this->login();
+        $responses = [
+            $this->request('/clients.php?search=W02', 'GET', [], $session['cookie']),
+            $this->request('/partners.php?search=W02', 'GET', [], $session['cookie']),
+            $this->request('/tasks.php?search=W02', 'GET', [], $session['cookie']),
+            $this->request('/calendar.php?view=day&year=2026&month=11&day=17', 'GET', [], $session['cookie']),
+        ];
+
+        foreach ($responses as $response) {
+            self::assertSame(200, $response['status']);
+            self::assertStringNotContainsString('<script>window.crmXss=1</script>', $response['body']);
+        }
+        self::assertStringContainsString('&lt;script&gt;window.crmXss=1&lt;/script&gt;', $responses[2]['body']);
+        self::assertStringContainsString('&lt;script&gt;window.crmXss=1&lt;/script&gt;', $responses[3]['body']);
+    }
+
     public function testPartnerExcelExportEscapesUntrustedPartnerName(): void
     {
         $name = 'W02 Excel <img src=x onerror="window.crmXss=1">';
@@ -553,6 +623,29 @@ final class W02CsrfTest extends TestCase
 
         $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
         self::assertSame(413, $response['status']);
+        self::assertStringNotContainsString('/tmp/', $response['body']);
+        self::assertSame($before, $after);
+    }
+
+    public function testImportRejectsCorruptXlsxWithoutExposingParserDetails(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $before = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        $response = $this->requestMultipart(
+            '/imports/import_active_professionals.php',
+            ['_csrf_token' => $token],
+            'excel_file',
+            'corrupt.xlsx',
+            "PK\x03\x04W02-CORRUPT-XLSX-FIXTURE",
+            $session['cookie']
+        );
+
+        $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+        self::assertSame(400, $response['status']);
+        self::assertStringContainsString('Δεν ήταν δυνατή η ανάγνωση', $response['body']);
         self::assertStringNotContainsString('/tmp/', $response['body']);
         self::assertSame($before, $after);
     }
