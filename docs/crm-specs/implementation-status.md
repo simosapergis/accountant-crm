@@ -25,7 +25,7 @@
 | Καταγραφή | Αποτέλεσμα |
 |---|---|
 | Αρχικό σημείο αναφοράς | `27a805fbafcab86d0673c1f7f4911a45c1fcc8f1`; branch `codex/crm-w01-bootstrap`. |
-| Τρέχον Git σημείο | Branch `codex/crm-w02-security-audit`, based on `48209a8`; export audit changes are verified and awaiting checkpoint commit. |
+| Τρέχον Git σημείο | Branch `codex/crm-w02-security-audit`; export audit checkpoint `1a1e4e2` is committed and verified. W02 remains in progress. |
 | Specs και οδηγίες | Το `docs/crm-specs/` εισήχθη ως canonical αντίγραφο. Ενημερώθηκε το `AGENTS.md` για το canonical spec path και την επιβεβαιωμένη συμπεριφορά recurring tasks χωρίς scheduled end date. |
 | W01 baseline | [w01-baseline.md](evidence/w01-baseline.md): 34 tests, 5 PASS / 29 RED πριν από τις W02 διορθώσεις. Καταγράφηκαν δημόσια routes/data exposure, redirects εκτός `/crm/` και cookie policy gaps. |
 | W02 RED | [w02-csrf.md](evidence/w02-csrf.md): πριν από την υλοποίηση, 38 tests / 3 failures για POST χωρίς CSRF, token field που έλειπε και GET διαγραφή πελάτη που εκτελούνταν. |
