@@ -14,7 +14,7 @@ if (!$userId) {
 
 /* ================= SELECTED DATE ================= */
 
-$selectedDate = $_GET['date'] ?? date("Y-m-d");
+$selectedDate = $_GET['date'] ?? $_POST['selected_date'] ?? date("Y-m-d");
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
     $selectedDate = date("Y-m-d");
 }
@@ -41,6 +41,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_note'])) {
     $mysqli->query($sql);
 
     header("Location: mydiary.php?date=".$noteDate);
+    exit;
+}
+
+if (isset($_GET['delete_event'])) {
+    require_post_method();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_event'])) {
+    $eventId = (int)$_POST['delete_event'];
+    $deleteEvent = $mysqli->prepare('DELETE FROM diary_events WHERE id = ? AND user_id = ?');
+    $deleteEvent->bind_param('ii', $eventId, $userId);
+    $deleteEvent->execute();
+    if ($deleteEvent->affected_rows !== 1) {
+        http_response_code(404);
+        exit('Not Found');
+    }
+    header('Location: mydiary.php?date=' . rawurlencode($selectedDate));
     exit;
 }
 
@@ -80,22 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_event'])) {
     }
 
     header("Location: mydiary.php?date=".$eventDate);
-    exit;
-}
-
-/* =========================================================
-   DELETE EVENT
-========================================================= */
-if (isset($_GET['delete_event'])) {
-
-    $eventId = (int)$_GET['delete_event'];
-
-    $mysqli->query("
-        DELETE FROM diary_events 
-        WHERE id=$eventId AND user_id=$userId
-    ");
-
-    header("Location: mydiary.php?date=".$selectedDate);
     exit;
 }
 
@@ -261,11 +262,13 @@ require "includes/header.php";
 
 .mydiary-event-time { color:#475569; font-size:14px; }
 
-.mydiary-event-actions a {
+.mydiary-event-actions a,
+.mydiary-event-actions button {
     font-size:18px;
     display:block;
     margin-bottom:6px;
 }
+.mydiary-event-actions button { border:0; background:none; padding:0; cursor:pointer; }
 </style>
 <div class="page-container">
 
@@ -401,6 +404,7 @@ require "includes/header.php";
                 </h3>
 
                 <form method="post">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="note_date" value="<?= $selectedDate ?>">
 
                     <textarea name="note_content"
@@ -449,24 +453,23 @@ require "includes/header.php";
                             <div class="mydiary-event-actions">
 
                                 <!-- EDIT -->
-                                <a href="#"
-                                   onclick='openEditModal({
-                                       id:"<?= $e["id"] ?>",
-                                       title:"<?= addslashes($e["title"]) ?>",
-                                       start_time:"<?= $e["start_time"] ?>",
-                                       end_time:"<?= $e["end_time"] ?>",
-                                       description:"<?= addslashes($e["description"]) ?>"
-                                   })'
-                                   title="Επεξεργασία">
-                                   ✏️
-                                </a>
+                                <button type="button"
+                                        data-event-id="<?= (int)$e['id'] ?>"
+                                        data-event-title="<?= htmlspecialchars((string)$e['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                        data-event-date="<?= htmlspecialchars((string)$e['event_date'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                        data-event-start-time="<?= htmlspecialchars((string)$e['start_time'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                        data-event-end-time="<?= htmlspecialchars((string)$e['end_time'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                        data-event-description="<?= htmlspecialchars((string)$e['description'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                                        onclick="openEditModal(this)" title="Επεξεργασία">✏️</button>
 
                                 <!-- DELETE -->
-                                <a href="mydiary.php?date=<?= $selectedDate ?>&delete_event=<?= $e['id'] ?>"
-                                   onclick="return confirm('Διαγραφή ραντεβού;')"
-                                   title="Διαγραφή">
-                                   🗑
-                                </a>
+                                <form method="post" action="mydiary.php" style="display:inline;">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="selected_date" value="<?= htmlspecialchars($selectedDate, ENT_QUOTES, 'UTF-8') ?>">
+                                    <button type="submit" name="delete_event" value="<?= (int)$e['id'] ?>"
+                                            style="border:0;background:none;color:#dc3545;cursor:pointer;font-size:16px;"
+                                            onclick="return confirm('Διαγραφή ραντεβού;')" title="Διαγραφή">🗑</button>
+                                </form>
 
                             </div>
 
@@ -487,6 +490,7 @@ require "includes/header.php";
                 <h3>➕ Νέο ραντεβού</h3>
 
                 <form method="post">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="event_date" value="<?= $selectedDate ?>">
 
                     <div style="margin-bottom:6px;">Τίτλος</div>
@@ -538,7 +542,9 @@ require "includes/header.php";
 
         <h3 style="margin-top:0;">✏️ Επεξεργασία Ραντεβού</h3>
 
-        <form id="editEventForm">
+        <form id="editEventForm" method="post">
+
+            <?= csrf_field() ?>
 
             <input type="hidden" id="edit_event_id" name="id">
 
@@ -578,12 +584,14 @@ require "includes/header.php";
 </div>
 
 <script>
-function openEditModal(data) {
-    document.getElementById("edit_event_id").value    = data.id;
-    document.getElementById("edit_event_title").value = data.title;
-    document.getElementById("edit_event_start").value = data.start_time;
-    document.getElementById("edit_event_end").value   = data.end_time;
-    document.getElementById("edit_event_desc").value  = data.description;
+function openEditModal(button) {
+    const data = button.dataset;
+    document.getElementById("edit_event_id").value    = data.eventId;
+    document.getElementById("edit_event_title").value = data.eventTitle;
+    document.getElementById("edit_event_date").value  = data.eventDate;
+    document.getElementById("edit_event_start").value = data.eventStartTime;
+    document.getElementById("edit_event_end").value   = data.eventEndTime;
+    document.getElementById("edit_event_desc").value  = data.eventDescription;
 
     document.getElementById("editEventModal").style.display = "block";
 }

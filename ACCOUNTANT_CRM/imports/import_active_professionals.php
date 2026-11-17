@@ -129,7 +129,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES["excel_file"])) {
             }
 
         } catch (Exception $e) {
-            $errors[] = "Σφάλμα ανάγνωσης αρχείου: " . $e->getMessage();
+            // Keep file paths and parser details out of the response.
+            $errors[] = "Δεν ήταν δυνατή η ανάγνωση του αρχείου.";
         }
     }
 
@@ -147,7 +148,7 @@ require "../includes/header.php";
 
     <?php if ($message): ?>
         <div class="card card-green" style="margin-bottom:15px;">
-            <?= $message ?>
+            <?= htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
         </div>
     <?php endif; ?>
 
@@ -155,13 +156,14 @@ require "../includes/header.php";
         <div class="card card-yellow" style="margin-bottom:15px;">
             <b>Παρουσιάστηκαν σφάλματα:</b><br>
             <?php foreach ($errors as $err): ?>
-                • <?= $err ?><br>
+                • <?= htmlspecialchars($err, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?><br>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
     <div class="form-card">
         <form method="post" enctype="multipart/form-data">
+            <?= csrf_field() ?>
 
             <div class="form-row">
                 <div class="form-group">

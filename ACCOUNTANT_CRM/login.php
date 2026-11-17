@@ -1,10 +1,12 @@
 <?php
 require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/csrf.php';
 require_once "includes/db.php";
 
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    csrf_validate_request();
 
     $username = trim($_POST["username"]);
     $password = trim($_POST["password"]);
@@ -22,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (password_verify($password, $user["password"])) {
 
             session_regenerate_id(true);
+            $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
 
             $_SESSION["user_id"]   = $user["id"];
             $_SESSION["username"]  = $user["username"];
@@ -97,6 +100,7 @@ button:hover {
     <?php endif; ?>
 
     <form method="post">
+        <?= csrf_field() ?>
         <input type="text" name="username" placeholder="Όνομα χρήστη" required>
         <input type="password" name="password" placeholder="Κωδικός" required>
         <button type="submit">Είσοδος</button>

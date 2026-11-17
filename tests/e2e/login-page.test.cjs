@@ -31,7 +31,7 @@ async function runCheck(name, check) {
       assert.equal(await page.locator('input[name="username"]').isVisible(), true);
       assert.equal(await page.locator('input[name="password"]').isVisible(), true);
     }));
-    checks.push(await runCheck('successful login rotates the session ID and opens the protected dashboard', async () => {
+    checks.push(await runCheck('login rotates the session ID, logout ends it, and protected pages reject the old session', async () => {
       const context = await browser.newContext({ ignoreHTTPSErrors: true });
       const page = await context.newPage();
       await page.goto(`${baseUrl}/login.php`);
@@ -47,6 +47,31 @@ async function runCheck(name, check) {
       assert.equal(page.url(), `${baseUrl}/index.php`);
       assert.ok(before && after && before.value !== after.value, 'session ID should rotate after login');
       assert.equal(await page.locator('body').innerText().then((text) => text.includes('Notice: session_start')), false);
+
+      const logoutNavigation = page.waitForNavigation();
+      await page.locator('form[action="logout.php"] button[type="submit"]').first().click();
+      const logoutResponse = await logoutNavigation;
+      assert.equal(logoutResponse.status(), 200);
+      assert.equal(page.url(), `${baseUrl}/login.php`);
+      await page.goto(`${baseUrl}/tasks.php`);
+      assert.equal(page.url(), `${baseUrl}/login.php`, 'logout should make protected pages unavailable');
+      await context.close();
+    }));
+    checks.push(await runCheck('client autocomplete renders hostile names as text', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+      await page.goto(`${baseUrl}/task_form.php`);
+      await page.locator('#client_search').fill('W02 XSS');
+      await page.locator('#client_results .client-item').waitFor({ state: 'visible' });
+
+      assert.equal(await page.locator('#client_results img').count(), 0);
+      assert.equal(await page.evaluate(() => window.crmXss), undefined);
       await context.close();
     }));
     const context = await browser.newContext({ ignoreHTTPSErrors: true });

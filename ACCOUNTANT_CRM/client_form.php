@@ -1,12 +1,15 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+if (isset($_GET['delete'])) {
+    require_once __DIR__ . '/includes/csrf.php';
+    require_post_method();
+}
 require_once 'includes/db.php';
 
 $id = $_GET['id'] ?? null;
-$deleteId = $_GET['delete'] ?? null;
-
-if ($deleteId) {
-    $stmt = $mysqli->prepare("DELETE FROM clients WHERE id = ?");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_client'])) {
+    $deleteId = (int)$_POST['delete_client'];
+    $stmt = $mysqli->prepare('DELETE FROM clients WHERE id = ?');
     $stmt->bind_param('i', $deleteId);
     $stmt->execute();
     header('Location: clients.php');
@@ -75,7 +78,8 @@ require 'includes/header.php';
 ?>
 
 <form method="post">
-    <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
+    <?= csrf_field() ?>
+    <input type="hidden" name="id" value="<?= htmlspecialchars((string)$id, ENT_QUOTES, 'UTF-8') ?>">
     <div class="form-card">
         <?php if ($saveError): ?>
             <div role="alert" style="margin-bottom:16px;padding:12px;border-radius:6px;background:#f8d7da;color:#842029;">
@@ -118,8 +122,8 @@ require 'includes/header.php';
         <div class="form-actions">
             <a href="clients.php" class="btn btn-secondary">Άκυρο</a>
             <?php if ($id): ?>
-                <a href="client_form.php?delete=<?= $id ?>" class="btn btn-danger"
-                   onclick="return confirm('Διαγραφή πελάτη;')">Διαγραφή</a>
+                <button type="submit" name="delete_client" value="<?= (int)$id ?>" class="btn btn-danger"
+                        onclick="return confirm('Διαγραφή πελάτη;')">Διαγραφή</button>
             <?php endif; ?>
             <button type="submit" class="btn btn-primary">Αποθήκευση</button>
         </div>

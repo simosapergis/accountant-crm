@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+if (isset($_GET['delete'])) {
+    require_post_method();
+}
 require_once "includes/db.php";
 require_once "includes/functions.php";
 
@@ -326,8 +329,11 @@ require "includes/header.php";
 
                     <td class="task-actions">
                         <a class="icon-btn blue" href="task_form.php?id=<?= $row['id'] ?>">✏️</a>
-                        <a class="icon-btn red" href="tasks.php?delete=<?= $row['id'] ?>"
-                           onclick="return confirm('Διαγραφή εργασίας;')">🗑</a>
+                        <form method="post" action="task_form.php" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <button class="icon-btn red" type="submit" name="delete_task" value="<?= (int)$row['id'] ?>"
+                                    onclick="return confirm('Διαγραφή εργασίας;')">🗑</button>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -376,9 +382,11 @@ require "includes/header.php";
 
                 <div class="mobile-card-actions">
                     <a class="icon-btn blue" href="task_form.php?id=<?= $row['id'] ?>">✏️</a>
-                    <a class="icon-btn red"
-                       href="tasks.php?delete=<?= $row['id'] ?>"
-                       onclick="return confirm('Διαγραφή εργασίας;')">🗑</a>
+                    <form method="post" action="task_form.php" style="display:inline;">
+                        <?= csrf_field() ?>
+                        <button class="icon-btn red" type="submit" name="delete_task" value="<?= (int)$row['id'] ?>"
+                                onclick="return confirm('Διαγραφή εργασίας;')">🗑</button>
+                    </form>
                 </div>
 
             </div>

@@ -1,15 +1,19 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+if (isset($_GET['delete'])) {
+    require_once __DIR__ . '/includes/csrf.php';
+    require_post_method();
+}
 require_once 'includes/db.php';
 
 $id = $_GET['id'] ?? null;
-$deleteId = $_GET['delete'] ?? null;
 
 //
 // ΔΙΑΓΡΑΦΗ ΣΥΝΕΡΓΑΤΗ
 //
-if ($deleteId) {
-    $stmt = $mysqli->prepare("DELETE FROM partners WHERE id = ?");
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_partner'])) {
+    $deleteId = (int)$_POST['delete_partner'];
+    $stmt = $mysqli->prepare('DELETE FROM partners WHERE id = ?');
     $stmt->bind_param('i', $deleteId);
     $stmt->execute();
     header('Location: partners.php');
@@ -71,6 +75,7 @@ require 'includes/header.php';
 ?>
 
 <form method="post">
+<?= csrf_field() ?>
 <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
 
 <div class="form-card">
@@ -100,11 +105,10 @@ require 'includes/header.php';
         <a href="partners.php" class="btn btn-secondary">Άκυρο</a>
 
         <?php if ($id): ?>
-            <a href="partner_form.php?delete=<?= $id ?>" 
-               class="btn btn-danger"
-               onclick="return confirm('Διαγραφή συνεργάτη;');">
+            <button type="submit" name="delete_partner" value="<?= (int)$id ?>"
+               class="btn btn-danger" onclick="return confirm('Διαγραφή συνεργάτη;');">
                Διαγραφή
-            </a>
+            </button>
         <?php endif; ?>
 
         <button type="submit" class="btn btn-primary">Αποθήκευση</button>

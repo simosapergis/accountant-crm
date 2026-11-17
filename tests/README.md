@@ -18,7 +18,8 @@ CRM_BASE_URL=https://127.0.0.1:18443/crm npm --prefix tests/e2e --cache /tmp/crm
 
 The PHP runner checks DB host, user, and name before connecting. It refuses to
 run against any target except `test-db` / `crm_w01_test`, then seeds only
-idempotent fictional W01 client, collaborator and task records. PHPUnit
+idempotent fictional W01 client, collaborator and task records plus a hostile
+client name used by the W02 autocomplete XSS browser regression. PHPUnit
 dependencies are pinned in `tests/composer.lock`; the application Composer
 install still uses `--no-dev`. Browser checks use pinned `playwright-core` with
 host Chrome and ignore only the self-signed test certificate.

@@ -269,6 +269,7 @@ tbody tr:hover {
 .icon-btn.gray { border-color:#bbb; color:#555; }
 .icon-btn.blue { border-color:#007bff; color:#007bff; }
 .icon-btn.red  { border-color:#dc3545; color:#dc3545; }
+.icon-btn[type="submit"] { padding:0; background:transparent; cursor:pointer; }
 
 .icon-btn:hover {
     background:#f1f1f1;

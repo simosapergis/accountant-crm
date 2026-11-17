@@ -197,9 +197,11 @@ require 'includes/header.php';
                     <td class="task-actions">
                 <a class="icon-btn blue" href="client_form.php?id=<?= $c['id'] ?>">✏️</a>
                 <a class="icon-btn gray" href="tasks.php?client=<?= $c['id'] ?>">📄</a>
-                <a class="icon-btn red"
-                   href="client_form.php?delete=<?= $c['id'] ?>"
-                   onclick="return confirm('Διαγραφή πελάτη;');">🗑</a>
+                <form method="post" action="client_form.php" style="display:inline;">
+                    <?= csrf_field() ?>
+                    <button class="icon-btn red" type="submit" name="delete_client" value="<?= (int)$c['id'] ?>"
+                            onclick="return confirm('Διαγραφή πελάτη;');">🗑</button>
+                </form>
             </td>
                 </tr>
             <?php endforeach; ?>

@@ -1,13 +1,16 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
+if (isset($_GET['delete'])) {
+    require_post_method();
+}
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
 
 /* ----------------------------------------------------------
    ΔΙΑΓΡΑΦΗ
 ----------------------------------------------------------- */
-if (isset($_GET['delete'])) {
-    $id = (int)$_GET['delete'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_task'])) {
+    $id = (int)$_POST['delete_task'];
     $stmt = $mysqli->prepare("DELETE FROM tasks WHERE id=?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
@@ -163,6 +166,8 @@ function addClientToDropdown(id, name) {
      ΦΟΡΜΑ ΕΡΓΑΣΙΑΣ
 ============================================ -->
 <form method="post">
+    <?= csrf_field() ?>
+    <?php if ($id): ?><input type="hidden" name="id" value="<?= (int)$id ?>"><?php endif; ?>
     <input type="hidden" name="save_task" value="1">
 
     <div class="form-card">
@@ -276,6 +281,10 @@ function addClientToDropdown(id, name) {
 
         <div class="form-actions">
             <a href="tasks.php" class="btn btn-secondary">Άκυρο</a>
+            <?php if ($id): ?>
+                <button class="btn btn-danger" type="submit" name="delete_task" value="<?= (int)$id ?>"
+                        onclick="return confirm('Διαγραφή εργασίας;')">Διαγραφή</button>
+            <?php endif; ?>
             <button class="btn btn-primary" type="submit">Αποθήκευση</button>
         </div>
 
@@ -293,6 +302,7 @@ function addClientToDropdown(id, name) {
                   method="post"
                   action="save_client_ajax.php"
                   target="clientSaveFrame">
+                <?= csrf_field() ?>
 
                 <div class="modal-header">
                     <h5 class="modal-title">Νέος Πελάτης</h5>
@@ -356,7 +366,16 @@ function renderResults(data) {
     data.forEach(c => {
         const div = document.createElement("div");
         div.className = "client-item";
-        div.innerHTML = `<strong>${c.name}</strong>` + (c.afm ? `<br><small>${c.afm}</small>` : "");
+        const name = document.createElement("strong");
+        name.textContent = c.name;
+        div.appendChild(name);
+
+        if (c.afm) {
+            div.appendChild(document.createElement("br"));
+            const afm = document.createElement("small");
+            afm.textContent = c.afm;
+            div.appendChild(afm);
+        }
         div.onclick = () => {
             input.value = c.name;
             document.getElementById("client_id").value = c.id;

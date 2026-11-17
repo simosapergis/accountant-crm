@@ -177,8 +177,11 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
 
         <!-- USER (desktop) -->
         <div class="menu-user">
-            Συνδεδεμένος ως: <b><?= $_SESSION['fullname'] ?></b> |
-            <a href="logout.php">Αποσύνδεση</a>
+            Συνδεδεμένος ως: <b><?= htmlspecialchars((string)$_SESSION['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></b> |
+            <form action="logout.php" method="post" style="display:inline;">
+                <?= csrf_field() ?>
+                <button type="submit" style="padding:0;border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;">Αποσύνδεση</button>
+            </form>
         </div>
 
         <!-- HAMBURGER (mobile) -->
@@ -198,8 +201,11 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         <a href="mydiary.php">MyDiary</a>
         <div class="mobile-user-box">
             Συνδεδεμένος ως:<br>
-            <b><?= $_SESSION['fullname'] ?></b><br>
-            <a href="logout.php">Αποσύνδεση</a>
+            <b><?= htmlspecialchars((string)$_SESSION['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></b><br>
+            <form action="logout.php" method="post">
+                <?= csrf_field() ?>
+                <button type="submit" style="padding:0;border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;">Αποσύνδεση</button>
+            </form>
         </div>
 
     </div>

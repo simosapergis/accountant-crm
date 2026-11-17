@@ -20,9 +20,13 @@ if ($id) {
 /* ============================================================
    ΔΙΑΓΡΑΦΗ
 ============================================================ */
-if (isset($_GET['delete']) && $id) {
-    $stmt = $mysqli->prepare("DELETE FROM active_professionals WHERE id = ?");
-    $stmt->bind_param("i", $id);
+if (isset($_GET['delete'])) {
+    require_post_method();
+}
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_professional'])) {
+    $deleteId = (int)$_POST['delete_professional'];
+    $stmt = $mysqli->prepare('DELETE FROM active_professionals WHERE id = ?');
+    $stmt->bind_param('i', $deleteId);
     $stmt->execute();
     header("Location: active_professionals.php");
     exit;
@@ -192,17 +196,18 @@ require "includes/header.php";
          ΦΟΡΜΑ
     ============================================================= -->
     <form method="post" class="form-box">
+        <?= csrf_field() ?>
 
         <div class="form-row">
             <label>Κωδικός</label>
             <input type="text" name="code"
-                   value="<?= $pro["code"] ?? "" ?>" required>
+                   value="<?= htmlspecialchars((string)($pro["code"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
         </div>
 
         <div class="form-row">
             <label>Ονοματεπώνυμο</label>
             <input type="text" name="fullname"
-                   value="<?= $pro["fullname"] ?? "" ?>" required>
+                   value="<?= htmlspecialchars((string)($pro["fullname"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
         </div>
 
         <div class="form-row-half">
@@ -210,13 +215,13 @@ require "includes/header.php";
             <div class="form-row">
                 <label>Έναρξη</label>
                 <input type="date" name="start_date"
-                       value="<?= $pro["start_date"] ?? "" ?>">
+                       value="<?= htmlspecialchars((string)($pro["start_date"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
             </div>
 
             <div class="form-row">
                 <label>Διακοπή</label>
                 <input type="date" name="end_date"
-                       value="<?= $pro["end_date"] ?? "" ?>">
+                       value="<?= htmlspecialchars((string)($pro["end_date"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
             </div>
 
         </div>
@@ -257,9 +262,8 @@ require "includes/header.php";
         <button type="submit" class="save-btn">💾 Αποθήκευση</button>
 
         <?php if ($pro): ?>
-            <a href="active_professional_form.php?delete=<?= $pro['id'] ?>"
-               class="delete-btn"
-               onclick="return confirm('Σίγουρα διαγραφή;')">🗑 Διαγραφή</a>
+            <button type="submit" name="delete_professional" value="<?= (int)$pro['id'] ?>"
+                    class="delete-btn" onclick="return confirm('Σίγουρα διαγραφή;')">🗑 Διαγραφή</button>
         <?php endif; ?>
 
     </form>

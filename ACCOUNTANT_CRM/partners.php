@@ -106,9 +106,11 @@ require "includes/header.php";
                     <td class="task-actions">
                         <a class="icon-btn gray" href="partner_form.php?id=<?= $p['id'] ?>">👁</a>
                         <a class="icon-btn blue" href="partner_form.php?id=<?= $p['id'] ?>">✏️</a>
-                        <a class="icon-btn red"
-                           href="partner_form.php?delete=<?= $p['id'] ?>"
-                           onclick="return confirm('Διαγραφή συνεργάτη;')">🗑</a>
+                        <form method="post" action="partner_form.php" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <button class="icon-btn red" type="submit" name="delete_partner" value="<?= (int)$p['id'] ?>"
+                                    onclick="return confirm('Διαγραφή συνεργάτη;')">🗑</button>
+                        </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -141,9 +143,11 @@ require "includes/header.php";
                 <div class="mobile-card-actions">
                     <a class="icon-btn gray" href="partner_form.php?id=<?= $p['id'] ?>">👁</a>
                     <a class="icon-btn blue" href="partner_form.php?id=<?= $p['id'] ?>">✏️</a>
-                    <a class="icon-btn red"
-                       href="partner_form.php?delete=<?= $p['id'] ?>"
-                       onclick="return confirm('Διαγραφή συνεργάτη;')">🗑</a>
+                    <form method="post" action="partner_form.php" style="display:inline;">
+                        <?= csrf_field() ?>
+                        <button class="icon-btn red" type="submit" name="delete_partner" value="<?= (int)$p['id'] ?>"
+                                onclick="return confirm('Διαγραφή συνεργάτη;')">🗑</button>
+                    </form>
                 </div>
             </div>
         <?php endforeach; ?>

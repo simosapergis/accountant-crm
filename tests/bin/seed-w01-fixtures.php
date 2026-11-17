@@ -21,6 +21,15 @@ $clientName = 'W01 Fixture Client';
 $client->bind_param('is', $clientId, $clientName);
 $client->execute();
 
+$xssClientId = 910097;
+$xssClientName = 'W02 XSS <img src=x onerror="window.crmXss=1">';
+$xssClient = $db->prepare(
+    "INSERT INTO clients (id, name, category) VALUES (?, ?, 'Ιδιώτης') " .
+    'ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category)'
+);
+$xssClient->bind_param('is', $xssClientId, $xssClientName);
+$xssClient->execute();
+
 $partnerId = 910001;
 $partner = $db->prepare(
     'INSERT INTO partners (id, fullname) VALUES (?, ?) ' .
@@ -58,4 +67,4 @@ $user = $db->prepare(
 $user->bind_param('issss', $userId, $username, $passwordHash, $fullname, $role);
 $user->execute();
 
-fwrite(STDOUT, "Seeded idempotent fictional W01 user, client, collaborator, and task fixtures.\n");
+fwrite(STDOUT, "Seeded idempotent fictional W01 fixtures and W02 XSS test client.\n");
