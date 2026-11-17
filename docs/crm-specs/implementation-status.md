@@ -14,9 +14,10 @@
 - W02 μέχρι τώρα: κοινό session bootstrap, session cookie policy, session ID rotation στο login, idle timeout, auth guards και `/crm/` redirects· CSRF validation για POST, POST-only logout/AJAX mutations και POST deletion forms.
 - W02 / SEC-04 / AT-05: PARTIAL — tests cover missing/invalid/foreign CSRF tokens, valid update/delete, login/logout and representative GET deletions. Δεν έχει ολοκληρωθεί ολόκληρο το route matrix ή το συνολικό W02 security audit.
 - W02 / ROL-03 / AT-04: PARTIAL — private diary read filtering and foreign event update/delete rejection have tests and implementation.
-- W02 / SEC-05 / AT-06: PARTIAL — header fullname, MyDiary inline event data, client autocomplete, active-professional form attributes, duplicate-code import feedback, and new-client AJAX script handoff have targeted escaping/rendering regressions.
-- Τελευταίοι έλεγχοι: PHPUnit 52 tests / 155 assertions PASS, including import feedback and AJAX script handoff regressions; browser login/logout/autocomplete checks PASS from the previous E2E run· focused PHP syntax lint PASS.
-- Επόμενο βήμα: continue SEC-05 / AT-06 review of remaining user-controlled outputs, followed by SEC-06 prepared-query audit.
+- W02 / SEC-05 / AT-06: PARTIAL — header fullname/title, MyDiary inline event data, client autocomplete, active-professional form attributes, import feedback, AJAX script handoff, and partner Excel export have targeted escaping/rendering regressions.
+- W02 / SEC-06 / AT-07: PARTIAL — client, partner, task, active-professional, autocomplete and MyDiary queries now bind variable values; ordering remains fixed or allowlisted. SQL-like search and diary apostrophe regressions cover changed paths.
+- Τελευταίοι έλεγχοι: PHPUnit 59 tests / 195 assertions PASS, including null contact rendering, partner title and Excel export regressions, SQL-like searches and MyDiary apostrophe round trip; browser login/logout/autocomplete checks PASS from the previous E2E run· focused PHP syntax lint PASS.
+- Επόμενο βήμα: continue SEC-06 / AT-07 audit for diary queries and export filters/IDs; broader SEC-05 output review remains incomplete.
 
 ## Καταγραφή τρέχουσας εργασίας
 
@@ -31,7 +32,9 @@
 | W02 SEC-05 RED/GREEN | [w02-xss.md](evidence/w02-xss.md): raw header fullname, diary inline JavaScript and active-professional attribute values reproduced as RED; current suite GREEN at 50 tests / 144 assertions and autocomplete E2E PASS. The pre-fix autocomplete browser attempt was interrupted, so its RED was not observed. |
 | W02 SEC-05 import follow-up | [w02-xss.md](evidence/w02-xss.md): duplicate-code import feedback reproduced as raw text containing an attribute payload; output is now escaped and parser exceptions return a generic message. Focused regression PASS, 1 test / 5 assertions. |
 | W02 SEC-05 AJAX follow-up | [w02-xss.md](evidence/w02-xss.md): a submitted `</script>` payload was reproduced in the `save_client_ajax.php` response before the fix; JSON_HEX encoding now protects the handoff. Full PHPUnit suite PASS, 52 tests / 155 assertions. |
-| W02 PHPUnit | `docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 build app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 up -d app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 run --rm tests` — latest full PASS: 52 tests / 155 assertions. Focused import regression previously passed: 1 test / 5 assertions. Runner verified `test-db / crm_w01_test` and used fictional fixtures. |
+| W02 SEC-05 document title and export | [w02-xss.md](evidence/w02-xss.md): partner fullname broke out of the shared `<title>` and appeared as raw HTML in the partner Excel export. Both sinks now escape the name. Full PHPUnit suite PASS, 54 tests / 165 assertions. |
+| W02 SEC-06 query slice | [w02-sql.md](evidence/w02-sql.md): client, partner, task, active-professional and autocomplete searches use prepared statements; MyDiary note/event writes and reads also bind values. SQL-like input and apostrophe round-trip regressions pass. Full PHPUnit suite PASS, 59 tests / 195 assertions. |
+| W02 PHPUnit | `docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 build app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 up -d app && docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 run --rm tests` — latest full PASS: 59 tests / 195 assertions. Runner verified `test-db / crm_w01_test` and used fictional fixtures. |
 | W02 browser | `CRM_BASE_URL=https://127.0.0.1:18443/crm npm --prefix tests/e2e --cache /tmp/crm-w01-npm-cache test` — PASS: login/session ID rotation, POST logout, blocked re-entry with old session, hostile autocomplete name rendered as text, Secure, HttpOnly, SameSite=Lax και cookie path `/crm/`. Το Chrome εκτελέστηκε εκτός sandbox εξαιτίας socket restriction. |
 | W02 syntax | `php -l` passed for the modified header, diary, update-event and CSRF files; PHPUnit parsed and exercised the latest active-professional form change. A broader application-wide PHP lint passed before these latest output changes. |
 | Περιβάλλον | Host PHP/Composer δεν είναι διαθέσιμα· οι PHP έλεγχοι εκτελούνται στο απομονωμένο Compose project. Chrome browser check απαιτεί εκτέλεση εκτός sandbox. |
@@ -55,7 +58,7 @@
 
 ## Ακριβές επόμενο βήμα
 
-Συνέχισε το W02 με full PHPUnit verification of the new SEC-05 import feedback regression. Έπειτα συνέχισε SEC-05 / AT-06 source review and targeted tests for remaining user-controlled outputs, followed by prepared-statement tests βάσει SEC-06 and role/access boundary checks for existing routes. Μην εφαρμόσεις role rules σε μελλοντικούς catalog routes που δεν υπάρχουν ακόμη· κατέγραψε τα ως μελλοντική απαίτηση του σχετικού feature.
+Συνέχισε το W02 με SEC-06 / AT-07 source audit for remaining export filters and partner-analysis export IDs; replace escaped SQL interpolation with prepared statements and preserve allowlists for dynamic sort columns. Broader SEC-05 / AT-06 output review remains open. Add targeted coverage for each changed query family and role/access boundary checks for existing routes. Μην εφαρμόσεις role rules σε μελλοντικούς catalog routes που δεν υπάρχουν ακόμη· κατέγραψε τα ως μελλοντική απαίτηση του σχετικού feature.
 
 ## Τελευταίο βήμα TDD
 

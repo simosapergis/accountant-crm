@@ -17,44 +17,54 @@ $count_inactive = $mysqli->query("SELECT COUNT(*) AS c FROM active_professionals
 /* ============================================================
    ΦΙΛΤΡΑ
 ============================================================ */
-$search    = $_GET['search']    ?? "";
-$has_vat   = $_GET['has_vat']   ?? "";
-$vat_type  = $_GET['vat_type']  ?? "";
-$payroll   = $_GET['payroll']   ?? "";
+$searchInput = $_GET['search'] ?? '';
+$hasVatInput = $_GET['has_vat'] ?? '';
+$vatTypeInput = $_GET['vat_type'] ?? '';
+$payrollInput = $_GET['payroll'] ?? '';
+$search = is_string($searchInput) ? $searchInput : '';
+$has_vat = is_string($hasVatInput) ? $hasVatInput : '';
+$vat_type = is_string($vatTypeInput) ? $vatTypeInput : '';
+$payroll = is_string($payrollInput) ? $payrollInput : '';
 
 /* Default: Εμφάνιση μόνο ΕΝΕΡΓΩΝ */
-if (!isset($_GET['is_active'])) {
+if (!array_key_exists('is_active', $_GET)) {
     $is_active = "1";
 } else {
-    $is_active = $_GET['is_active'];
+    $activeInput = $_GET['is_active'];
+    $is_active = is_string($activeInput) ? $activeInput : '';
 }
 
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search !== "") {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND (fullname LIKE '%$s%' OR code LIKE '%$s%')";
+    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
+    $searchPattern = '%' . $search . '%';
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
 }
 
 if ($is_active !== "") {
-    $a = (int)$is_active;
-    $where .= " AND is_active = $a";
+    $conditions[] = 'is_active = ?';
+    $params[] = (int)$is_active;
 }
 
 if ($has_vat !== "") {
-    $v = (int)$has_vat;
-    $where .= " AND has_vat = $v";
+    $conditions[] = 'has_vat = ?';
+    $params[] = (int)$has_vat;
 }
 
 if ($vat_type !== "") {
-    $v = $mysqli->real_escape_string($vat_type);
-    $where .= " AND vat_type = '$v'";
+    $conditions[] = 'vat_type = ?';
+    $params[] = $vat_type;
 }
 
 if ($payroll !== "") {
-    $p = (int)$payroll;
-    $where .= " AND has_payroll = $p";
+    $conditions[] = 'has_payroll = ?';
+    $params[] = (int)$payroll;
 }
+
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 /* ============================================================
    QUERY
@@ -65,7 +75,9 @@ $sql = "
     $where
     ORDER BY code ASC
 ";
-$result = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$result = $stmt->get_result();
 $pros = [];
 while ($row = $result->fetch_assoc()) {
     $pros[] = $row;

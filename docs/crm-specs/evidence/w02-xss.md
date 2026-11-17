@@ -30,6 +30,8 @@ The import follow-up adds an XLSX integration fixture with a duplicate active-pr
 
 Source review then found that `save_client_ajax.php` used `addslashes()` to insert a submitted client name into an inline script. A new HTTP test reproduced a `</script><script>...` breakout as RED. The response now uses `json_encode()` with JSON_HEX flags (and invalid UTF-8 substitution) for the JavaScript argument. The first post-fix run exposed a brittle test expectation around JSON's optional escaped slash; after normalizing that representation in the assertion, the full suite passes 52 tests / 155 assertions. The endpoint is exercised through HTTP; browser E2E was not rerun because the UI handoff code is unchanged and the source test asserts script-safe encoding.
 
+Additional output review found that the dynamic partner page title was printed raw by the shared header. The test reproduced a `</title><script>...` breakout as RED; the shared title is now HTML-escaped, and the focused test passes 1 test / 5 assertions. The partner analysis Excel export also inserted the stored partner name directly into an HTML cell; a fake `<img onerror>` name reproduced the raw markup as RED and the cell now uses HTML escaping. The full PHPUnit suite passes 54 tests / 165 assertions. No browser suite rerun was needed for these server-rendered output changes.
+
 ## Remaining scope
 
 AT-06 remains partial: broader outputs such as task/client/partner fields, autocomplete responses, export documents and other dynamic JavaScript sinks need their own context-specific tests and review. G01 remains `NOT_EVALUATED`.

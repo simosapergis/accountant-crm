@@ -5,12 +5,15 @@ require_once "includes/db.php";
 require_once "includes/functions.php";
 
 /* Απλό search αν θέλεις μπορείς να το επεκτείνεις */
-$search = $_GET['search'] ?? '';
+$searchInput = $_GET['search'] ?? '';
+$search = is_string($searchInput) ? $searchInput : '';
 
-$where = " WHERE 1=1 ";
+$where = '';
+$params = [];
 if ($search !== '') {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND (fullname LIKE '%$s%' OR phone LIKE '%$s%' OR email LIKE '%$s%')";
+    $where = ' WHERE (fullname LIKE ? OR phone LIKE ? OR email LIKE ?)';
+    $searchPattern = '%' . $search . '%';
+    $params = [$searchPattern, $searchPattern, $searchPattern];
 }
 
 $sql = "
@@ -19,7 +22,9 @@ $sql = "
     $where
     ORDER BY fullname
 ";
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
 
 $partners = [];
 while ($p = $res->fetch_assoc()) {
@@ -101,8 +106,8 @@ require "includes/header.php";
             <?php foreach ($partners as $p): ?>
                 <tr>
                     <td><?= htmlspecialchars($p['fullname']) ?></td>
-                    <td><?= htmlspecialchars($p['phone']) ?></td>
-                    <td><?= htmlspecialchars($p['email']) ?></td>
+                    <td><?= htmlspecialchars((string)($p['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($p['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                     <td class="task-actions">
                         <a class="icon-btn gray" href="partner_form.php?id=<?= $p['id'] ?>">👁</a>
                         <a class="icon-btn blue" href="partner_form.php?id=<?= $p['id'] ?>">✏️</a>

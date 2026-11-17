@@ -31,12 +31,14 @@ final class W02CsrfTest extends TestCase
             $deleteAjaxFixture = $this->db->prepare('DELETE FROM clients WHERE name = ?');
             $deleteAjaxFixture->bind_param('s', $ajaxFixtureName);
             $deleteAjaxFixture->execute();
+            $this->db->query("DELETE FROM diary_events WHERE user_id = 910001 AND event_date = '2026-11-18' AND title LIKE 'W02 Apostrophe%'");
             $this->putTaskFixture();
             $this->db->query('DELETE FROM diary_events WHERE id = 910099');
             $this->db->query('DELETE FROM diary_events WHERE id = 910098');
             $this->db->query("DELETE FROM diary_notes WHERE user_id = 910002 AND note_date = '2026-11-17'");
             $this->db->query('DELETE FROM users WHERE id = 910002');
             $this->db->query("UPDATE users SET fullname = 'W01 Fictional User' WHERE id = 910001");
+            $this->db->query("UPDATE partners SET fullname = 'W01 Fixture Collaborator' WHERE id = 910001");
             $this->db->query('DELETE FROM active_professionals WHERE id = 910099');
             $this->db->query('DELETE FROM clients WHERE id IN (910098, 910099)');
         }
@@ -142,6 +144,73 @@ final class W02CsrfTest extends TestCase
         self::assertSame('W02 Authorized Client Update', $this->clientName(910099));
     }
 
+    public function testClientSearchDoesNotBroadenForSqlLikeInput(): void
+    {
+        $session = $this->login();
+        $path = '/clients.php?' . http_build_query(['search' => "' OR 1=1 -- "]);
+        $response = $this->request($path, 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringNotContainsString('W01 Fixture Client', $response['body']);
+        self::assertStringNotContainsString('W02 CSRF Fixture', $response['body']);
+    }
+
+    public function testClientAndPartnerListsHandleNullableContactValues(): void
+    {
+        $session = $this->login();
+        $clientResponse = $this->request(
+            '/clients.php?' . http_build_query(['search' => 'W02 CSRF Fixture']),
+            'GET',
+            [],
+            $session['cookie']
+        );
+        $partnerResponse = $this->request(
+            '/partners.php?' . http_build_query(['search' => 'W01 Fixture Collaborator']),
+            'GET',
+            [],
+            $session['cookie']
+        );
+
+        self::assertSame(200, $clientResponse['status']);
+        self::assertSame(200, $partnerResponse['status']);
+        self::assertStringContainsString('W02 CSRF Fixture', $clientResponse['body']);
+        self::assertStringContainsString('W01 Fixture Collaborator', $partnerResponse['body']);
+        self::assertStringNotContainsString('Deprecated: htmlspecialchars()', $clientResponse['body']);
+        self::assertStringNotContainsString('Deprecated: htmlspecialchars()', $partnerResponse['body']);
+    }
+
+    public function testPartnerAndAutocompleteSearchesDoNotBroadenForSqlLikeInput(): void
+    {
+        $session = $this->login();
+        $sqlLikeInput = "' OR 1=1 -- ";
+
+        $partnerPath = '/partners.php?' . http_build_query(['search' => $sqlLikeInput]);
+        $partnerResponse = $this->request($partnerPath, 'GET', [], $session['cookie']);
+        self::assertSame(200, $partnerResponse['status']);
+        self::assertStringNotContainsString('W01 Fixture Collaborator', $partnerResponse['body']);
+
+        $autocompletePath = '/ajax/search_clients.php?' . http_build_query(['q' => $sqlLikeInput]);
+        $autocompleteResponse = $this->request($autocompletePath, 'GET', [], $session['cookie']);
+        self::assertSame(200, $autocompleteResponse['status']);
+        self::assertSame([], json_decode($autocompleteResponse['body'], true));
+    }
+
+    public function testTaskAndProfessionalSearchesDoNotBroadenForSqlLikeInput(): void
+    {
+        $session = $this->login();
+        $sqlLikeInput = "' OR 1=1 -- ";
+
+        $taskPath = '/tasks.php?' . http_build_query(['search' => $sqlLikeInput]);
+        $taskResponse = $this->request($taskPath, 'GET', [], $session['cookie']);
+        self::assertSame(200, $taskResponse['status']);
+        self::assertStringNotContainsString('W01 Fixture Task', $taskResponse['body']);
+
+        $professionalPath = '/active_professionals.php?' . http_build_query(['search' => $sqlLikeInput]);
+        $professionalResponse = $this->request($professionalPath, 'GET', [], $session['cookie']);
+        self::assertSame(200, $professionalResponse['status']);
+        self::assertStringNotContainsString('W02-XSS-', $professionalResponse['body']);
+    }
+
     public function testGetClientDeletionDoesNotChangeData(): void
     {
         $session = $this->login();
@@ -221,6 +290,34 @@ final class W02CsrfTest extends TestCase
         self::assertSame('W02 Private Diary Event', $event['title'] ?? null);
     }
 
+    public function testDiaryEventPreservesApostrophesWhenStored(): void
+    {
+        $session = $this->login();
+        $date = '2026-11-18';
+        $title = "W02 Apostrophe's Event";
+        $description = "W02 description's apostrophe";
+        $page = $this->request('/mydiary.php?date=' . $date, 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($page['body']);
+        $response = $this->request('/mydiary.php', 'POST', [
+            'event_date' => $date,
+            'event_title' => $title,
+            'start_time' => '10:00',
+            'end_time' => '11:00',
+            'event_desc' => $description,
+            'save_event' => '1',
+            '_csrf_token' => $token,
+        ], $session['cookie']);
+
+        $stmt = $this->db->prepare('SELECT title, description FROM diary_events WHERE user_id = 910001 AND event_date = ? AND title = ?');
+        $stmt->bind_param('ss', $date, $title);
+        $stmt->execute();
+        $event = $stmt->get_result()->fetch_assoc();
+
+        self::assertSame(302, $response['status']);
+        self::assertSame($title, $event['title'] ?? null);
+        self::assertSame($description, $event['description'] ?? null);
+    }
+
     public function testAuthenticatedHeaderEscapesTheUsersFullname(): void
     {
         $fullname = '<script>window.w02Xss=1</script>';
@@ -234,6 +331,42 @@ final class W02CsrfTest extends TestCase
         self::assertSame(200, $response['status']);
         self::assertStringNotContainsString($fullname, $response['body']);
         self::assertStringContainsString('&lt;script&gt;window.w02Xss=1&lt;/script&gt;', $response['body']);
+    }
+
+    public function testSharedHeaderEscapesPartnerNameInDocumentTitle(): void
+    {
+        $name = 'W02 Title </title><script>window.crmXss=1</script>';
+        $stmt = $this->db->prepare('UPDATE partners SET fullname = ? WHERE id = 910001');
+        $stmt->bind_param('s', $name);
+        $stmt->execute();
+
+        $session = $this->login();
+        $response = $this->request('/partner_tasks.php?id=910001', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringNotContainsString($name, $response['body']);
+        self::assertStringContainsString(
+            'W02 Title &lt;/title&gt;&lt;script&gt;window.crmXss=1&lt;/script&gt;',
+            $response['body']
+        );
+    }
+
+    public function testPartnerExcelExportEscapesUntrustedPartnerName(): void
+    {
+        $name = 'W02 Excel <img src=x onerror="window.crmXss=1">';
+        $stmt = $this->db->prepare('UPDATE partners SET fullname = ? WHERE id = 910001');
+        $stmt->bind_param('s', $name);
+        $stmt->execute();
+
+        $session = $this->login();
+        $response = $this->request('/exports/export_analysis_partners_excel.php?partner_id=910001', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringNotContainsString($name, $response['body']);
+        self::assertStringContainsString(
+            'W02 Excel &lt;img src=x onerror=&quot;window.crmXss=1&quot;&gt;',
+            $response['body']
+        );
     }
 
     public function testDiaryValuesAreEscapedBeforeEmbeddingInInlineJavaScript(): void

@@ -6,7 +6,7 @@ require_once "includes/functions.php";
 
 /* ================= USER ================= */
 
-$userId = $_SESSION['user_id'] ?? 0;
+$userId = (int)($_SESSION['user_id'] ?? 0);
 if (!$userId) {
     header("Location: login.php");
     exit;
@@ -14,7 +14,8 @@ if (!$userId) {
 
 /* ================= SELECTED DATE ================= */
 
-$selectedDate = $_GET['date'] ?? $_POST['selected_date'] ?? date("Y-m-d");
+$dateInput = $_GET['date'] ?? $_POST['selected_date'] ?? date("Y-m-d");
+$selectedDate = is_string($dateInput) ? $dateInput : date("Y-m-d");
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
     $selectedDate = date("Y-m-d");
 }
@@ -27,20 +28,21 @@ $selDay   = (int)date("j", strtotime($selectedDate));
    SAVE NOTE
 ========================================================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_note'])) {
-    $noteDate = $_POST['note_date'] ?? $selectedDate;
-    $content  = $_POST['note_content'] ?? '';
+    $noteDateInput = $_POST['note_date'] ?? $selectedDate;
+    $contentInput = $_POST['note_content'] ?? '';
+    $noteDate = is_string($noteDateInput) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $noteDateInput)
+        ? $noteDateInput
+        : $selectedDate;
+    $content = is_string($contentInput) ? $contentInput : '';
 
-    $noteDate = $mysqli->real_escape_string($noteDate);
-    $content  = $mysqli->real_escape_string($content);
+    $saveNote = $mysqli->prepare(
+        'INSERT INTO diary_notes (user_id, note_date, content) VALUES (?, ?, ?) ' .
+        'ON DUPLICATE KEY UPDATE content = VALUES(content)'
+    );
+    $saveNote->bind_param('iss', $userId, $noteDate, $content);
+    $saveNote->execute();
 
-    $sql = "
-        INSERT INTO diary_notes (user_id, note_date, content)
-        VALUES ($userId, '$noteDate', '$content')
-        ON DUPLICATE KEY UPDATE content = VALUES(content)
-    ";
-    $mysqli->query($sql);
-
-    header("Location: mydiary.php?date=".$noteDate);
+    header('Location: mydiary.php?date=' . rawurlencode($noteDate));
     exit;
 }
 
@@ -66,19 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_event'])) {
 ========================================================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_event'])) {
 
-    $eventDate  = $_POST['event_date'] ?? $selectedDate;
-    $title      = trim($_POST['event_title'] ?? '');
-    $start_time = $_POST['start_time'] ?? null;
-    $end_time   = $_POST['end_time'] ?? null;
-    $desc       = $_POST['event_desc'] ?? '';
+    $eventDateInput = $_POST['event_date'] ?? $selectedDate;
+    $titleInput = $_POST['event_title'] ?? '';
+    $startTimeInput = $_POST['start_time'] ?? null;
+    $endTimeInput = $_POST['end_time'] ?? null;
+    $descriptionInput = $_POST['event_desc'] ?? '';
+    $eventDate = is_string($eventDateInput) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventDateInput)
+        ? $eventDateInput
+        : $selectedDate;
+    $title = is_string($titleInput) ? trim($titleInput) : '';
+    $start_time = is_string($startTimeInput) && $startTimeInput !== '' ? $startTimeInput : null;
+    $end_time = is_string($endTimeInput) && $endTimeInput !== '' ? $endTimeInput : null;
+    $desc = is_string($descriptionInput) ? $descriptionInput : '';
 
     if ($title !== '') {
-
-        $eventDate  = $mysqli->real_escape_string($eventDate);
-        $title      = $mysqli->real_escape_string($title);
-        $start_time = $start_time ? $mysqli->real_escape_string($start_time) : null;
-        $end_time   = $end_time   ? $mysqli->real_escape_string($end_time)   : null;
-        $desc       = $mysqli->real_escape_string($desc);
 
         $stmt = $mysqli->prepare("
             INSERT INTO diary_events (user_id, event_date, start_time, end_time, title, description)
@@ -96,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_event'])) {
         $stmt->execute();
     }
 
-    header("Location: mydiary.php?date=".$eventDate);
+    header('Location: mydiary.php?date=' . rawurlencode($eventDate));
     exit;
 }
 
@@ -113,13 +116,13 @@ $monthEnd   = date("Y-m-t", $firstDayTs);
 
 /* CRM TASKS */
 $tasksByDay = [];
-$taskSql = "
-    SELECT id, title, task_date, status
-    FROM tasks
-    WHERE task_date BETWEEN '$monthStart' AND '$monthEnd'
-    ORDER BY task_date ASC
-";
-$taskRes = $mysqli->query($taskSql);
+$taskStmt = $mysqli->prepare(
+    'SELECT id, title, task_date, status FROM tasks ' .
+    'WHERE task_date BETWEEN ? AND ? ORDER BY task_date ASC'
+);
+$taskStmt->bind_param('ss', $monthStart, $monthEnd);
+$taskStmt->execute();
+$taskRes = $taskStmt->get_result();
 while ($row = $taskRes->fetch_assoc()) {
     $d = (int)date("j", strtotime($row['task_date']));
     $tasksByDay[$d][] = $row;
@@ -127,36 +130,34 @@ while ($row = $taskRes->fetch_assoc()) {
 
 /* PERSONAL EVENTS */
 $eventsByDay = [];
-$evtSql = "
-    SELECT *
-    FROM diary_events
-    WHERE user_id = $userId
-      AND event_date BETWEEN '$monthStart' AND '$monthEnd'
-    ORDER BY event_date ASC, start_time ASC
-";
-$evtRes = $mysqli->query($evtSql);
+$eventStmt = $mysqli->prepare(
+    'SELECT * FROM diary_events WHERE user_id = ? AND event_date BETWEEN ? AND ? ' .
+    'ORDER BY event_date ASC, start_time ASC'
+);
+$eventStmt->bind_param('iss', $userId, $monthStart, $monthEnd);
+$eventStmt->execute();
+$evtRes = $eventStmt->get_result();
 while ($row = $evtRes->fetch_assoc()) {
     $d = (int)date("j", strtotime($row['event_date']));
     $eventsByDay[$d][] = $row;
 }
 
 /* NOTES */
-$noteRes = $mysqli->query("
-    SELECT content
-    FROM diary_notes
-    WHERE user_id=$userId AND note_date='$selectedDate'
-");
+$noteStmt = $mysqli->prepare('SELECT content FROM diary_notes WHERE user_id = ? AND note_date = ?');
+$noteStmt->bind_param('is', $userId, $selectedDate);
+$noteStmt->execute();
+$noteRes = $noteStmt->get_result();
 $noteRow = $noteRes->fetch_assoc();
 $currentNote = $noteRow['content'] ?? "";
 
 /* DAY EVENTS */
 $dayEvents = [];
-$dayEvt = $mysqli->query("
-    SELECT *
-    FROM diary_events
-    WHERE user_id=$userId AND event_date='$selectedDate'
-    ORDER BY start_time ASC, id ASC
-");
+$dayEventStmt = $mysqli->prepare(
+    'SELECT * FROM diary_events WHERE user_id = ? AND event_date = ? ORDER BY start_time ASC, id ASC'
+);
+$dayEventStmt->bind_param('is', $userId, $selectedDate);
+$dayEventStmt->execute();
+$dayEvt = $dayEventStmt->get_result();
 while ($row = $dayEvt->fetch_assoc()) {
     $dayEvents[] = $row;
 }

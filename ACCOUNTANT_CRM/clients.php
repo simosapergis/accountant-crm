@@ -5,24 +5,32 @@ require_once 'includes/db.php';
 require_once 'includes/functions.php';
 
 /* ===================== ΦΙΛΤΡΑ ====================== */
-$search   = $_GET['search']   ?? '';
-$category = $_GET['category'] ?? '';
-$balanceF = $_GET['balance']  ?? ''; // positive / zero / all
-$sort     = $_GET['sort']     ?? '';
+$searchInput = $_GET['search'] ?? '';
+$categoryInput = $_GET['category'] ?? '';
+$balanceInput = $_GET['balance'] ?? '';
+$sortInput = $_GET['sort'] ?? '';
+$search = is_string($searchInput) ? $searchInput : '';
+$category = is_string($categoryInput) ? $categoryInput : '';
+$balanceF = is_string($balanceInput) ? $balanceInput : ''; // positive / zero / all
+$sort = is_string($sortInput) ? $sortInput : '';
 
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search !== '') {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND (c.name LIKE '%$s%' OR c.afm LIKE '%$s%')";
+    $conditions[] = '(c.name LIKE ? OR c.afm LIKE ?)';
+    $searchPattern = '%' . $search . '%';
+    $params[] = $searchPattern;
+    $params[] = $searchPattern;
 }
 
 if ($category !== '') {
-    $c = $mysqli->real_escape_string($category);
-    $where .= " AND c.category = '$c'";
+    $conditions[] = 'c.category = ?';
+    $params[] = $category;
 }
 
 /* Βάση query */
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 $sql = "
     SELECT c.*,
            COALESCE(SUM(t.fee),0) AS total_fees,
@@ -35,17 +43,17 @@ $sql = "
 ";
 
 /* Ταξινόμηση */
-$orderBy = " ORDER BY c.name ASC";
-
-if ($sort === 'balance') {
-    $orderBy = " ORDER BY (COALESCE(SUM(t.fee),0) - COALESCE(SUM(t.collected),0)) DESC";
-} elseif ($sort === 'tasks') {
-    $orderBy = " ORDER BY COUNT(t.id) DESC";
-}
+$orderBy = match ($sort) {
+    'balance' => ' ORDER BY (COALESCE(SUM(t.fee),0) - COALESCE(SUM(t.collected),0)) DESC',
+    'tasks' => ' ORDER BY COUNT(t.id) DESC',
+    default => ' ORDER BY c.name ASC',
+};
 
 $sql .= $orderBy;
 
-$res = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$res = $stmt->get_result();
 
 /* Φιλτράρισμα υπολοίπου σε PHP, για απλότητα */
 $clients = [];
@@ -187,10 +195,10 @@ require 'includes/header.php';
             <?php foreach ($clients as $c): ?>
                 <tr>
                     <td><?= htmlspecialchars($c['name']) ?></td>
-                    <td><?= htmlspecialchars($c['afm']) ?></td>
-                    <td><?= htmlspecialchars($c['category']) ?></td>
-                    <td><?= htmlspecialchars($c['phone']) ?></td>
-                    <td><?= htmlspecialchars($c['email']) ?></td>
+                    <td><?= htmlspecialchars((string)($c['afm'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($c['category'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($c['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($c['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                     <td><?= formatMoney($c['total_fees']) ?></td>
                     <td><?= formatMoney($c['total_collected']) ?></td>
                     <td><?= formatMoney($c['balance']) ?></td>

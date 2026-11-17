@@ -37,7 +37,7 @@ $res = $mysqli->query($sql);
 // Πίνακας Excel
 echo "<table border='1'>
         <tr style='background:#d0d0d0; font-weight:bold;'>
-            <td colspan='7'>Ανάλυση Συνεργάτη: $partner_name</td>
+            <td colspan='7'>Ανάλυση Συνεργάτη: " . htmlspecialchars($partner_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</td>
         </tr>
         <tr>
             <th>Ημερομηνία</th>

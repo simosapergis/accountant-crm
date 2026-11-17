@@ -9,64 +9,69 @@ require_once "includes/functions.php";
 $pageTitle = "Εργασίες";
 
 /* ---------------- ΦΙΛΤΡΑ ---------------- */
-$search     = $_GET['search'] ?? '';
-$status     = $_GET['status'] ?? '';
-$client_id  = $_GET['client'] ?? '';
-$partner_id = $_GET['partner'] ?? '';
+$searchInput = $_GET['search'] ?? '';
+$statusInput = $_GET['status'] ?? '';
+$clientInput = $_GET['client'] ?? '';
+$partnerInput = $_GET['partner'] ?? '';
+$dateRangeInput = $_GET['date_range_type'] ?? '';
+$dateFromInput = $_GET['date_from'] ?? '';
+$dateToInput = $_GET['date_to'] ?? '';
+$search = is_string($searchInput) ? $searchInput : '';
+$status = is_string($statusInput) ? $statusInput : '';
+$client_id = is_string($clientInput) ? $clientInput : '';
+$partner_id = is_string($partnerInput) ? $partnerInput : '';
+$date_range_type = is_string($dateRangeInput) ? $dateRangeInput : '';
+$date_from = is_string($dateFromInput) ? $dateFromInput : '';
+$date_to = is_string($dateToInput) ? $dateToInput : '';
 
-$date_range_type = $_GET['date_range_type'] ?? '';
-$date_from       = $_GET['date_from'] ?? '';
-$date_to         = $_GET['date_to'] ?? '';
-
-$where = " WHERE 1=1 ";
+$conditions = [];
+$params = [];
 
 if ($search != "") {
-    $s = $mysqli->real_escape_string($search);
-    $where .= " AND t.title LIKE '%$s%'";
+    $conditions[] = 't.title LIKE ?';
+    $params[] = '%' . $search . '%';
 }
 
 if ($status != "") {
-    $s = $mysqli->real_escape_string($status);
-    $where .= " AND t.status = '$s'";
+    $conditions[] = 't.status = ?';
+    $params[] = $status;
 }
 
 if ($client_id != "") {
-    $cid = (int)$client_id;
-    $where .= " AND t.client_id = $cid";
+    $conditions[] = 't.client_id = ?';
+    $params[] = (int)$client_id;
 }
 
 if ($partner_id != "") {
-    $pid = (int)$partner_id;
-    $where .= " AND t.partner_id = $pid";
+    $conditions[] = 't.partner_id = ?';
+    $params[] = (int)$partner_id;
 }
 
 /* ---------------- ΦΙΛΤΡΑ ΗΜΕΡΟΜΗΝΙΑΣ ---------------- */
 
-if ($date_range_type == "today") {
-    $where .= " AND t.task_date = CURDATE() ";
+if ($date_range_type === "today") {
+    $conditions[] = 't.task_date = CURDATE()';
 }
 
-if ($date_range_type == "this_week") {
-    $where .= " AND YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1) ";
+if ($date_range_type === "this_week") {
+    $conditions[] = 'YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1)';
 }
 
-if ($date_range_type == "this_month") {
-    $where .= " AND MONTH(t.task_date) = MONTH(CURDATE())
-                AND YEAR(t.task_date) = YEAR(CURDATE()) ";
+if ($date_range_type === "this_month") {
+    $conditions[] = 'MONTH(t.task_date) = MONTH(CURDATE()) AND YEAR(t.task_date) = YEAR(CURDATE())';
 }
 
-if ($date_range_type == "prev_month") {
-    $where .= "
-        AND MONTH(t.task_date) = MONTH(CURDATE() - INTERVAL 1 MONTH)
-        AND YEAR(t.task_date)  = YEAR(CURDATE() - INTERVAL 1 MONTH)
-    ";
+if ($date_range_type === "prev_month") {
+    $conditions[] = 'MONTH(t.task_date) = MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(t.task_date) = YEAR(CURDATE() - INTERVAL 1 MONTH)';
 }
 
-if ($date_range_type == "custom" && $date_from && $date_to) {
-    $f = $mysqli->real_escape_string($date_from);
-    $t = $mysqli->real_escape_string($date_to);
-    $where .= " AND t.task_date BETWEEN '$f' AND '$t' ";
+if ($date_range_type === "custom" && $date_from !== '' && $date_to !== '') {
+    $conditions[] = 't.task_date BETWEEN ? AND ?';
+    $params[] = $date_from;
+    $params[] = $date_to;
 }
+
+$where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 /* ---------------- QUERY ---------------- */
 $sql = "
@@ -80,7 +85,9 @@ $sql = "
     ORDER BY t.task_date DESC, t.id DESC
 ";
 
-$result = $mysqli->query($sql);
+$stmt = $mysqli->prepare($sql);
+$stmt->execute($params);
+$result = $stmt->get_result();
 
 /* Μεταφέρουμε αποτελέσματα σε array */
 $tasks = [];
