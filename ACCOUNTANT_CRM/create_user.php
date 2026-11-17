@@ -5,6 +5,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/password_policy.php';
 
 function prompt(string $label): string
 {
@@ -22,7 +23,7 @@ function prompt_password(string $label): string
         exit(1);
     }
     system('stty -echo');
-    $password = trim((string) fgets(STDIN));
+    $password = rtrim((string)fgets(STDIN), "\r\n");
     system('stty echo');
     fwrite(STDOUT, PHP_EOL);
     return $password;
@@ -43,8 +44,9 @@ if (!in_array($role, ['admin', 'user'], true)) {
 
 $password = prompt_password('Password: ');
 $confirmation = prompt_password('Confirm password: ');
-if (strlen($password) < 12) {
-    fwrite(STDERR, "Use a password with at least 12 characters.\n");
+$passwordError = crm_password_policy_error($password);
+if ($passwordError !== null) {
+    fwrite(STDERR, $passwordError . "\n");
     exit(1);
 }
 if (!hash_equals($password, $confirmation)) {

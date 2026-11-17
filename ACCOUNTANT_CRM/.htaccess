@@ -1,0 +1,9 @@
+Options -Indexes
+
+<FilesMatch "(?i)(^\.|^composer\.(json|lock)$|\.(sql|log|bak|backup|old|orig|ini|dist|dump|swp)$)">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(?:includes|vendor)(?:/|$) - [F,NC,L]
+RewriteRule ^(?:create_user|install|setup)\.php$ - [F,NC,L]

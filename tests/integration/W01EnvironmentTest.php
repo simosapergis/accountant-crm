@@ -106,7 +106,31 @@ final class W01EnvironmentTest extends TestCase
 
     public function testAccountCreationEntrypointIsNotAvailableOverHttp(): void
     {
-        self::assertSame(404, $this->get('/create_user.php')['status']);
+        self::assertContains($this->get('/create_user.php')['status'], [403, 404]);
+    }
+
+    #[DataProvider('sensitivePaths')]
+    public function testSensitiveFilesAndInternalDirectoriesAreNotServed(string $path): void
+    {
+        $response = $this->get($path);
+
+        self::assertContains($response['status'], [403, 404], $path . ' must not be served over HTTP.');
+        self::assertStringNotContainsString('DB_PASSWORD=', $response['body']);
+        self::assertStringNotContainsString('W02-SECRET-MARKER', $response['body']);
+    }
+
+    public static function sensitivePaths(): array
+    {
+        return [
+            'dotenv above app root' => ['/../.env'],
+            'database dump above app root' => ['/../accountant_crm.sql'],
+            'database include' => ['/includes/db.php'],
+            'composer manifest' => ['/composer.json'],
+            'composer lock' => ['/composer.lock'],
+            'vendor metadata' => ['/vendor/composer/installed.json'],
+            'CLI account tool' => ['/create_user.php'],
+            'installer route' => ['/install.php'],
+        ];
     }
 
     private function get(string $path): array

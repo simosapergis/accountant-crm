@@ -72,11 +72,11 @@ echo "<tr>
 
 while ($c = $res->fetch_assoc()) {
     echo "<tr>";
-    echo "<td>".htmlspecialchars($c['name'])."</td>";
-    echo "<td>".htmlspecialchars($c['afm'])."</td>";
-    echo "<td>".htmlspecialchars($c['category'])."</td>";
-    echo "<td>".htmlspecialchars($c['phone'])."</td>";
-    echo "<td>".htmlspecialchars($c['email'])."</td>";
+    echo "<td>".crm_excel_html_text($c['name'])."</td>";
+    echo "<td>".crm_excel_html_text($c['afm'])."</td>";
+    echo "<td>".crm_excel_html_text($c['category'])."</td>";
+    echo "<td>".crm_excel_html_text($c['phone'])."</td>";
+    echo "<td>".crm_excel_html_text($c['email'])."</td>";
     echo "<td>".formatMoney($c['total_fees'])."</td>";
     echo "<td>".formatMoney($c['total_collected'])."</td>";
     echo "<td>".formatMoney($c['balance'])."</td>";

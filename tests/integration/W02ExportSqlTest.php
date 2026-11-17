@@ -114,6 +114,87 @@ final class W02ExportSqlTest extends TestCase
         self::assertStringContainsString('search=fictional&amp;is_active=1', $response['body']);
     }
 
+    public function testAuthenticatedPagesAndExportsDisableSharedCaching(): void
+    {
+        $page = $this->request('/tasks.php');
+        $export = $this->request('/exports/export_tasks_excel.php');
+        $xlsxExport = $this->request('/exports/export_active_professionals_excel.php');
+
+        self::assertStringContainsString('no-store', strtolower($page['headers']['cache-control'] ?? ''));
+        self::assertStringContainsString('private', strtolower($page['headers']['cache-control'] ?? ''));
+        self::assertSame('no-cache', strtolower($page['headers']['pragma'] ?? ''));
+        self::assertStringContainsString('no-store', strtolower($export['headers']['cache-control'] ?? ''));
+        self::assertStringContainsString('no-store', strtolower($xlsxExport['headers']['cache-control'] ?? ''));
+    }
+
+    public function testSpreadsheetExportsKeepUntrustedTextAsLiteralText(): void
+    {
+        $db = new mysqli(
+            (string)getenv('DB_HOST'),
+            (string)getenv('DB_USER'),
+            (string)getenv('DB_PASSWORD'),
+            (string)getenv('DB_NAME')
+        );
+        self::assertSame('crm_w01_test', $db->query('SELECT DATABASE()')->fetch_row()[0]);
+
+        $professionalBefore = $db->query('SELECT fullname FROM active_professionals WHERE id = 910099')->fetch_assoc();
+        if ($professionalBefore === null) {
+            $stmt = $db->prepare(
+                "INSERT INTO active_professionals " .
+                "(id, code, fullname, is_active, has_vat, vat_type, has_payroll) " .
+                "VALUES (910099, 'W02-EXPORT-FORMULA', 'Temporary fixture', 1, 0, NULL, 0)"
+            );
+            $stmt->execute();
+        }
+
+        $originals = [
+            'task' => $db->query('SELECT title FROM tasks WHERE id = 910001')->fetch_assoc()['title'],
+            'client' => $db->query('SELECT name FROM clients WHERE id = 910001')->fetch_assoc()['name'],
+            'partner' => $db->query('SELECT fullname FROM partners WHERE id = 910001')->fetch_assoc()['fullname'],
+            'professional' => $db->query('SELECT fullname FROM active_professionals WHERE id = 910099')->fetch_assoc()['fullname'],
+        ];
+
+        try {
+            $updates = [
+                ['UPDATE tasks SET title = ? WHERE id = 910001', '=1+1'],
+                ['UPDATE clients SET name = ? WHERE id = 910001', '+SUM(1,1)'],
+                ['UPDATE partners SET fullname = ? WHERE id = 910001', '@SUM(1,1)'],
+                ['UPDATE active_professionals SET fullname = ? WHERE id = 910099', '=1+1'],
+            ];
+            foreach ($updates as [$sql, $value]) {
+                $stmt = $db->prepare($sql);
+                $stmt->bind_param('s', $value);
+                $stmt->execute();
+            }
+
+            $taskExport = $this->request('/exports/export_tasks_excel.php');
+            $clientExport = $this->request('/exports/export_clients_excel.php');
+            $partnerExport = $this->request('/exports/export_analysis_partners_excel.php?partner_id=910001');
+            $professionalExport = $this->request('/exports/export_active_professionals_excel.php');
+
+            self::assertStringContainsString('&#039;=1+1', $taskExport['body']);
+            self::assertStringContainsString('&#039;+SUM(1,1)', $clientExport['body']);
+            self::assertStringContainsString('&#039;@SUM(1,1)', $partnerExport['body']);
+            self::assertXlsxCellIsLiteralText($professionalExport['body'], '=1+1');
+        } finally {
+            $restore = [
+                ['UPDATE tasks SET title = ? WHERE id = 910001', $originals['task']],
+                ['UPDATE clients SET name = ? WHERE id = 910001', $originals['client']],
+                ['UPDATE partners SET fullname = ? WHERE id = 910001', $originals['partner']],
+                ['UPDATE active_professionals SET fullname = ? WHERE id = 910099', $originals['professional']],
+            ];
+            foreach ($restore as [$sql, $value]) {
+                $stmt = $db->prepare($sql);
+                $stmt->bind_param('s', $value);
+                $stmt->execute();
+            }
+            if ($professionalBefore === null) {
+                $db->query('DELETE FROM active_professionals WHERE id = 910099');
+            }
+            $db->close();
+        }
+    }
+
     public function testActiveProfessionalExportsRejectArrayVatTypeFilter(): void
     {
         $excel = $this->request('/exports/export_active_professionals_excel.php?vat_type%5B%5D=fixture');
@@ -134,13 +215,17 @@ final class W02ExportSqlTest extends TestCase
         ]]);
         $body = file_get_contents(rtrim((string) getenv('CRM_BASE_URL'), '/') . $path, false, $context);
         $status = 0;
+        $responseHeaders = [];
         foreach ($http_response_header ?? [] as $header) {
             if (preg_match('/^HTTP\/\S+\s+(\d+)/', $header, $matches)) {
                 $status = (int) $matches[1];
+            } elseif (str_contains($header, ':')) {
+                [$name, $value] = explode(':', $header, 2);
+                $responseHeaders[strtolower(trim($name))] = trim($value);
             }
         }
 
-        return ['status' => $status, 'body' => $body ?: ''];
+        return ['status' => $status, 'body' => $body ?: '', 'headers' => $responseHeaders];
     }
 
     private function login(): string
@@ -199,6 +284,28 @@ final class W02ExportSqlTest extends TestCase
                 $sheet->toArray()
             ));
             self::assertStringNotContainsString($needle, $values);
+        } finally {
+            unlink($path);
+        }
+    }
+
+    private static function assertXlsxCellIsLiteralText(string $contents, string $expected): void
+    {
+        require_once '/var/www/html/crm/vendor/autoload.php';
+        $path = tempnam(sys_get_temp_dir(), 'w02-formula-');
+        file_put_contents($path, $contents);
+        try {
+            $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path)->getActiveSheet();
+            $found = false;
+            foreach ($sheet->getRowIterator() as $row) {
+                foreach ($row->getCellIterator() as $cell) {
+                    if ($cell->getValue() === $expected) {
+                        self::assertSame(\PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING, $cell->getDataType());
+                        $found = true;
+                    }
+                }
+            }
+            self::assertTrue($found, 'The export should preserve the original text value.');
         } finally {
             unlink($path);
         }

@@ -7,6 +7,7 @@ require_once "../vendor/autoload.php"; // PhpSpreadsheet
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 /* -------------------------------------------------------------
    ΔΙΑΒΑΣΗ ΦΙΛΤΡΩΝ ΑΠΟ ΤΟ index.php
@@ -97,13 +98,13 @@ $rowNum = 2;
 
 while ($row = $result->fetch_assoc()) {
 
-    $sheet->setCellValue("A$rowNum", $row['code']);
-    $sheet->setCellValue("B$rowNum", $row['fullname']);
+    $sheet->setCellValueExplicit("A$rowNum", (string)($row['code'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValueExplicit("B$rowNum", (string)$row['fullname'], DataType::TYPE_STRING);
     $sheet->setCellValue("C$rowNum", $row['is_active'] ? "ΝΑΙ" : "ΟΧΙ");
-    $sheet->setCellValue("D$rowNum", $row['start_date']);
-    $sheet->setCellValue("E$rowNum", $row['end_date']);
+    $sheet->setCellValueExplicit("D$rowNum", (string)($row['start_date'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValueExplicit("E$rowNum", (string)($row['end_date'] ?? ''), DataType::TYPE_STRING);
     $sheet->setCellValue("F$rowNum", $row['has_vat'] ? "ΝΑΙ" : "ΟΧΙ");
-    $sheet->setCellValue("G$rowNum", $row['vat_type']);
+    $sheet->setCellValueExplicit("G$rowNum", (string)($row['vat_type'] ?? ''), DataType::TYPE_STRING);
     $sheet->setCellValue("H$rowNum", $row['has_payroll'] ? "ΝΑΙ" : "ΟΧΙ");
 
     $rowNum++;
@@ -123,8 +124,6 @@ $filename = "Ενεργοί_Επαγγελματίες.xlsx";
 
 header("Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 header("Content-Disposition: attachment; filename=\"$filename\"");
-header("Cache-Control: max-age=0");
-
 $writer = new Xlsx($spreadsheet);
 $writer->save("php://output");
 exit;

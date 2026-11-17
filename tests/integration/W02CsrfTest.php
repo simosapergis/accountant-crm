@@ -111,6 +111,39 @@ final class W02CsrfTest extends TestCase
         self::assertSame(302, $this->request('/tasks.php', 'GET', [], $page['cookie'])['status']);
     }
 
+    public function testLoginPreservesLeadingAndTrailingPasswordSpaces(): void
+    {
+        $id = 910003;
+        $username = 'w02-space-password';
+        $password = '  W02-Fictional-Password-With-Spaces  ';
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $fullname = 'W02 Fictional Space Password User';
+        $role = 'user';
+        $user = $this->db->prepare(
+            'INSERT INTO users (id, username, password, fullname, role) VALUES (?, ?, ?, ?, ?) ' .
+            'ON DUPLICATE KEY UPDATE password = VALUES(password), fullname = VALUES(fullname), role = VALUES(role)'
+        );
+        $user->bind_param('issss', $id, $username, $hash, $fullname, $role);
+        $user->execute();
+
+        try {
+            $page = $this->request('/login.php');
+            $token = $this->csrfToken($page['body']);
+            $login = $this->request('/login.php', 'POST', [
+                'username' => $username,
+                'password' => $password,
+                '_csrf_token' => $token,
+            ], $page['cookie']);
+
+            self::assertSame(302, $login['status']);
+            self::assertSame(200, $this->request('/tasks.php', 'GET', [], $login['cookie'])['status']);
+        } finally {
+            $delete = $this->db->prepare('DELETE FROM users WHERE id = ?');
+            $delete->bind_param('i', $id);
+            $delete->execute();
+        }
+    }
+
     public function testLogoutRequiresCsrfProtectedPostAndEndsSession(): void
     {
         $session = $this->login();
@@ -166,6 +199,33 @@ final class W02CsrfTest extends TestCase
 
         self::assertSame(302, $response['status']);
         self::assertSame('W02 User Role Task Edit', $task['title'] ?? null);
+    }
+
+    public function testTaskMoneyInputsStoreExactCentsAndRejectAmbiguousValues(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/task_form.php?id=910001', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $base = [
+            'id' => 910001, 'task_date' => '2026-11-17', 'title' => 'W02 Exact Money Fixture',
+            'client_id' => 910001, 'partner_id' => 910001, 'status' => 'Σε εξέλιξη',
+            'notes' => 'fictional money regression', 'save_task' => '1', '_csrf_token' => $token,
+        ];
+
+        foreach ([['100', '0', '100.00'], ['100,50', '0', '100.50'], ['100.50', '0', '100.50'], ['1.234,56', '0', '1234.56']] as [$fee, $collected, $expected]) {
+            $response = $this->request('/task_form.php?id=910001', 'POST', $base + ['fee' => $fee, 'collected' => $collected], $session['cookie']);
+            self::assertSame(302, $response['status']);
+            $row = $this->db->query('SELECT fee FROM tasks WHERE id = 910001')->fetch_assoc();
+            self::assertSame($expected, (string)($row['fee'] ?? ''));
+        }
+
+        $before = $this->db->query('SELECT fee FROM tasks WHERE id = 910001')->fetch_assoc()['fee'];
+        $invalid = $this->request('/task_form.php?id=910001', 'POST', $base + ['fee' => '1.234', 'collected' => '0'], $session['cookie']);
+        $after = $this->db->query('SELECT fee FROM tasks WHERE id = 910001')->fetch_assoc()['fee'];
+
+        self::assertSame(200, $invalid['status']);
+        self::assertStringContainsString('Παρακαλώ εισάγετε', $invalid['body']);
+        self::assertSame((string)$before, (string)$after);
     }
 
     public function testClientSearchDoesNotBroadenForSqlLikeInput(): void
@@ -448,9 +508,96 @@ final class W02CsrfTest extends TestCase
             $session['cookie']
         );
 
-        self::assertSame(200, $response['status']);
+        self::assertSame(400, $response['status']);
         self::assertStringNotContainsString($code, $response['body']);
         self::assertStringContainsString(htmlspecialchars($code, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $response['body']);
+    }
+
+    public function testImportRejectsRenamedNonXlsxFileWithoutDatabaseChanges(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $before = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        $response = $this->requestMultipart(
+            '/imports/import_active_professionals.php',
+            ['_csrf_token' => $token],
+            'excel_file',
+            'renamed.csv.xlsx',
+            "Κωδικός,Ονοματεπώνυμο\nW02-INVALID-FORMAT,No Import\n",
+            $session['cookie']
+        );
+
+        $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+        self::assertSame(400, $response['status']);
+        self::assertStringNotContainsString('/tmp/', $response['body']);
+        self::assertSame($before, $after);
+    }
+
+    public function testImportRejectsOversizedUploadWithoutDatabaseChanges(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $before = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        $response = $this->requestMultipart(
+            '/imports/import_active_professionals.php',
+            ['_csrf_token' => $token],
+            'excel_file',
+            'oversized.xlsx',
+            str_repeat('x', 2 * 1024 * 1024 + 1),
+            $session['cookie']
+        );
+
+        $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+        self::assertSame(413, $response['status']);
+        self::assertStringNotContainsString('/tmp/', $response['body']);
+        self::assertSame($before, $after);
+    }
+
+    public function testImportRejectsWorkbookWithInvalidRowWithoutPartialInsert(): void
+    {
+        require_once '/var/www/html/crm/vendor/autoload.php';
+        $session = $this->login();
+        $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $before = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        $workbook = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $workbook->getActiveSheet();
+        $sheet->fromArray([[
+            'Κωδικός', 'Ονοματεπώνυμο', 'Ενεργός', 'Ημερομηνία Έναρξης',
+            'Ημερομηνία Διακοπής', 'ΦΠΑ', 'Τύπος ΦΠΑ', 'Μισθοδοσία',
+        ]], null, 'A1');
+        $sheet->fromArray([[
+            'W02-IMPORT-AT17-GOOD', 'Fictional Imported Professional', 'ΝΑΙ', '', '', 'ΟΧΙ', '', 'ΟΧΙ',
+        ]], null, 'A2');
+        $sheet->fromArray([['', 'Missing Code', 'ΝΑΙ', '', '', 'ΟΧΙ', '', 'ΟΧΙ']], null, 'A3');
+        $xlsxPath = tempnam(sys_get_temp_dir(), 'crm-w02-import-');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($workbook))->save($xlsxPath);
+
+        try {
+            $response = $this->requestMultipart(
+                '/imports/import_active_professionals.php',
+                ['_csrf_token' => $token],
+                'excel_file',
+                'partial-import.xlsx',
+                file_get_contents($xlsxPath),
+                $session['cookie']
+            );
+        } finally {
+            unlink($xlsxPath);
+            $cleanup = $this->db->prepare('DELETE FROM active_professionals WHERE code = ?');
+            $cleanupCode = 'W02-IMPORT-AT17-GOOD';
+            $cleanup->bind_param('s', $cleanupCode);
+            $cleanup->execute();
+        }
+
+        $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+        self::assertSame(400, $response['status']);
+        self::assertSame($before, $after);
     }
 
     public function testAjaxClientCreationDoesNotEmbedSubmittedNameAsExecutableScript(): void

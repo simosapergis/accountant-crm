@@ -85,10 +85,10 @@ while ($row = $res->fetch_assoc()) {
     $balance = $row['fee'] - $row['collected'];
     echo "<tr>";
     echo "<td>" . greekDateFromDb($row['task_date']) . "</td>";
-    echo "<td>" . htmlspecialchars($row['title']) . "</td>";
-    echo "<td>" . htmlspecialchars($row['client_name']) . "</td>";
-    echo "<td>" . htmlspecialchars($row['partner_name']) . "</td>";
-    echo "<td>" . htmlspecialchars($row['status']) . "</td>";
+    echo "<td>" . crm_excel_html_text($row['title']) . "</td>";
+    echo "<td>" . crm_excel_html_text($row['client_name']) . "</td>";
+    echo "<td>" . crm_excel_html_text($row['partner_name']) . "</td>";
+    echo "<td>" . crm_excel_html_text($row['status']) . "</td>";
     echo "<td>" . number_format($row['fee'],2,',','.') . "</td>";
     echo "<td>" . number_format($row['collected'],2,',','.') . "</td>";
     echo "<td>" . number_format($balance,2,',','.') . "</td>";

@@ -37,7 +37,7 @@ echo "\xEF\xBB\xBF"; // UTF-8 BOM για ελληνικά
 // Πίνακας Excel
 echo "<table border='1'>
         <tr style='background:#d0d0d0; font-weight:bold;'>
-            <td colspan='7'>Ανάλυση Συνεργάτη: " . htmlspecialchars($partner_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</td>
+            <td colspan='7'>Ανάλυση Συνεργάτη: " . crm_excel_html_text($partner_name) . "</td>
         </tr>
         <tr>
             <th>Ημερομηνία</th>
@@ -61,9 +61,9 @@ while ($row = $res->fetch_assoc()) {
 
     echo "<tr>
             <td>".greekDateFromDb($row['task_date'])."</td>
-            <td>".htmlspecialchars($row['title'])."</td>
-            <td>".htmlspecialchars($row['client_name'])."</td>
-            <td>".htmlspecialchars($row['status'])."</td>
+            <td>".crm_excel_html_text($row['title'])."</td>
+            <td>".crm_excel_html_text($row['client_name'])."</td>
+            <td>".crm_excel_html_text($row['status'])."</td>
             <td>".number_format($row['fee'],2,',','.')."</td>
             <td>".number_format($row['collected'],2,',','.')."</td>
             <td>".number_format($balance,2,',','.')."</td>

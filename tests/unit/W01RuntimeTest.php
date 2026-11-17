@@ -19,9 +19,9 @@ final class W01RuntimeTest extends TestCase
     public function testSessionIdleExpiryUsesTheThirtyMinuteBoundaryWithAFrozenClock(): void
     {
         $clock = new FrozenClock(new DateTimeImmutable('2026-11-17 12:30:01', new DateTimeZone('Europe/Athens')));
-        $lastActivity = $clock->now()->getTimestamp() - SessionLifecycle::IDLE_TIMEOUT_SECONDS - 1;
+        $now = $clock->now()->getTimestamp();
 
-        self::assertTrue(SessionLifecycle::isExpired($lastActivity, $clock->now()->getTimestamp()));
-        self::assertFalse(SessionLifecycle::isExpired($lastActivity + 1, $clock->now()->getTimestamp()));
+        self::assertFalse(SessionLifecycle::isExpired($now - SessionLifecycle::IDLE_TIMEOUT_SECONDS + 1, $now));
+        self::assertTrue(SessionLifecycle::isExpired($now - SessionLifecycle::IDLE_TIMEOUT_SECONDS, $now));
     }
 }

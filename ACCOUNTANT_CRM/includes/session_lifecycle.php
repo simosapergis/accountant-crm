@@ -7,6 +7,6 @@ final class SessionLifecycle
 
     public static function isExpired(int $lastActivity, int $now): bool
     {
-        return $lastActivity > 0 && ($now - $lastActivity) > self::IDLE_TIMEOUT_SECONDS;
+        return $lastActivity > 0 && ($now - $lastActivity) >= self::IDLE_TIMEOUT_SECONDS;
     }
 }

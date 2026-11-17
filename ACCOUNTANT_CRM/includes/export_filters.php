@@ -29,3 +29,13 @@ function crm_export_optional_id(string $key): ?int
 
     return (int)$value;
 }
+
+function crm_excel_html_text(mixed $value): string
+{
+    $text = (string)($value ?? '');
+    if (preg_match('/^[\x00-\x20]*[=+\-@]/', $text)) {
+        $text = "'" . $text;
+    }
+
+    return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}

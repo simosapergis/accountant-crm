@@ -5,6 +5,7 @@ if (isset($_GET['delete'])) {
 }
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
+require_once __DIR__ . '/includes/money.php';
 
 /* ----------------------------------------------------------
    ΔΙΑΓΡΑΦΗ
@@ -22,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_task'])) {
    ΕΠΕΞΕΡΓΑΣΙΑ / ΝΕΑ ΕΡΓΑΣΙΑ
 ----------------------------------------------------------- */
 $id = $_GET['id'] ?? null;
+$formError = '';
 
 $task = [
     'task_date'    => date('Y-m-d'),
@@ -65,26 +67,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
     $client_id  = (int)($_POST['client_id'] ?? 0);
     $partner_id = ($_POST['partner_id'] ?? '') !== '' ? (int)$_POST['partner_id'] : null;
     $status     = $_POST['status'] ?? 'Σε εξέλιξη';
-    $fee        = (float)str_replace(',', '.', ($_POST['fee'] ?? '0'));
-    $collected  = (float)str_replace(',', '.', ($_POST['collected'] ?? '0'));
+    $feeInput = is_string($_POST['fee'] ?? null) ? $_POST['fee'] : '';
+    $collectedInput = is_string($_POST['collected'] ?? null) ? $_POST['collected'] : '';
+    $feeCents = crm_parse_money_cents($feeInput);
+    $collectedCents = crm_parse_money_cents($collectedInput);
     $notes      = $_POST['notes'] ?? '';
 
-    if ($client_id <= 0) {
+    $task = array_merge($task, [
+        'task_date' => $task_date, 'title' => $title, 'client_id' => $client_id,
+        'partner_id' => $partner_id, 'status' => $status, 'fee' => $feeInput,
+        'collected' => $collectedInput, 'notes' => $notes,
+    ]);
+    if ($feeCents === null || $collectedCents === null) {
+        $formError = 'Παρακαλώ εισάγετε μη αρνητικά ποσά έως 99.999.999,99. Επιτρέπονται μορφές 100, 100,50, 100.50 και 1.234,56.';
+    }
+
+    if ($formError === '' && $client_id <= 0) {
         // Αν θες μπορείς να βάλεις validation μήνυμα. Προς το παρόν απλά δεν σώζουμε.
         header("Location: task_form.php" . ($id ? "?id=".(int)$id : ""));
         exit;
     }
 
-    if ($id) {
+    if ($formError === '' && $id) {
+        $fee = crm_money_decimal($feeCents);
+        $collected = crm_money_decimal($collectedCents);
         $stmt = $mysqli->prepare("
             UPDATE tasks
             SET task_date=?, title=?, client_id=?, partner_id=?, status=?, fee=?, collected=?, notes=?, updated_at=NOW()
             WHERE id=?
         ");
 
-        // ΣΩΣΤΟ types: s s i i s d d s i  => "ssiisddsi"
         $stmt->bind_param(
-            "ssiisddsi",
+            "ssiissssi",
             $task_date,
             $title,
             $client_id,
@@ -96,15 +110,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
             $id
         );
 
-    } else {
+    } elseif ($formError === '') {
+        $fee = crm_money_decimal($feeCents);
+        $collected = crm_money_decimal($collectedCents);
         $stmt = $mysqli->prepare("
             INSERT INTO tasks (task_date, title, client_id, partner_id, status, fee, collected, notes)
             VALUES (?,?,?,?,?,?,?,?)
         ");
 
-        // ΣΩΣΤΟ types: s s i i s d d s => "ssiisdds"
         $stmt->bind_param(
-            "ssiisdds",
+            "ssiissss",
             $task_date,
             $title,
             $client_id,
@@ -116,9 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
         );
     }
 
-    $stmt->execute();
-    header("Location: tasks.php");
-    exit;
+    if ($formError === '') {
+        $stmt->execute();
+        header("Location: tasks.php");
+        exit;
+    }
 }
 
 /* ----------------------------------------------------------
@@ -167,6 +184,7 @@ function addClientToDropdown(id, name) {
 ============================================ -->
 <form method="post">
     <?= csrf_field() ?>
+    <?php if ($formError !== ''): ?><div class="alert alert-danger" role="alert"><?= htmlspecialchars($formError, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
     <?php if ($id): ?><input type="hidden" name="id" value="<?= (int)$id ?>"><?php endif; ?>
     <input type="hidden" name="save_task" value="1">
 
@@ -255,20 +273,20 @@ function addClientToDropdown(id, name) {
             <div class="form-group">
                 <label>Αμοιβή (€)</label>
                 <input type="text" name="fee" style="height:48px;"
-                       value="<?= number_format((float)$task['fee'],2,',','.') ?>">
+                       value="<?= htmlspecialchars(isset($_POST['fee']) ? (string)$task['fee'] : crm_money_input_value((string)$task['fee']), ENT_QUOTES, 'UTF-8') ?>">
             </div>
 
             <div class="form-group">
                 <label>Είσπραξη (€)</label>
                 <input type="text" name="collected" style="height:48px;"
-                       value="<?= number_format((float)$task['collected'],2,',','.') ?>">
+                       value="<?= htmlspecialchars(isset($_POST['collected']) ? (string)$task['collected'] : crm_money_input_value((string)$task['collected']), ENT_QUOTES, 'UTF-8') ?>">
             </div>
 
             <div class="form-group">
                 <label>Υπόλοιπο (€)</label>
-                <?php $balance = (float)$task['fee'] - (float)$task['collected']; ?>
+                <?php $balanceCents = (crm_parse_money_cents((string)$task['fee']) ?? 0) - (crm_parse_money_cents((string)$task['collected']) ?? 0); ?>
                 <input type="text" disabled style="height:48px; background:#eee;"
-                       value="<?= number_format($balance,2,',','.') ?>">
+                       value="<?= htmlspecialchars(($balanceCents < 0 ? '-' : '') . crm_money_input_value(crm_money_decimal(abs($balanceCents))), ENT_QUOTES, 'UTF-8') ?>">
             </div>
         </div>
 

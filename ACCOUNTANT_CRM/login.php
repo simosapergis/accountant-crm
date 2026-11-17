@@ -9,7 +9,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_validate_request();
 
     $username = trim($_POST["username"]);
-    $password = trim($_POST["password"]);
+    $password = (string)($_POST["password"] ?? '');
 
     // Fetch user
     $stmt = $mysqli->prepare("SELECT * FROM users WHERE username = ?");
