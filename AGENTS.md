@@ -10,7 +10,7 @@
 
 ## Product context and client brief
 
-The detailed client explanation is `accountant-crm-hours-client-explanation.docx`. Treat it as the source for the requested work summarized below. Before implementing a behavior whose details are not specified there, in existing application behavior, or in a written feature spec, ask for or document the product decision rather than inventing one.
+The client explanation document `accountant-crm-hours-client-explanation.docx` is intentionally kept as a local file and ignored by Git. Its requirements are summarized below so agents can use them in a fresh checkout. Treat this summary as the available client brief. Before implementing a behavior whose details are not specified here, in existing application behavior, or in a written feature spec, ask for or document the product decision rather than inventing one.
 
 The brief covers:
 
