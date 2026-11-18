@@ -2,10 +2,9 @@
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once "../includes/db.php";
-require_once "../vendor/autoload.php"; // Dompdf
+require_once dirname(__DIR__) . '/includes/pdf.php';
 
 
-use Dompdf\Dompdf;
 
 // -------------------------------------------------------------
 // ΦΙΛΤΡΑ
@@ -143,9 +142,7 @@ $html .= "</tbody></table></body></html>";
 // -------------------------------------------------------------
 // DOMPDF
 // -------------------------------------------------------------
-$dompdf = new Dompdf([
-    "defaultFont" => "DejaVu Sans"
-]);
+$dompdf = crm_pdf_renderer();
 
 $dompdf->loadHtml($html, "UTF-8");
 $dompdf->setPaper("A4", "portrait");

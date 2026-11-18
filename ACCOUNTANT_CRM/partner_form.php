@@ -76,7 +76,7 @@ require 'includes/header.php';
 
 <form method="post">
 <?= csrf_field() ?>
-<input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
+<input type="hidden" name="id" value="<?= htmlspecialchars((string)($id ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
 
 <div class="form-card">
 

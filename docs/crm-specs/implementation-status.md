@@ -1,5 +1,33 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Collaborator creation regression - 18 November 2026
+
+Fixed new collaborator creation in `partner_form.php`.
+Actual authenticated `/crm/` form submission reproduced a PHP 8.3 null-escaping warning inside the hidden ID, which selected the update branch and inserted no row.
+The hidden ID now renders as an empty string for a new collaborator.
+`W08CollaboratorTest::testNewCollaboratorFromRenderedFormIsSavedAndListed` submits the rendered inputs and verifies persistence and the list row.
+Guarded command: `php tests/bin/assert-test-db.php && tests/vendor/bin/phpunit -c tests/phpunit.xml tests/integration/W08CollaboratorTest.php`.
+RED: 1 test / 5 assertions, expected one row, actual zero.
+GREEN: 1 test / 7 assertions.
+PHP syntax checks passed for both changed PHP files.
+Only uniquely named fictional test records were created and cleaned up in `crm_test_native_20261118`.
+W08 remains `IN_PROGRESS`, with the earlier export/import regressions unresolved.
+G01 remains `NOT_EVALUATED`; all changes are uncommitted.
+
+
+### W08 local work in progress - 18 November 2026
+
+Branch `codex/crm-remaining-tasks`, starting commit `a7c8dbb`, initially clean.
+W08 is `IN_PROGRESS`; G01 stays `NOT_EVALUATED`.
+Native PHP 8.3.36 and the dedicated `/crm/` server were verified against `crm_test_native_20261118`.
+The stopped temporary MariaDB process was restarted using its existing isolated data directory without reset.
+Authenticated HTTP reproduction confirmed missing Dompdf and the nullable collaborator deprecation in the task print report.
+`W08PdfTest` RED: 1 test / 3 assertions, expected PDF bytes but received the missing Dompdf fatal error.
+Composer audit found 12 advisories affecting the locked PhpSpreadsheet 5.3.0; a compatible patched update and direct Dompdf dependency are in progress.
+Remaining local work: export and nested-path regressions, dependency/resource restrictions, import/delete rechecks, spreadsheet/PDF inspection and full regression.
+No commit, push, deployment or G01 approval has occurred.
+
+
 ### W04 local completion - 18 November 2026
 
 W04 is `DONE_LOCAL` on `codex/crm-remaining-tasks`, based on `1441217` plus the current uncommitted changes.
@@ -151,7 +179,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
 | W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
-| W08 | NOT_STARTED | — |
+| W08 | IN_PROGRESS | See current W08 checkpoint above; AT-47 PDF regression reproduced RED. |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
 | W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
