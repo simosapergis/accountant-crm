@@ -7,6 +7,7 @@ require_once 'includes/db.php';
 require_once 'includes/functions.php';
 require_once __DIR__ . '/includes/money.php';
 require_once __DIR__ . '/includes/catalog_admin.php';
+require_once __DIR__ . '/includes/recurrence.php';
 
 /* ----------------------------------------------------------
    ΔΙΑΓΡΑΦΗ
@@ -61,6 +62,14 @@ if ($id) {
 }
 $originalPaymentMethodId = isset($task['payment_method_id']) ? (int)$task['payment_method_id'] : 0;
 $originalPaymentMethodLabel = (string)($task['payment_method_label'] ?? '');
+$minimumRecurrenceMonth = crm_recurrence_month_add(substr(crm_recurrence_today(), 0, 7) . '-01', 1);
+$defaultRecurrenceDay = (int)substr((string)$task['task_date'], 8, 2);
+$recurrenceDayInput = is_string($_POST['recurrence_day'] ?? null) ? $_POST['recurrence_day'] : (string)$defaultRecurrenceDay;
+$recurrenceStartInput = is_string($_POST['recurrence_start_month'] ?? null) ? $_POST['recurrence_start_month'] : substr($minimumRecurrenceMonth, 0, 7);
+$recurrenceFeeInput = is_string($_POST['recurrence_fee'] ?? null)
+    ? $_POST['recurrence_fee']
+    : (is_string($_POST['fee'] ?? null) ? $_POST['fee'] : crm_money_input_value((string)$task['fee']));
+$enableRecurrence = !$id && ($_POST['enable_recurrence'] ?? '') === '1';
 $recurrenceLinkId = null;
 $canEnableRecurrence = false;
 if ($id && isset($task['id'])) {
@@ -112,6 +121,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
     }
     if ($formError === '' && (!is_string($titleInput) || mb_strlen($title, 'UTF-8') > 255)) {
         $formError = 'Ο τίτλος εργασίας πρέπει να έχει έως 255 χαρακτήρες.';
+    }
+
+    $recurrenceDay = filter_var($recurrenceDayInput, FILTER_VALIDATE_INT);
+    $recurrenceStartMonth = crm_recurrence_parse_month($recurrenceStartInput);
+    $recurrenceFeeCents = crm_parse_money_cents($recurrenceFeeInput);
+    if ($formError === '' && $enableRecurrence && (
+        $recurrenceDay === false || $recurrenceDay < 1 || $recurrenceDay > 31 ||
+        $recurrenceStartMonth === null || $recurrenceStartMonth < $minimumRecurrenceMonth ||
+        $recurrenceFeeCents === null
+    )) {
+        $formError = 'Ελέγξτε την ημέρα (1-31), τον μήνα έναρξης και την επαναλαμβανόμενη αμοιβή.';
     }
 
     if ($formError === '' && $collectedCents > 0) {
@@ -190,12 +210,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
     }
 
     if ($formError === '') {
-        $stmt->execute();
-        if ($collectedCents === 0 && $originalPaymentMethodId > 0) {
-            $_SESSION['flash_message'] = 'Η είσπραξη μηδενίστηκε και το μέσο είσπραξης καθαρίστηκε.';
+        try {
+            if ($enableRecurrence) {
+                $mysqli->begin_transaction();
+            }
+            $stmt->execute();
+            if ($enableRecurrence) {
+                $newTaskId = (int)$stmt->insert_id;
+                $recurrenceFee = crm_money_decimal($recurrenceFeeCents);
+                crm_recurrence_create_rule(
+                    $mysqli,
+                    $newTaskId,
+                    (int)$recurrenceDay,
+                    $recurrenceStartMonth,
+                    $recurrenceFee,
+                    isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null,
+                    false
+                );
+                $mysqli->commit();
+            }
+            if ($collectedCents === 0 && $originalPaymentMethodId > 0) {
+                $_SESSION['flash_message'] = 'Η είσπραξη μηδενίστηκε και το μέσο είσπραξης καθαρίστηκε.';
+            }
+            header("Location: tasks.php");
+            exit;
+        } catch (Throwable $exception) {
+            if ($enableRecurrence) {
+                $mysqli->rollback();
+            }
+            $formError = 'Δεν ήταν δυνατή η αποθήκευση της εργασίας και της μηνιαίας επανάληψης. Ελέγξτε τα στοιχεία και δοκιμάστε ξανά.';
         }
-        header("Location: tasks.php");
-        exit;
     }
 }
 
@@ -383,6 +427,43 @@ function addClientToDropdown(id, name) {
                 <textarea name="notes" rows="4"><?= htmlspecialchars($task['notes'] ?? '') ?></textarea>
             </div>
         </div>
+
+        <?php if (!$id): ?>
+        <div class="form-row" style="display:block;">
+            <label style="display:flex;align-items:center;gap:8px;">
+                <input id="enable-recurrence" type="checkbox" name="enable_recurrence" value="1" <?= $enableRecurrence ? 'checked' : '' ?>>
+                Να επαναλαμβάνεται κάθε μήνα
+            </label>
+            <div id="recurrence-settings" class="form-row" style="display:<?= $enableRecurrence ? 'flex' : 'none' ?>; margin-top:12px;">
+                <div class="form-group">
+                    <label for="recurrence-day">Ημέρα μήνα (1-31)</label>
+                    <input id="recurrence-day" type="number" name="recurrence_day" min="1" max="31" value="<?= htmlspecialchars($recurrenceDayInput, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="recurrence-start-month">Μήνας έναρξης</label>
+                    <input id="recurrence-start-month" type="month" name="recurrence_start_month" min="<?= htmlspecialchars(substr($minimumRecurrenceMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($recurrenceStartInput, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="recurrence-fee">Επαναλαμβανόμενη αμοιβή (€)</label>
+                    <input id="recurrence-fee" type="text" name="recurrence_fee" value="<?= htmlspecialchars($recurrenceFeeInput, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+            </div>
+        </div>
+        <script>
+            const recurrenceToggle = document.getElementById('enable-recurrence');
+            const recurrenceSettings = document.getElementById('recurrence-settings');
+            const taskFeeInput = document.querySelector('input[name="fee"]');
+            const recurringFeeInput = document.getElementById('recurrence-fee');
+            let recurringFeeWasEdited = <?= isset($_POST['recurrence_fee']) ? 'true' : 'false' ?>;
+            recurrenceToggle.addEventListener('change', () => {
+                recurrenceSettings.style.display = recurrenceToggle.checked ? 'flex' : 'none';
+            });
+            recurringFeeInput.addEventListener('input', () => { recurringFeeWasEdited = true; });
+            taskFeeInput.addEventListener('input', () => {
+                if (!recurringFeeWasEdited) recurringFeeInput.value = taskFeeInput.value;
+            });
+        </script>
+        <?php endif; ?>
 
         <div class="form-actions">
             <a href="tasks.php" class="btn btn-secondary">Άκυρο</a>

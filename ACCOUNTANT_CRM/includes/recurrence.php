@@ -45,7 +45,7 @@ function crm_recurrence_fee_decimal(mixed $input): ?string
     return number_format((float)str_replace(',', '.', trim($input)), 2, '.', '');
 }
 
-function crm_recurrence_create_rule(mysqli $db, int $taskId, int $day, string $startMonth, string $fee, ?int $createdBy): int
+function crm_recurrence_create_rule(mysqli $db, int $taskId, int $day, string $startMonth, string $fee, ?int $createdBy, bool $manageTransaction = true): int
 {
     if ($day < 1 || $day > 31 || crm_recurrence_parse_month(substr($startMonth, 0, 7)) !== $startMonth) {
         throw new InvalidArgumentException('Invalid recurrence schedule.');
@@ -56,7 +56,9 @@ function crm_recurrence_create_rule(mysqli $db, int $taskId, int $day, string $s
         throw new InvalidArgumentException('Η έναρξη πρέπει να είναι από τον επόμενο μήνα και μετά.');
     }
 
-    $db->begin_transaction();
+    if ($manageTransaction) {
+        $db->begin_transaction();
+    }
     try {
         $taskStmt = $db->prepare('SELECT id,client_id,title,partner_id,notes FROM tasks WHERE id=? FOR UPDATE');
         $taskStmt->bind_param('i', $taskId);
@@ -83,10 +85,14 @@ function crm_recurrence_create_rule(mysqli $db, int $taskId, int $day, string $s
         $version = $db->prepare('INSERT INTO recurring_task_rule_versions (rule_id,effective_month,day_of_month,client_id,title,partner_id,notes,fee) VALUES (?,?,?,?,?,?,?,?)');
         $version->bind_param('isiisiss', $ruleId, $startMonth, $day, $clientId, $title, $partnerId, $notes, $fee);
         $version->execute();
-        $db->commit();
+        if ($manageTransaction) {
+            $db->commit();
+        }
         return $ruleId;
     } catch (Throwable $exception) {
-        $db->rollback();
+        if ($manageTransaction) {
+            $db->rollback();
+        }
         throw $exception;
     }
 }

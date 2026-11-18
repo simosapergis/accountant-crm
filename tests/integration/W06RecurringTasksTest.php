@@ -195,6 +195,55 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM recurring_task_rules WHERE source_task_id=910030 AND state="active"')->fetch_row()[0]);
     }
 
+    public function testNewTaskCanStartMonthlyRecurrenceInTheSameSubmission(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/task_form.php', 'GET', [], $session['cookie']);
+        self::assertSame(200, $form['status']);
+        self::assertStringContainsString('name="enable_recurrence"', $form['body']);
+
+        $nextMonth = crm_recurrence_month_add(substr(crm_recurrence_today(), 0, 7) . '-01', 1);
+        $payload = [
+            'task_date' => '2026-11-18', 'title' => 'W06 Initial Recurrence Task',
+            'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
+            'fee' => '125,50', 'collected' => '0', 'payment_method_id' => '', 'notes' => 'Fictional initial recurring task',
+            'enable_recurrence' => '1', 'recurrence_day' => '12',
+            'recurrence_start_month' => substr($nextMonth, 0, 7), 'recurrence_fee' => '130,75',
+            'save_task' => '1', '_csrf_token' => $this->csrfToken($form['body']),
+        ];
+        $saved = $this->request('/task_form.php', 'POST', $payload, $session['cookie']);
+        self::assertSame(302, $saved['status']);
+
+        $task = $this->db->query("SELECT id FROM tasks WHERE title='W06 Initial Recurrence Task' AND client_id=" . self::CLIENT_ID)->fetch_assoc();
+        self::assertNotNull($task);
+        $taskId = (int)$task['id'];
+        $this->taskIds[] = $taskId;
+        $rule = $this->db->query('SELECT id,day_of_month,start_month,fee FROM recurring_task_rules WHERE source_task_id=' . $taskId . ' AND state="active"')->fetch_assoc();
+        self::assertNotNull($rule);
+        $this->ruleIds[] = (int)$rule['id'];
+        self::assertSame('12', (string)$rule['day_of_month']);
+        self::assertSame($nextMonth, $rule['start_month']);
+        self::assertSame('130.75', $rule['fee']);
+    }
+
+    public function testInvalidInitialRecurrenceDoesNotLeaveTheNewTaskBehind(): void
+    {
+        $session = $this->login();
+        $form = $this->request('/task_form.php', 'GET', [], $session['cookie']);
+        $payload = [
+            'task_date' => '2026-11-18', 'title' => 'W06 Invalid Initial Recurrence',
+            'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
+            'fee' => '125,50', 'collected' => '0', 'payment_method_id' => '', 'notes' => '',
+            'enable_recurrence' => '1', 'recurrence_day' => '12',
+            'recurrence_start_month' => substr(crm_recurrence_today(), 0, 7), 'recurrence_fee' => '130,75',
+            'save_task' => '1', '_csrf_token' => $this->csrfToken($form['body']),
+        ];
+        $response = $this->request('/task_form.php', 'POST', $payload, $session['cookie']);
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('μήνα έναρξης', mb_strtolower($response['body'], 'UTF-8'));
+        self::assertSame(0, (int)$this->db->query("SELECT COUNT(*) FROM tasks WHERE title='W06 Invalid Initial Recurrence'")->fetch_row()[0]);
+    }
+
     public function testSchedulerHasNoPublicHttpEndpoint(): void
     {
         $session = $this->login();

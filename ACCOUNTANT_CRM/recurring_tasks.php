@@ -14,7 +14,6 @@ require __DIR__ . '/includes/header.php';
 ?>
 <div class="page-container">
     <h2>Επαναλαμβανόμενες εργασίες</h2>
-    <p>Οι κανόνες δημιουργούν αυτόνομα tasks. Κάθε task διατηρεί τα δικά του στοιχεία μετά τη δημιουργία.</p>
     <div class="table-wrapper"><table>
         <thead><tr><th>Πελάτης</th><th>Τίτλος</th><th>Ημέρα</th><th>Έναρξη</th><th>Αμοιβή</th><th>Κατάσταση</th><th>Εργασίες</th><th>Ρυθμίσεις</th></tr></thead>
         <tbody>
