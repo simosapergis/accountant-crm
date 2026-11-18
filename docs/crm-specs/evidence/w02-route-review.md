@@ -98,7 +98,7 @@ Existing hostile-value regressions cover shared headers, list/calendar pages, ta
 The representative rendered browser inspection is recorded below.
 
 The route review began from `c9652a7`; the logout correction was committed as `393ac41`.
-The catalog-form authorization test extension is currently uncommitted.
+The catalog-form authorization test extension is included in commit `df84d7b`.
 
 ## Browser inspection
 
@@ -116,3 +116,10 @@ This should be reviewed as a UI defect; no change was made during the security a
 The full PHPUnit suite passed on the established isolated database after setting `APP_ENV=test` and `CRM_TEST_ADMIN_USER=root`: 161 tests / 1,014 assertions.
 An earlier run on `crm_test_native_20261118` was invalid as a full-suite baseline because it omitted those test-only runner settings and contained unrelated recurrence rows; it failed 6 tests / 979 assertions.
 No cleanup was performed on that database.
+
+## Independent review of the reconciled state
+
+The independent read-only review checked exact commit `df84d7bd56b1b039be62f73a7861985e9bbc780f` and found no new critical or high security issue in the reviewed changes.
+It confirmed the 33-route inventory, the admin-role task/recurrence regression, and the recorded focused and full-suite results.
+The reviewer did not approve G01 because the recurring-task empty screen has an unexplained blank panel and remains an open UI issue.
+G01 remains `NOT_EVALUATED` until that issue is resolved and the exact final state is reviewed.
