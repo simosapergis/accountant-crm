@@ -1,5 +1,17 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Mobile catalog card redesign - 18 November 2026
+
+The user rejected the narrow table layout on mobile and requested a card redesign for task titles and payment methods.
+At widths up to 768 pixels, each option now appears as a card with its name, active status and a full-width edit action; empty catalogs display a short empty-state message.
+The desktop table remains in place above the mobile breakpoint.
+The browser regression initially failed because the card list was absent, then passed all 8 checks at 390/320 pixels and 1024 pixels.
+The user visually approved both redesigned catalog pages.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on clean isolated database `crm_test_g01_mobile_catalog_20261118`, including the W05 catalog tests.
+The browser suite passed all 8 checks against the clean test server, including both mobile catalog pages at 390 and 320 pixels and desktop behavior at 1024 pixels.
+The exact latest code state still requires independent review and any remaining required human layout acceptance; G01 remains `NOT_EVALUATED`.
+
 ### Compact navigation drawer alignment - 18 November 2026
 
 The user reported that the compact navigation list container was wider than the header.

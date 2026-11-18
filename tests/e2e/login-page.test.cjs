@@ -131,6 +131,42 @@ async function runCheck(name, check) {
       assert.ok(desktopHeader.userRight <= desktopHeader.viewportWidth, JSON.stringify(desktopHeader));
       await context.close();
     }));
+    checks.push(await runCheck('admin catalogs use readable cards on small screens', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-admin');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Admin-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+
+      for (const [route, heading] of [
+        ['payment_methods.php', 'Μέσα είσπραξης'],
+        ['task_titles.php', 'Τίτλοι εργασιών'],
+      ]) {
+        const response = await page.goto(`${baseUrl}/${route}`);
+        assert.equal(response.status(), 200, `${route} should be accessible to an admin`);
+        assert.equal(await page.locator('h2').innerText(), heading);
+        for (const width of [390, 320]) {
+          await page.setViewportSize({ width, height: 844 });
+          assert.equal(await page.locator('.catalog-table-wrapper').isVisible(), false, `${route} desktop table should be hidden at ${width}px`);
+          assert.equal(await page.locator('.catalog-mobile-list').isVisible(), true, `${route} cards should be visible at ${width}px`);
+          const cards = page.locator('.catalog-mobile-card');
+          if (await cards.count()) {
+            assert.ok(await cards.first().locator('.catalog-mobile-card-name').isVisible());
+            assert.ok(await cards.first().getByRole('link', { name: 'Επεξεργασία' }).isVisible());
+          } else {
+            assert.ok(await page.locator('.catalog-mobile-empty').isVisible());
+          }
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+        }
+      }
+      await page.setViewportSize({ width: 1024, height: 768 });
+      assert.equal(await page.locator('.catalog-table-wrapper').isVisible(), true);
+      assert.equal(await page.locator('.catalog-mobile-list').isVisible(), false);
+      await context.close();
+    }));
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
     await page.goto(`${baseUrl}/login.php`);

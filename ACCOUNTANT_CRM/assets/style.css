@@ -1146,7 +1146,7 @@ textarea {
 ============================================================ */
 @media (max-width: 768px) {
 
-    /* Κρύβουμε τον πίνακα */
+    /* Keep the legacy mobile-card view for pages that provide card markup. */
     table {
         display: none !important;
     }
@@ -1267,4 +1267,56 @@ select[size="1"] {
         -webkit-appearance: auto;
         background-image: none;
     }
+}
+
+.catalog-mobile-list { display: none; }
+
+.catalog-mobile-card {
+    display: grid;
+    gap: 14px;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e5eaf1;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+.catalog-mobile-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.catalog-mobile-name-group { flex: 1; min-width: 0; }
+.catalog-mobile-field-label { display: block; margin-bottom: 4px; color: #64748b; font-size: 12px; font-weight: 600; }
+.catalog-mobile-card-name { font-size: 16px; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+
+.catalog-status-pill {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 28px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.catalog-status-active { background: #dcfce7; color: #166534; }
+.catalog-status-inactive { background: #e2e8f0; color: #475569; }
+.catalog-mobile-card .btn { display: flex; align-items: center; justify-content: center; min-height: 44px; }
+.catalog-mobile-empty { padding: 22px 18px; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fff; color: #64748b; text-align: center; line-height: 1.5; }
+
+@media (max-width: 768px) {
+    .catalog-table-wrapper { display: none; }
+    .catalog-mobile-list { display: grid; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+    .catalog-list-heading { align-items: stretch; }
+    .catalog-list-heading h2 { font-size: 22px; }
+    .catalog-list-heading .btn { width: 100%; min-height: 44px; margin-left: 0; justify-content: center; }
 }

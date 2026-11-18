@@ -59,5 +59,6 @@ docker compose --env-file /dev/null -f compose.w01.yaml -p crm-w01-20261117 run 
 This uses only the dedicated `test-db / crm_w01_test` target. Test dependencies are installed in the W01 test image; the production Dockerfile remains `--no-dev`.
 
 The test DB guard requires `CRM_TEST_DB_NAME` to match `DB_NAME`, a non-root user, a nonempty host and a clearly isolated database name. It also queries MariaDB to verify the actual selected database before destructive/setup operations. Credentials are never printed. The fixtures are fictional and idempotent.
+The W01 fixture seeder creates a fictional admin account used by the mobile catalog browser regression.
 
 For browser checks, install the pinned Playwright dependency and run against the local `/crm/` URL. Do not run `down -v`; retaining the project-owned test volume avoids accidental data loss. Do not use the test project with `.env` or a normal development database.

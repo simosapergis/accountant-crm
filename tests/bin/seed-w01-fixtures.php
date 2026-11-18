@@ -68,4 +68,16 @@ $user = $db->prepare(
 $user->bind_param('issss', $userId, $username, $passwordHash, $fullname, $role);
 $user->execute();
 
-fwrite(STDOUT, "Seeded idempotent fictional W01 fixtures and W02 XSS test client.\n");
+$adminId = 919001;
+$adminUsername = 'w01-fake-admin';
+$adminPasswordHash = password_hash('W01-Fictional-Admin-Password-2026', PASSWORD_DEFAULT);
+$adminFullname = 'W01 Fictional Administrator';
+$adminRole = 'admin';
+$admin = $db->prepare(
+    'INSERT INTO users (id, username, password, fullname, role) VALUES (?, ?, ?, ?, ?) ' .
+    'ON DUPLICATE KEY UPDATE password = VALUES(password), fullname = VALUES(fullname), role = VALUES(role)'
+);
+$admin->bind_param('issss', $adminId, $adminUsername, $adminPasswordHash, $adminFullname, $adminRole);
+$admin->execute();
+
+fwrite(STDOUT, "Seeded idempotent fictional W01 user/admin fixtures and W02 XSS test client.\n");

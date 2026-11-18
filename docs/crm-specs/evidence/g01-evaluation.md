@@ -11,6 +11,12 @@ Its browser E2E suite passed 8 checks.
 An earlier full guarded PHP run passed with 162 tests / 1,024 assertions, but a repeat during this follow-up lost its MariaDB connection during W08 exports and is not a passing rerun.
 The full suite must pass again on a healthy isolated database, and a human must inspect and accept the key layouts before G01 can be evaluated as PASS.
 
+The user has now visually approved the responsive card redesign for the task-title and payment-method catalogs.
+The browser suite passed all 8 checks, including both catalog cards at 390 and 320 pixels and desktop table behavior at 1024 pixels.
+The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on the clean isolated database `crm_test_g01_mobile_catalog_20261118`.
+That approval covers those two screens only; the latest card implementation still needs an independent code review, and any other required human layout acceptance must be recorded.
+G01 remains `NOT_EVALUATED` while those checks remain open.
+
 - The current source review reconciles all 33 HTTP entrypoints with authentication, role, CSRF, ownership, SQL, output and private-file evidence in [W02 route review](w02-route-review.md).
 - The logout issue, recurrence empty state and desktop header overflow are fixed with HTTP/browser regression coverage.
 - Full guarded PHPUnit suite: PASS, 162 tests / 1,024 assertions on `crm_test_w08_closeout_20261118`.

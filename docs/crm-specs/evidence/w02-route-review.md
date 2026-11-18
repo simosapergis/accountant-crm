@@ -175,3 +175,16 @@ The independent reviewer checked exact code commit `63fc9a7a603c90c54f7c00ac9893
 The reviewer confirmed the header-relative bounds match the compact body padding and that the E2E assertions cover 390- and 1280-pixel alignment, mobile overflow and 1600-pixel desktop geometry.
 No security or functional regression was found, and the reviewer supports the code change.
 This is not a G01 PASS: a fresh green full-suite rerun and the required human layout inspection remain outstanding.
+
+## Catalog mobile-card redesign and visual acceptance
+
+The user reported that the task-title and payment-method tables disappeared on small screens and rejected the dense narrow table layout.
+The browser regression first failed because the mobile card list was missing.
+At widths up to 768 pixels, both catalog pages now show individual cards with the option name, active status and a full-width edit action; an empty catalog shows an explanatory message.
+The desktop table remains visible above the mobile breakpoint.
+The browser suite passed all 8 checks, covering both catalogs at 390 and 320 pixels and the desktop table at 1024 pixels.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The user visually approved the redesigned catalog pages on 18 November 2026.
+The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on the new clean isolated database `crm_test_g01_mobile_catalog_20261118`; this includes the W05 catalog integration tests.
+The browser suite passed all 8 checks against the same database after the full suite, confirming that the seeded admin fixture remains available.
+An independent review of this latest code state and any remaining human layout acceptance remain outstanding; G01 remains `NOT_EVALUATED`.
