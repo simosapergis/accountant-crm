@@ -14,6 +14,10 @@ Independent review of exact commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e` su
 That review was scoped to the catalog implementation; the full G01 checklist review and any remaining required human layout acceptance are still open.
 G01 remains `NOT_EVALUATED`.
 
+The independent G01 review checked exact HEAD `d7476c500ead6e5802228a229b789eea2e381ca8`, found no open critical/high issue and found the local route/security and existing-flow evidence sufficient.
+It identified AT-50 human inspection of the recurring-task empty state and compact navigation/header as the remaining gate item.
+The user has approved the catalog layouts only; G01 remains `NOT_EVALUATED` until the other key layouts are accepted and the exact-commit PASS is recorded.
+
 ### Compact navigation drawer alignment - 18 November 2026
 
 The user reported that the compact navigation list container was wider than the header.

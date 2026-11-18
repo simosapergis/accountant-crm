@@ -2,22 +2,20 @@
 
 ## Current re-evaluation - 18 November 2026
 
-Reviewed code: `251a35c1251c4307f81afe6b6a9300fd9db5c1e7` on `codex/crm-remaining-tasks`.
-Result: `NOT_EVALUATED` pending the required human inspection of key application layouts.
+Reviewed code: `d7476c500ead6e5802228a229b789eea2e381ca8` on `codex/crm-remaining-tasks`.
+Result: `NOT_EVALUATED` pending human inspection and acceptance of the remaining key application layouts.
 
-Latest code follow-up: `63fc9a7a603c90c54f7c00ac989327b715e7b50d` aligns the compact drawer with the header.
-The independent reviewer supports this change and found no security or functional regression.
-Its browser E2E suite passed 8 checks.
-An earlier full guarded PHP run passed with 162 tests / 1,024 assertions, but a repeat during this follow-up lost its MariaDB connection during W08 exports and is not a passing rerun.
-The full suite must pass again on a healthy isolated database, and a human must inspect and accept the key layouts before G01 can be evaluated as PASS.
+The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on clean isolated database `crm_test_g01_mobile_catalog_20261118`.
+The browser E2E suite passed all 8 checks, including both catalog cards at 390 and 320 pixels and desktop table behavior at 1024 pixels.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The independent G01 reviewer checked the full checklist against this exact commit, found no open critical/high issue, and found the local route/security and existing-flow evidence sufficient.
+The user's visual approval covers the task-title and payment-method catalogs only.
+Human acceptance of the recurring-task empty state and compact navigation/header is still required.
+The reviewer did not grant G01 PASS because AT-50 human inspection remains incomplete and the final PASS record is not yet present.
 
-The user has now visually approved the responsive card redesign for the task-title and payment-method catalogs.
-The browser suite passed all 8 checks, including both catalog cards at 390 and 320 pixels and desktop table behavior at 1024 pixels.
-The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on the clean isolated database `crm_test_g01_mobile_catalog_20261118`.
-The independent reviewer checked exact code commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e`, supports the catalog change and found no security or functional regression.
-That review was scoped to the mobile catalogs and their test fixture; the independent G01 checklist review and any other required human layout acceptance remain open.
-The user's visual approval covers the two catalog pages only.
-G01 remains `NOT_EVALUATED` while those checks remain open.
+The catalog-specific code review also supports the card change and its fixture handling; details are in [W02 route review](w02-route-review.md).
+No production or hosting checks were performed.
+Do not mark G01 PASS until the remaining human layout inspection is recorded against this exact code commit.
 
 - The current source review reconciles all 33 HTTP entrypoints with authentication, role, CSRF, ownership, SQL, output and private-file evidence in [W02 route review](w02-route-review.md).
 - The logout issue, recurrence empty state and desktop header overflow are fixed with HTTP/browser regression coverage.
