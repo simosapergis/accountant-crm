@@ -48,8 +48,15 @@ async function runCheck(name, check) {
       assert.ok(before && after && before.value !== after.value, 'session ID should rotate after login');
       assert.equal(await page.locator('body').innerText().then((text) => text.includes('Notice: session_start')), false);
 
+      const compactNavigation = await page.locator('.hamburger').isVisible();
+      if (compactNavigation) {
+        await page.locator('.hamburger').click();
+      }
       const logoutNavigation = page.waitForNavigation();
-      await page.locator('form[action$="/logout.php"] button[type="submit"]').first().click();
+      const logoutButton = compactNavigation
+        ? page.locator('.mobile-menu form[action$="/logout.php"] button[type="submit"]')
+        : page.locator('.menu-user form[action$="/logout.php"] button[type="submit"]');
+      await logoutButton.click();
       const logoutResponse = await logoutNavigation;
       assert.equal(logoutResponse.status(), 200);
       assert.equal(page.url(), `${baseUrl}/login.php`);
@@ -72,6 +79,36 @@ async function runCheck(name, check) {
 
       assert.equal(await page.locator('#client_results img').count(), 0);
       assert.equal(await page.evaluate(() => window.crmXss), undefined);
+      await context.close();
+    }));
+    checks.push(await runCheck('navigation fits desktop and keeps account controls available at compact widths', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 } });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+
+      assert.equal(await page.locator('.hamburger').isVisible(), true);
+      assert.equal(await page.locator('.menu-user').isVisible(), false);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await page.locator('.hamburger').click();
+      assert.equal(await page.locator('.mobile-user-box').isVisible(), true);
+      assert.match(await page.locator('.mobile-user-box').innerText(), /W01 Fictional User/);
+
+      await page.setViewportSize({ width: 1600, height: 900 });
+      await page.reload();
+      assert.equal(await page.locator('.menu-links').isVisible(), true);
+      assert.equal(await page.locator('.menu-user').isVisible(), true);
+      const desktopHeader = await page.evaluate(() => ({
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        userRight: document.querySelector('.menu-user').getBoundingClientRect().right,
+      }));
+      assert.ok(desktopHeader.documentWidth <= desktopHeader.viewportWidth, JSON.stringify(desktopHeader));
+      assert.ok(desktopHeader.userRight <= desktopHeader.viewportWidth, JSON.stringify(desktopHeader));
       await context.close();
     }));
     const context = await browser.newContext({ ignoreHTTPSErrors: true });

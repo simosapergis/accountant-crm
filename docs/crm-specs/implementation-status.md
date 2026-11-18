@@ -1,11 +1,21 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Authenticated desktop header fix - 18 November 2026
+
+The user authorized fixing the separately observed clipping of the signed-in username in the desktop navigation.
+The new browser regression reproduced the issue before the CSS update: at a 1280-pixel viewport, the desktop navigation overflowed instead of switching to the compact menu.
+The header now accounts for its horizontal padding, uses a compact hamburger navigation through 1400 pixels, and allows the desktop account block to wrap without clipping.
+The browser regression verifies no horizontal overflow, account/logout access through the compact menu, and the full desktop account block within a 1600-pixel viewport.
+The E2E suite passed all 8 checks, and the full guarded PHP suite passed with 162 tests / 1,024 assertions.
+Manual browser inspection at 1280 pixels showed the hamburger menu and full account name in its drawer; the 1600-pixel geometry is checked by Playwright.
+An independent review of the final header state is pending; G01 remains `NOT_EVALUATED` until that review and exact commit record.
+
 ### G01 re-review follow-up - 18 November 2026
 
 The independent review of `51f2100ad85a4166c145a2cb5b989d2ebc87c955` confirmed the empty-state fix and found no new critical/high security issue.
 It flagged that recurrence tests require a clean schema; that precondition is now explicit in the test and `tests/README.md`.
 After this clarification, focused `W06RecurringTasksTest` passes with 19 tests / 138 assertions and the full guarded suite passes with 162 tests / 1,024 assertions.
-The reviewer also noted the authenticated username is clipped in the desktop header; this separate visual issue is documented and awaits the user's choice.
+The reviewer also noted the authenticated username was clipped in the desktop header; this was subsequently fixed with user authorization as recorded above.
 G01 remains `NOT_EVALUATED` pending a final review of the exact committed state and resolution or disposition of the header issue.
 
 ### Recurring-task empty-state fix - 18 November 2026

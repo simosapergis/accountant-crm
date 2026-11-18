@@ -27,25 +27,28 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         ========================================== */
         .top-menu {
             width: 100%;
+            box-sizing: border-box;
             background: #1f1f1f;
             padding: 14px 20px;
             color: white;
             display: flex;
             align-items: center;
-            gap: 40px;
+            gap: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.25);
         }
 
         .menu-logo {
             font-size: 20px;
             font-weight: 600;
-            margin-right: 30px;
+            margin-right: 0;
             white-space: nowrap;
         }
 
         .menu-links {
             display: flex;
-            gap: 25px;
+            flex: 1 1 auto;
+            gap: 12px;
+            min-width: 0;
         }
 
         .menu-links a {
@@ -65,13 +68,19 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         }
 
         .menu-user {
-            margin-left: auto;
+            flex: 0 1 auto;
+            margin-left: 0;
+            max-width: 32%;
             color: #d4d4d4;
             font-size: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
-            white-space: nowrap;
+            white-space: normal;
+        }
+
+        .menu-user b {
+            overflow-wrap: anywhere;
         }
 
         .menu-user a {
@@ -88,7 +97,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         ========================================== */
 
         /* Hide desktop menu on small screens */
-        @media (max-width: 850px) {
+        @media (max-width: 1400px) {
             .menu-links,
             .menu-user {
                 display: none;
@@ -103,7 +112,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
             margin-left: auto;
         }
 
-        @media (max-width: 850px) {
+        @media (max-width: 1400px) {
             .hamburger {
                 display: block;
             }
@@ -118,6 +127,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
             position: absolute;
             top: 60px;
             width: 100%;
+            box-sizing: border-box;
             left: 0;
             z-index: 999;
         }

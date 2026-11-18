@@ -145,5 +145,10 @@ The independent reviewer checked commit `51f2100ad85a4166c145a2cb5b989d2ebc87c95
 The reviewer identified the clean recurrence schema as a test precondition because rules are shared and processed globally.
 That precondition is now asserted by the empty-state HTTP test and documented in `tests/README.md`; focused W06 and full-suite runs passed again afterward.
 The reviewer also reported that the signed-in username is clipped at the right edge of the desktop header.
-This separate visual issue is documented, and the user has been asked whether to authorize a fix.
-The test guard and updated evidence are newer than `51f2100`; they require an independent review against their resulting commit before recording a G01 outcome.
+The user authorized a fix.
+The browser regression failed before the fix at 1280 pixels because the desktop menu was still displayed and overflowed the viewport.
+The shared header now uses border-box sizing, tighter flexible desktop navigation, and switches to the compact drawer through 1400 pixels.
+The E2E regression verifies no horizontal overflow at 1280 pixels, that the user name and logout remain available in the compact drawer, and that the desktop account block stays inside a 1600-pixel viewport.
+All 8 browser E2E checks passed after the fix, and the full guarded PHP suite passed with 162 tests / 1,024 assertions.
+Manual browser inspection confirmed the compact menu and account name display correctly at 1280 pixels.
+The header fix and updated evidence require an independent review against their resulting commit before recording a G01 outcome.
