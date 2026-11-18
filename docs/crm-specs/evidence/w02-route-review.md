@@ -204,3 +204,12 @@ The mobile-only recurrence fixture is seeded by `tests/bin/seed-w01-mobile-recur
 PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
 The user visually approved the recurring-rule cards on 18 November 2026.
 This change still needs an independent review of its exact commit; G01 remains `NOT_EVALUATED`.
+
+## Exact-commit follow-up review - 18 November 2026
+
+The exact commit `bc1406c064e1fa8829dee74da5aa86409c6f3793` was reviewed read-only, including the responsive recurrence markup and post-PHPUnit fixture.
+No new security or functional defect was identified in those changes.
+The fixture refuses non-isolated/root test configurations, verifies its live database, uses prepared statements and only seeds fictional data.
+The fresh G01 checklist reconciliation is in [G01 evaluation evidence](g01-evaluation.md).
+The review initially left the recurring-task empty state and compact navigation/header for human acceptance.
+The user confirmed acceptance on 18 November 2026 for this exact commit; the complete checklist reconciliation and local G01 PASS are recorded in [G01 evaluation evidence](g01-evaluation.md).
