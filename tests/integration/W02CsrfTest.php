@@ -160,6 +160,20 @@ final class W02CsrfTest extends TestCase
         self::assertSame(302, $this->request('/tasks.php', 'GET', [], $session['cookie'])['status']);
     }
 
+    public function testAnonymousLogoutPostIsRejectedWithoutInvalidatingItsSession(): void
+    {
+        $loginPage = $this->request('/login.php');
+        $anonymousCookie = $loginPage['cookie'];
+        $token = $this->csrfToken($loginPage['body']);
+
+        $logout = $this->request('/logout.php', 'POST', ['_csrf_token' => $token], $anonymousCookie);
+
+        self::assertSame(302, $logout['status']);
+        self::assertSame('/crm/login.php', $logout['location']);
+        $loginPageAfter = $this->request('/login.php', 'GET', [], $anonymousCookie);
+        self::assertSame($token, $this->csrfToken($loginPageAfter['body']), 'An anonymous request must not execute the authenticated logout action.');
+    }
+
     public function testClientUpdateWithSessionCsrfTokenIsAccepted(): void
     {
         $session = $this->login();
@@ -870,6 +884,7 @@ final class W02CsrfTest extends TestCase
         $responseHeaders = $http_response_header ?? [];
         $status = 0;
         $responseCookie = '';
+        $location = '';
 
         foreach ($responseHeaders as $header) {
             if (preg_match('/^HTTP\/\S+\s+(\d+)/', $header, $matches)) {
@@ -878,9 +893,12 @@ final class W02CsrfTest extends TestCase
             if (stripos($header, 'Set-Cookie: PHPSESSID=') === 0) {
                 $responseCookie = explode(';', trim(substr($header, strlen('Set-Cookie: '))))[0];
             }
+            if (stripos($header, 'Location:') === 0) {
+                $location = trim(substr($header, strlen('Location:')));
+            }
         }
 
-        return ['status' => $status, 'body' => $body ?: '', 'cookie' => $responseCookie];
+        return ['status' => $status, 'body' => $body ?: '', 'cookie' => $responseCookie, 'location' => $location];
     }
 
     private function requestMultipart(string $path, array $fields, string $fileField, string $filename, string $fileContents, string $cookie): array

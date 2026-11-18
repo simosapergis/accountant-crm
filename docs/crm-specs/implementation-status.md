@@ -1,5 +1,17 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### G01 baseline evaluation - 18 November 2026
+
+G01 was evaluated at `c9652a7` with an independent read-only review and the full isolated native MariaDB suite.
+The suite passed with 159 tests / 998 assertions after the test database guard verified `crm_test_w08_closeout_20261118`.
+The first W02 source route review is recorded in [w02-route-review.md](evidence/w02-route-review.md).
+The anonymous logout issue found there is fixed locally with a RED/GREEN HTTP regression; the focused W02 CSRF class passes with 40 tests / 230 assertions and the full suite with 160 tests / 1,001 assertions.
+Full route-level role/CSRF regression coverage and final output/file reviews remain incomplete.
+The independent review confirmed that G01 cannot pass while these checks and human review remain open.
+See [G01 evaluation evidence](evidence/g01-evaluation.md).
+G01 remains `NOT_EVALUATED`; no production or hosting checks were performed.
+Next: close the documented W02 baseline review gaps, then repeat independent G01 review.
+
 ### W08 local closeout - 18 November 2026
 
 W08 is `DONE_LOCAL` on `codex/crm-remaining-tasks`, based on `948b24d` plus the current uncommitted fixes.
@@ -203,7 +215,9 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 
 ## Ακριβές επόμενο βήμα
 
-W03 and W04 local work is complete. Continue with W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
+Complete the HTTP role/CSRF matrices and remaining output/file review criteria listed in [G01 evaluation evidence](evidence/g01-evaluation.md).
+Request another independent G01 review after those checks pass.
+Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
 
 ## Τελευταίο βήμα TDD
 
