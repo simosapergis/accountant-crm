@@ -1,5 +1,15 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W04 local completion - 18 November 2026
+
+W04 is `DONE_LOCAL` on `codex/crm-remaining-tasks`, based on `1441217` plus the current uncommitted changes.
+AT-10, AT-11 and AT-12 HTTP checks, real MariaDB concurrent counters and retention checks pass.
+Full native regression command: `php tests/bin/assert-test-db.php && tests/vendor/bin/phpunit -c tests/phpunit.xml`, using the isolated test environment and `CRM_BASE_URL=http://127.0.0.1:18094/crm`.
+Result: PASS, 148 tests / 859 assertions.
+See [W04 evidence](evidence/w04-throttle.md) for scope and deployment configuration.
+G01 remains `NOT_EVALUATED`; W08 is next.
+
+
 ### W03 local completion evidence - 18 Νοεμβρίου 2026
 
 Το native CLI είναι PHP 8.3.36 και η τοπική MariaDB είναι 10.11.19.
@@ -140,7 +150,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W01 | DONE | [W01 baseline](evidence/w01-baseline.md), test harness, fixtures, clock και runners. |
 | W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
 | W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
-| W04 | NOT_STARTED | — |
+| W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
 | W08 | NOT_STARTED | — |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
@@ -151,7 +161,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 
 ## Ακριβές επόμενο βήμα
 
-W03 local work is complete. Continue with W04 and W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
+W03 and W04 local work is complete. Continue with W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
 
 ## Τελευταίο βήμα TDD
 

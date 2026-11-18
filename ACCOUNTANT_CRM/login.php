@@ -2,14 +2,28 @@
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/csrf.php';
 require_once "includes/db.php";
+require_once __DIR__ . '/includes/security_events.php';
 
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     csrf_validate_request();
 
-    $username = trim($_POST["username"]);
+    $username = trim((string)($_POST["username"] ?? ''));
     $password = (string)($_POST["password"] ?? '');
+
+    $identityHash = crm_security_hash(mb_strtolower($username, 'UTF-8'));
+    $source = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    $sourceHash = crm_security_hash($source);
+    $throttle = crm_login_begin($mysqli, $identityHash, $sourceHash);
+
+    if ($throttle['limited']) {
+        http_response_code(429);
+        crm_record_security_event($mysqli, 'login_throttled', 'blocked', $identityHash, $sourceHash, ['scope' => $throttle['scope']]);
+        $mysqli->commit();
+        $mysqli->commit();
+    $error = "Λάθος στοιχεία σύνδεσης!";
+    } else {
 
     // Fetch user
     $stmt = $mysqli->prepare("SELECT * FROM users WHERE username = ?");
@@ -23,6 +37,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Validate password
         if (password_verify($password, $user["password"])) {
 
+            crm_login_success($mysqli, $identityHash);
+            crm_record_security_event($mysqli, 'login_success', 'success', $identityHash, $sourceHash);
+
+            $mysqli->commit();
             session_regenerate_id(true);
             $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
 
@@ -36,7 +54,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
+    if (!$throttle['limited']) {
+        $locked = crm_login_failure($mysqli, $identityHash, $sourceHash);
+        crm_record_security_event($mysqli, 'login_failure', $locked ? 'throttled' : 'failure', $identityHash, $sourceHash);
+    }
+    $mysqli->commit();
     $error = "Λάθος στοιχεία σύνδεσης!";
+    }
 }
 ?>
 <!DOCTYPE html>

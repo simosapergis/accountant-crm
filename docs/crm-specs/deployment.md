@@ -138,3 +138,17 @@
 
 Η τελική αναφορά καταγράφει πραγματικό release commit, ημερομηνία εγκατάστασης, αποτελέσματα ελέγχων και τυχόν χαμηλότερης σοβαρότητας εκκρεμότητες.
 Η συντήρηση παρακολουθεί επιτυχία scheduler και backup, ενημερώσεις ασφαλείας και λήξη HTTPS χωρίς να προσθέτει νέες υπηρεσίες χωρίς ανάγκη.
+
+**W04 security configuration**
+
+Before activating this release, apply `20261118_003_security_events` with the migration CLI.
+Set `CRM_SECURITY_HMAC_KEY` to a private random value of at least 32 characters in the shared web/CLI environment.
+Keep the key stable across processes and outside the public root and repository.
+Login refuses to proceed if this configuration is absent or invalid.
+The defaults are `CRM_LOGIN_IDENTITY_LIMIT=5`, `CRM_LOGIN_SOURCE_LIMIT=30`, `CRM_LOGIN_WINDOW_SECONDS=900` and `CRM_LOGIN_COOLDOWN_SECONDS=900`.
+Each setting accepts a positive integer.
+The source is the server's `REMOTE_ADDR`; forwarded headers do not override it.
+Security events and counters live in private MariaDB tables and contain HMAC identifiers rather than plaintext usernames or addresses.
+Schedule `php bin/prune-security-events.php` daily using the same database configuration.
+`CRM_SECURITY_RETENTION_DAYS` defaults to 30; cleanup removes expired events and stale unlocked counters.
+On rollback, retain the additive tables and review compatibility before changing code; do not restore an old dump over newer records.

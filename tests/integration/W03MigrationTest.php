@@ -44,8 +44,8 @@ final class W03MigrationTest extends TestCase
         $afterSchema = $this->schemaSnapshot($db);
         self::assertSame(['id'=>(string)$clientId,'name'=>$name,'task_id'=>(string)$taskId,'title'=>$title,'fee'=>'1234.56','collected'=>'78.90'], $row);
         self::assertSame([], $again);
-        self::assertSame(['20261118_001_catalogs','20261118_002_recurring_tasks'], $applied);
-        self::assertSame(['payment_methods','recurrence_occurrences','recurrence_run_log','recurring_task_rule_versions','recurring_task_rules','schema_migrations','task_title_templates'], array_values(array_diff($afterTables,$beforeTables)));
+        self::assertSame(['20261118_001_catalogs','20261118_002_recurring_tasks','20261118_003_security_events'], $applied);
+        self::assertSame(['login_throttle','payment_methods','recurrence_occurrences','recurrence_run_log','recurring_task_rule_versions','recurring_task_rules','schema_migrations','security_events','task_title_templates'], array_values(array_diff($afterTables,$beforeTables)));
         self::assertSame(['payment_method_id INT(11) NULL','payment_method_label VARCHAR(100) NULL'], array_values(array_diff($afterSchema['columns']['tasks'], $beforeSchema['columns']['tasks'])));
         self::assertContains('idx_tasks_payment_method_id', array_diff($afterSchema['indexes']['tasks'], $beforeSchema['indexes']['tasks']));
         self::assertNotEmpty(array_diff(array_keys($afterSchema['foreign_keys']), array_keys($beforeSchema['foreign_keys'])));
