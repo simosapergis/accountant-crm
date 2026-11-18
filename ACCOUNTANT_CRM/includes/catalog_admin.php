@@ -125,8 +125,10 @@ function crm_catalog_render_list(string $kind, array $items): void
     $config = crm_catalog_config($kind);
     ?>
     <div class="page-container">
-        <h2><?= htmlspecialchars($config['plural_label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h2>
-        <p><a class="btn btn-primary" href="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">+ Νέα επιλογή</a></p>
+        <div class="catalog-list-heading">
+            <h2><?= htmlspecialchars($config['plural_label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h2>
+            <a class="btn btn-primary" href="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">+ Νέα επιλογή</a>
+        </div>
         <div class="table-wrapper">
             <table>
                 <thead><tr><th>Ονομασία</th><th>Κατάσταση</th><th>Ενέργειες</th></tr></thead>
@@ -153,24 +155,36 @@ function crm_catalog_render_form(string $kind, ?array $item, string $error, ?int
     ?>
     <div class="page-container">
         <h2><?= $item === null ? 'Νέα επιλογή' : 'Επεξεργασία επιλογής' ?>: <?= htmlspecialchars($config['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h2>
-        <?php if ($error !== ''): ?><div class="alert alert-danger" role="alert"><?= htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div><?php endif; ?>
+        <?php if ($error !== ''): ?><div class="alert alert-danger recurrence-error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div><?php endif; ?>
+        <section class="recurrence-card recurrence-editor catalog-editor">
         <form method="post" action="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">
             <?= $csrfField ?>
             <?php if ($item !== null): ?><input type="hidden" name="id" value="<?= (int)$item['id'] ?>"><?php endif; ?>
+            <div class="form-group">
             <label for="catalog-name">Ονομασία</label>
             <input id="catalog-name" name="name" type="text" maxlength="<?= (int)$config['max_length'] ?>" required value="<?= htmlspecialchars((string)($item['name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
-            <label><input type="checkbox" name="is_active" value="1" <?= $active ? 'checked' : '' ?>> Ενεργή</label>
-            <button class="btn btn-primary" type="submit" name="save_catalog" value="1">Αποθήκευση</button>
+            </div>
+            <div class="catalog-status">
+                <label class="recurrence-toggle" for="catalog-active">
+                    <input id="catalog-active" type="checkbox" name="is_active" value="1" <?= $active ? 'checked' : '' ?>>
+                    <span class="recurrence-toggle-copy"><strong>Ενεργή επιλογή</strong><span>Διαθέσιμη για επιλογή στις εργασίες. Η απενεργοποίηση διατηρεί τις υπάρχουσες καταχωρίσεις.</span></span>
+                </label>
+            </div>
+            <div class="recurrence-form-actions">
+                <a class="btn btn-secondary" href="<?= htmlspecialchars($config['plural_route'], ENT_QUOTES, 'UTF-8') ?>">Άκυρο</a>
+                <button class="btn btn-primary" type="submit" name="save_catalog" value="1">Αποθήκευση</button>
+            </div>
         </form>
         <?php if ($inactiveDuplicateId !== null): ?>
-            <form method="post" action="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">
+            <form class="catalog-reactivate" method="post" action="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">
                 <?= $csrfField ?>
                 <input type="hidden" name="name" value="<?= htmlspecialchars((string)($item['name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
                 <input type="hidden" name="reactivate_id" value="<?= $inactiveDuplicateId ?>">
                 <button class="btn btn-warning" type="submit" name="save_catalog" value="1">Επανενεργοποίηση υπάρχουσας επιλογής</button>
             </form>
         <?php endif; ?>
-        <p><a href="<?= htmlspecialchars($config['plural_route'], ENT_QUOTES, 'UTF-8') ?>">Επιστροφή στη λίστα</a></p>
+        </section>
+        <nav class="recurrence-back-links" aria-label="Επιστροφή"><a href="<?= htmlspecialchars($config['plural_route'], ENT_QUOTES, 'UTF-8') ?>"><span aria-hidden="true">←</span> Επιστροφή στη λίστα</a></nav>
     </div>
     <?php
 }

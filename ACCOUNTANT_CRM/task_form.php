@@ -429,12 +429,18 @@ function addClientToDropdown(id, name) {
         </div>
 
         <?php if (!$id): ?>
-        <div class="form-row" style="display:block;">
-            <label style="display:flex;align-items:center;gap:8px;">
-                <input id="enable-recurrence" type="checkbox" name="enable_recurrence" value="1" <?= $enableRecurrence ? 'checked' : '' ?>>
-                Να επαναλαμβάνεται κάθε μήνα
-            </label>
-            <div id="recurrence-settings" class="form-row" style="display:<?= $enableRecurrence ? 'flex' : 'none' ?>; margin-top:12px;">
+        <section class="recurrence-card" aria-labelledby="recurrence-heading">
+            <div class="recurrence-toggle-row">
+                <label class="recurrence-toggle" for="enable-recurrence">
+                    <input id="enable-recurrence" type="checkbox" name="enable_recurrence" value="1" <?= $enableRecurrence ? 'checked' : '' ?>>
+                    <span class="recurrence-toggle-copy">
+                        <strong id="recurrence-heading">Επανάληψη εργασίας κάθε μήνα</strong>
+                        <span>Δημιουργεί ξεχωριστή εργασία κάθε μήνα από την ημερομηνία έναρξης.</span>
+                    </span>
+                </label>
+                <span class="recurrence-badge">Προαιρετικό</span>
+            </div>
+            <div id="recurrence-settings" class="recurrence-settings" style="display:<?= $enableRecurrence ? 'grid' : 'none' ?>;">
                 <div class="form-group">
                     <label for="recurrence-day">Ημέρα μήνα (1-31)</label>
                     <input id="recurrence-day" type="number" name="recurrence_day" min="1" max="31" value="<?= htmlspecialchars($recurrenceDayInput, ENT_QUOTES, 'UTF-8') ?>">
@@ -448,7 +454,7 @@ function addClientToDropdown(id, name) {
                     <input id="recurrence-fee" type="text" name="recurrence_fee" value="<?= htmlspecialchars($recurrenceFeeInput, ENT_QUOTES, 'UTF-8') ?>">
                 </div>
             </div>
-        </div>
+        </section>
         <script>
             const recurrenceToggle = document.getElementById('enable-recurrence');
             const recurrenceSettings = document.getElementById('recurrence-settings');
@@ -456,7 +462,7 @@ function addClientToDropdown(id, name) {
             const recurringFeeInput = document.getElementById('recurrence-fee');
             let recurringFeeWasEdited = <?= isset($_POST['recurrence_fee']) ? 'true' : 'false' ?>;
             recurrenceToggle.addEventListener('change', () => {
-                recurrenceSettings.style.display = recurrenceToggle.checked ? 'flex' : 'none';
+                recurrenceSettings.style.display = recurrenceToggle.checked ? 'grid' : 'none';
             });
             recurringFeeInput.addEventListener('input', () => { recurringFeeWasEdited = true; });
             taskFeeInput.addEventListener('input', () => {

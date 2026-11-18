@@ -84,7 +84,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     } catch (Throwable $exception) {
-        $error = $exception->getMessage();
+        if ($restartId !== null && $exception instanceof mysqli_sql_exception && $exception->getCode() === 1062) {
+            $active = $mysqli->prepare("SELECT id FROM recurring_task_rules WHERE source_task_id=? AND state='active' LIMIT 1");
+            $sourceTaskId = $rule['source_task_id'] === null ? null : (int)$rule['source_task_id'];
+            if ($sourceTaskId !== null) {
+                $active->bind_param('i', $sourceTaskId);
+                $active->execute();
+                $activeRule = $active->get_result()->fetch_assoc();
+            }
+            if (!empty($activeRule['id'])) {
+                $error = 'Υπάρχει ήδη ενεργή επανάληψη για αυτή την εργασία. Μπορείτε να ανοίξετε τις ρυθμίσεις της.';
+                $existingActiveRuleId = (int)$activeRule['id'];
+            } else {
+                $error = 'Δεν ήταν δυνατή η επανέναρξη επειδή υπάρχει ήδη ενεργός κανόνας. Ανανεώστε τη σελίδα και ελέγξτε τις επαναλαμβανόμενες εργασίες.';
+            }
+        } else {
+            $error = $exception->getMessage();
+        }
     }
     if ($ruleId !== null) {
         $refresh = $mysqli->prepare('SELECT * FROM recurring_task_rules WHERE id=?');
@@ -99,37 +115,41 @@ require __DIR__ . '/includes/header.php';
 ?>
 <div class="page-container">
     <h2><?= $taskId !== null ? 'Νέα μηνιαία επανάληψη' : ($restartId !== null ? 'Επανέναρξη επανάληψης' : 'Ρυθμίσεις επανάληψης') ?></h2>
-    <?php if ($error !== ''): ?><div class="alert alert-danger" role="alert"><?= htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div><?php endif; ?>
+    <?php if ($error !== ''): ?><div class="alert alert-danger recurrence-error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?><?php if (!empty($existingActiveRuleId)): ?> <a class="recurrence-alert-link" href="recurring_task_form.php?id=<?= $existingActiveRuleId ?>">Άνοιγμα ενεργών ρυθμίσεων</a><?php endif; ?></div><?php endif; ?>
     <?php if ($notice !== ''): ?><div class="alert alert-success" role="status"><?= htmlspecialchars($notice, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div><?php endif; ?>
     <?php if ($taskId !== null && $task !== null): ?>
-        <p><?= htmlspecialchars((string)$task['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
-        <form method="post">
+        <section class="recurrence-card recurrence-editor">
+        <p class="recurrence-context"><?= htmlspecialchars((string)$task['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
+        <form method="post" class="recurrence-form">
             <?= csrf_field() ?>
-            <label for="day-of-month">Ημέρα μήνα (1-31)</label><input id="day-of-month" type="number" name="day_of_month" min="1" max="31" required value="<?= (int)substr((string)$task['task_date'], 8, 2) ?>">
-            <label for="start-month">Μήνας έναρξης</label><input id="start-month" type="month" name="start_month" min="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>">
-            <label for="recurring-fee">Επαναλαμβανόμενη αμοιβή (€)</label><input id="recurring-fee" type="text" name="fee" required value="<?= htmlspecialchars(crm_money_input_value((string)$task['fee']), ENT_QUOTES, 'UTF-8') ?>">
-            <button class="btn btn-primary" type="submit" name="save_new_rule" value="1">Ενεργοποίηση</button>
+            <div class="recurrence-fields">
+                <div class="form-group"><label for="day-of-month">Ημέρα μήνα</label><input id="day-of-month" type="number" name="day_of_month" min="1" max="31" required value="<?= (int)substr((string)$task['task_date'], 8, 2) ?>"><small>Αν λείπει από τον μήνα, επιλέγεται η τελευταία ημέρα.</small></div>
+                <div class="form-group"><label for="start-month">Μήνας έναρξης</label><input id="start-month" type="month" name="start_month" min="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>"></div>
+                <div class="form-group"><label for="recurring-fee">Επαναλαμβανόμενη αμοιβή (€)</label><input id="recurring-fee" type="text" name="fee" required value="<?= htmlspecialchars(crm_money_input_value((string)$task['fee']), ENT_QUOTES, 'UTF-8') ?>"></div>
+            </div>
+            <div class="recurrence-form-actions"><a href="task_form.php?id=<?= (int)$taskId ?>" class="btn btn-secondary">Άκυρο</a><button class="btn btn-primary" type="submit" name="save_new_rule" value="1">Ενεργοποίηση επανάληψης</button></div>
         </form>
+        </section>
     <?php elseif ($restartId !== null && $rule !== null): ?>
-        <p>Νέος κανόνας από <?= htmlspecialchars((string)$rule['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>. Το διάστημα διακοπής δεν αναπληρώνεται.</p>
-        <form method="post">
+        <section class="recurrence-card recurrence-editor"><p class="recurrence-context">Νέος κανόνας από <strong><?= htmlspecialchars((string)$rule['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></strong>. Το διάστημα διακοπής δεν αναπληρώνεται.</p>
+        <form method="post" class="recurrence-form">
             <?= csrf_field() ?>
-            <label for="start-month">Μήνας έναρξης</label><input id="start-month" type="month" name="start_month" min="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>">
-            <button class="btn btn-primary" type="submit" name="restart_rule" value="1">Επανέναρξη ως νέος κανόνας</button>
-        </form>
+            <div class="recurrence-fields recurrence-fields-single"><div class="form-group"><label for="start-month">Μήνας έναρξης</label><input id="start-month" type="month" name="start_month" min="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>" required value="<?= htmlspecialchars(substr($minimumMonth, 0, 7), ENT_QUOTES, 'UTF-8') ?>"></div></div>
+            <div class="recurrence-form-actions"><a href="recurring_tasks.php" class="btn btn-secondary">Άκυρο</a><button class="btn btn-primary" type="submit" name="restart_rule" value="1">Επανέναρξη ως νέος κανόνας</button></div>
+        </form></section>
     <?php elseif ($rule !== null && $rule['state'] === 'active'): ?>
-        <p><?= htmlspecialchars((string)$rule['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> · Έναρξη <?= htmlspecialchars(substr((string)$rule['start_month'], 0, 7), ENT_QUOTES, 'UTF-8') ?></p>
-        <form method="post">
+        <section class="recurrence-card recurrence-editor">
+        <header class="recurrence-rule-header"><div><h3><?= htmlspecialchars((string)$rule['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h3><p>Ενεργή μηνιαία επανάληψη</p></div><span class="recurrence-badge">Έναρξη <?= htmlspecialchars(substr((string)$rule['start_month'], 0, 7), ENT_QUOTES, 'UTF-8') ?></span></header>
+        <form method="post" class="recurrence-form">
             <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$rule['id'] ?>"><input type="hidden" name="row_version" value="<?= (int)$rule['row_version'] ?>">
-            <label for="day-of-month">Ημέρα μήνα (1-31)</label><input id="day-of-month" type="number" name="day_of_month" min="1" max="31" required value="<?= (int)$rule['day_of_month'] ?>">
-            <label for="recurring-fee">Επαναλαμβανόμενη αμοιβή (€)</label><input id="recurring-fee" type="text" name="fee" required value="<?= htmlspecialchars(crm_money_input_value((string)$rule['fee']), ENT_QUOTES, 'UTF-8') ?>">
-            <button class="btn btn-primary" type="submit" name="save_rule" value="1">Αποθήκευση ρυθμίσεων</button>
+            <div class="recurrence-fields recurrence-fields-active"><div class="form-group"><label for="day-of-month">Ημέρα μήνα</label><input id="day-of-month" type="number" name="day_of_month" min="1" max="31" required value="<?= (int)$rule['day_of_month'] ?>"><small>Σε μικρότερο μήνα, χρησιμοποιείται η τελευταία ημέρα.</small></div><div class="form-group"><label for="recurring-fee">Επαναλαμβανόμενη αμοιβή (€)</label><input id="recurring-fee" type="text" name="fee" required value="<?= htmlspecialchars(crm_money_input_value((string)$rule['fee']), ENT_QUOTES, 'UTF-8') ?>"></div></div>
+            <div class="recurrence-form-actions"><button class="btn btn-primary" type="submit" name="save_rule" value="1">Αποθήκευση ρυθμίσεων</button></div>
         </form>
-        <form method="post" style="margin-top:12px;">
+        <form method="post" class="recurrence-stop-form">
             <?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$rule['id'] ?>"><input type="hidden" name="row_version" value="<?= (int)$rule['row_version'] ?>">
-            <button class="btn btn-danger" type="submit" name="stop_rule" value="1">Άμεση διακοπή επανάληψης</button>
-        </form>
+            <span>Η διακοπή ακυρώνει τις μελλοντικές εργασίες που δεν έχουν δημιουργηθεί.</span><button class="btn btn-danger" type="submit" name="stop_rule" value="1">Διακοπή επανάληψης</button>
+        </form></section>
     <?php endif; ?>
-    <p><a href="recurring_tasks.php">Επαναλαμβανόμενες εργασίες</a> · <a href="tasks.php">Εργασίες</a></p>
+    <nav class="recurrence-back-links" aria-label="Σχετικές σελίδες"><a href="recurring_tasks.php"><span aria-hidden="true">←</span> Επαναλαμβανόμενες εργασίες</a><a href="tasks.php"><span aria-hidden="true">↗</span> Εργασίες</a></nav>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

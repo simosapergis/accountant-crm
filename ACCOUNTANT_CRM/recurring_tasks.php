@@ -24,7 +24,7 @@ require __DIR__ . '/includes/header.php';
                 <td><?= (int)$rule['day_of_month'] ?></td>
                 <td><?= htmlspecialchars(substr((string)$rule['start_month'], 0, 7), ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= formatMoney($rule['fee']) ?></td>
-                <td><?= $rule['state'] === 'active' ? 'Ενεργός' : 'Σταματημένος' ?></td>
+                <td><?= $rule['state'] === 'active' ? 'Ενεργός' : 'Σταματημένη' ?></td>
                 <td><?= (int)$rule['occurrence_count'] ?></td>
                 <td><a class="btn btn-secondary" href="recurring_task_form.php?<?= $rule['state'] === 'active' ? 'id' : 'restart_id' ?>=<?= (int)$rule['id'] ?>"><?= $rule['state'] === 'active' ? 'Ρυθμίσεις' : 'Επανέναρξη' ?></a></td>
             </tr>
