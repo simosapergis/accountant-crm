@@ -14,7 +14,8 @@ Representative mobile browser inspection at `/crm/` covered login, dashboard/nav
 The recurring-task empty screen has an unexplained blank rounded panel; recorded as a visible UI issue for review, with no change made.
 Independent read-only review of exact commit `df84d7bd56b1b039be62f73a7861985e9bbc780f` found no new critical or high security issue and confirmed the route count, role regression and test evidence.
 The reviewer did not approve G01 because the recurring-task empty screen still has an unexplained blank panel.
-G01 remains `NOT_EVALUATED` until that UI issue is resolved and the resulting exact code state is reviewed.
+The user chose to leave the UI unchanged and keep the issue documented.
+G01 remains `NOT_EVALUATED`; the observed issue prevents a gate pass under the independent review criteria.
 No deployment or production access occurred.
 
 ### G01 baseline evaluation - 18 November 2026

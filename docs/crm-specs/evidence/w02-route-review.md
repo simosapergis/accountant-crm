@@ -123,3 +123,4 @@ The independent read-only review checked exact commit `df84d7bd56b1b039be62f73a7
 It confirmed the 33-route inventory, the admin-role task/recurrence regression, and the recorded focused and full-suite results.
 The reviewer did not approve G01 because the recurring-task empty screen has an unexplained blank panel and remains an open UI issue.
 G01 remains `NOT_EVALUATED` until that issue is resolved and the exact final state is reviewed.
+On 18 November 2026, the user asked to leave the UI unchanged and keep the issue documented.
