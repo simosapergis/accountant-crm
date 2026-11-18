@@ -1,7 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once "../includes/db.php";
+require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/pdf.php';
 
 
@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/includes/pdf.php';
 // -------------------------------------------------------------
 // ΦΙΛΤΡΑ
 // -------------------------------------------------------------
-$activeOnly = crm_export_string_filter('active', crm_export_string_filter('is_active'));
+$activeOnly = crm_export_string_filter('active', crm_export_string_filter('is_active', '1'));
 $vatFilter  = crm_export_string_filter('vat', crm_export_string_filter('has_vat'));
 $vatType    = crm_export_string_filter('vat_type');
 $payroll    = crm_export_string_filter('payroll');
@@ -17,8 +17,14 @@ $payroll    = crm_export_string_filter('payroll');
 // -------------------------------------------------------------
 // WHERE
 // -------------------------------------------------------------
+$search = crm_export_string_filter('search');
 $conditions = [];
 $params = [];
+if ($search !== '') {
+    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
+    $params[] = '%' . $search . '%';
+    $params[] = '%' . $search . '%';
+}
 
 if ($activeOnly === "1") {
     $conditions[] = 'is_active = 1';
@@ -37,9 +43,9 @@ if ($vatType !== "") {
     $params[] = $vatType;
 }
 
-if ($payroll === "yes") {
+if ($payroll === "yes" || $payroll === "1") {
     $conditions[] = 'has_payroll = 1';
-} elseif ($payroll === "no") {
+} elseif ($payroll === "no" || $payroll === "0") {
     $conditions[] = 'has_payroll = 0';
 }
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
@@ -86,6 +92,7 @@ $html = '
         border: 1px solid #999;
         font-size: 12px;
     }
+    td:first-child { white-space: nowrap; }
     td {
         padding: 6px;
         border: 1px solid #ccc;

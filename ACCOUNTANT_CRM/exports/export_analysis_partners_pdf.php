@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once '../includes/db.php';
-require_once '../includes/functions.php';
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
 
 
 $partner_id = crm_export_optional_id('partner_id');
@@ -97,9 +97,9 @@ $total_collected = 0;
     ?>
         <tr>
             <td><?= greekDateFromDb($row['task_date']) ?></td>
-            <td><?= htmlspecialchars($row['title']) ?></td>
-            <td><?= htmlspecialchars($row['client_name']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
+            <td><?= htmlspecialchars((string)($row['title'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($row['client_name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($row['status'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= number_format($row['fee'], 2, ',', '.') ?> €</td>
             <td><?= number_format($row['collected'], 2, ',', '.') ?> €</td>
             <td><?= htmlspecialchars((string)($row['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
@@ -110,9 +110,10 @@ $total_collected = 0;
     <tfoot>
         <?php $final_balance = $total_fee - $total_collected; ?>
         <tr>
-            <td colspan="5">Σύνολα</td>
+            <td colspan="4">Σύνολα</td>
             <td><?= number_format($total_fee, 2, ',', '.') ?> €</td>
             <td><?= number_format($total_collected, 2, ',', '.') ?> €</td>
+            <td></td>
             <td><?= number_format($final_balance, 2, ',', '.') ?> €</td>
         </tr>
     </tfoot>

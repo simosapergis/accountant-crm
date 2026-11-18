@@ -49,7 +49,7 @@ async function runCheck(name, check) {
       assert.equal(await page.locator('body').innerText().then((text) => text.includes('Notice: session_start')), false);
 
       const logoutNavigation = page.waitForNavigation();
-      await page.locator('form[action="logout.php"] button[type="submit"]').first().click();
+      await page.locator('form[action$="/logout.php"] button[type="submit"]').first().click();
       const logoutResponse = await logoutNavigation;
       assert.equal(logoutResponse.status(), 200);
       assert.equal(page.url(), `${baseUrl}/login.php`);

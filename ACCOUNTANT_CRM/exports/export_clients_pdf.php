@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once '../includes/db.php';
-require_once '../includes/functions.php';
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
 
 
 $search = crm_export_string_filter('search');
@@ -13,8 +13,9 @@ $conditions = [];
 $params = [];
 
 if ($search !== '') {
-    $conditions[] = 'c.name LIKE ?';
-    $params[] = '%' . $search . '%';
+    $conditions[] = '(c.name LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+    $pattern = '%' . $search . '%';
+    array_push($params, $pattern, $pattern, $pattern, $pattern);
 }
 
 if ($category !== '') {
@@ -87,11 +88,11 @@ $res = $stmt->get_result();
         $total_col += $c['total_collected'];
     ?>
         <tr>
-            <td><?= htmlspecialchars($c['name']) ?></td>
-            <td><?= htmlspecialchars($c['afm']) ?></td>
-            <td><?= htmlspecialchars($c['category']) ?></td>
-            <td><?= htmlspecialchars($c['phone']) ?></td>
-            <td><?= htmlspecialchars($c['email']) ?></td>
+            <td><?= htmlspecialchars((string)($c['name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($c['afm'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($c['category'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($c['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($c['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= formatMoney($c['total_fees']) ?></td>
             <td><?= formatMoney($c['total_collected']) ?></td>
             <td><?= formatMoney($balance) ?></td>

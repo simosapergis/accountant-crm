@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once '../includes/db.php';
-require_once '../includes/functions.php';
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
 
 
 $search     = crm_export_string_filter('search');

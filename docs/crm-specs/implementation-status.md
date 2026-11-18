@@ -1,5 +1,19 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W08 local closeout - 18 November 2026
+
+W08 is `DONE_LOCAL` on `codex/crm-remaining-tasks`, based on `948b24d` plus the current uncommitted fixes.
+All eight export routes, Greek PDF, valid and invalid imports, nested navigation, session startup and rendered deletion flow pass their local checks.
+Full fresh native suite: PASS, 159 tests / 998 assertions.
+Browser checks: PASS, 7 checks on loopback HTTP under `/crm/`; this is not production HTTPS verification.
+PHP lint: PASS, 79 application/test files; whitespace check: PASS with the existing CRLF convention.
+Composer audit: no advisories; PHP 8.3.36 platform requirements pass.
+See [W08 closeout evidence](evidence/w08-closeout.md) for commands, RED/GREEN and acceptance mapping.
+The earlier manual test database was preserved after its active recurrence caused global scheduler count interference; the final suite used a fresh disposable schema and fictional fixtures.
+Next: separately evaluate G01 with independent review; G01 remains `NOT_EVALUATED`.
+No new commit, push or deployment was performed.
+
+
 ### Collaborator creation regression - 18 November 2026
 
 Fixed new collaborator creation in `partner_form.php`.
@@ -179,7 +193,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
 | W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
-| W08 | IN_PROGRESS | See current W08 checkpoint above; AT-47 PDF regression reproduced RED. |
+| W08 | DONE_LOCAL | AT-05/18/47 local checks pass; see [W08 evidence](evidence/w08-closeout.md). |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
 | W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |

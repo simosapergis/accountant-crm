@@ -4,18 +4,21 @@ Use this file to record issues found during development, their impact, and their
 
 ## Open
 
+No currently open entries in this tracker.
+See implementation-status.md for outstanding acceptance and review work.
+
+## Resolved
+
 ### Session is started twice on the home page
 
-- **Status:** Open
+- **Status:** Resolved locally (W02/W08)
 - **Observed:** 2026-11-15
 - **Page:** Home page (`/` / `index.php`)
 - **Error:** `Notice: session_start(): Ignoring session_start() because a session is already active in /var/www/html/includes/header.php on line 3`
 - **Cause:** `index.php` loads `includes/auth.php`, which starts the session; it then loads `includes/header.php`, which calls `session_start()` again.
 - **Affected files:** `ACCOUNTANT_CRM/includes/auth.php`, `ACCOUNTANT_CRM/includes/header.php`
 - **Proposed resolution:** Start the session in one shared authentication/bootstrap location only. Remove session startup from the header, or guard it with `session_status() === PHP_SESSION_NONE`.
-- **Verification:** Load the home page while authenticated and confirm the notice is absent.
-
-## Resolved
+- **Verification:** Authenticated home browser check and nested import HTTP regression pass without session notices; see `docs/crm-specs/evidence/w08-closeout.md`.
 
 ### Null collaborator name caused an `htmlspecialchars()` deprecation warning
 

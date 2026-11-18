@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once "../includes/db.php";
-require_once "../vendor/autoload.php"; // PhpSpreadsheet
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php'; // PhpSpreadsheet
 
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 /* -------------------------------------------------------------
    ΔΙΑΒΑΣΗ ΦΙΛΤΡΩΝ ΑΠΟ ΤΟ index.php
 -------------------------------------------------------------- */
-$activeOnly = crm_export_string_filter('active', crm_export_string_filter('is_active'));
+$activeOnly = crm_export_string_filter('active', crm_export_string_filter('is_active', '1'));
 $vatFilter  = crm_export_string_filter('vat', crm_export_string_filter('has_vat'));
 $vatType    = crm_export_string_filter('vat_type');
 $payroll    = crm_export_string_filter('payroll');
@@ -20,8 +20,14 @@ $payroll    = crm_export_string_filter('payroll');
 /* -------------------------------------------------------------
    ΧΤΙΖΟΥΜΕ ΤΟ WHERE
 -------------------------------------------------------------- */
+$search = crm_export_string_filter('search');
 $conditions = [];
 $params = [];
+if ($search !== '') {
+    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
+    $params[] = '%' . $search . '%';
+    $params[] = '%' . $search . '%';
+}
 
 if ($activeOnly === "1") {
     $conditions[] = 'is_active = 1';
@@ -40,9 +46,9 @@ if ($vatType !== "") {
     $params[] = $vatType;
 }
 
-if ($payroll === "yes") {
+if ($payroll === "yes" || $payroll === "1") {
     $conditions[] = 'has_payroll = 1';
-} elseif ($payroll === "no") {
+} elseif ($payroll === "no" || $payroll === "0") {
     $conditions[] = 'has_payroll = 0';
 }
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';

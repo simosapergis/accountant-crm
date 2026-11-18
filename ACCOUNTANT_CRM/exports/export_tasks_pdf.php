@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once '../includes/db.php';
-require_once '../includes/functions.php';
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
 
 
 // Φίλτρα (ίδια λογική με tasks.php)
@@ -11,6 +11,9 @@ $status     = crm_export_string_filter('status');
 $client_id  = crm_export_optional_id('client');
 $partner_id = crm_export_optional_id('partner');
 
+$date_range_type = crm_export_string_filter('date_range_type');
+$date_from = crm_export_string_filter('date_from');
+$date_to = crm_export_string_filter('date_to');
 $conditions = [];
 $params = [];
 
@@ -32,6 +35,20 @@ if ($client_id !== null) {
 if ($partner_id !== null) {
     $conditions[] = 't.partner_id = ?';
     $params[] = $partner_id;
+}
+// Ημερομηνίες
+if ($date_range_type == "today") {
+    $conditions[] = 't.task_date = CURDATE()';
+} elseif ($date_range_type == "this_week") {
+    $conditions[] = 'YEARWEEK(t.task_date, 1) = YEARWEEK(CURDATE(), 1)';
+} elseif ($date_range_type == "this_month") {
+    $conditions[] = 'MONTH(t.task_date)=MONTH(CURDATE()) AND YEAR(t.task_date)=YEAR(CURDATE())';
+} elseif ($date_range_type == "prev_month") {
+    $conditions[] = 'MONTH(t.task_date)=MONTH(CURDATE() - INTERVAL 1 MONTH) AND YEAR(t.task_date)=YEAR(CURDATE() - INTERVAL 1 MONTH)';
+} elseif ($date_range_type == "custom" && $date_from && $date_to) {
+    $conditions[] = 't.task_date BETWEEN ? AND ?';
+    $params[] = $date_from;
+    $params[] = $date_to;
 }
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
@@ -92,10 +109,10 @@ $res = $stmt->get_result();
     ?>
         <tr>
             <td><?= greekDateFromDb($row['task_date']) ?></td>
-            <td><?= htmlspecialchars($row['title']) ?></td>
-            <td><?= htmlspecialchars($row['client_name']) ?></td>
-            <td><?= htmlspecialchars($row['partner_name']) ?></td>
-            <td><?= htmlspecialchars($row['status']) ?></td>
+            <td><?= htmlspecialchars((string)($row['title'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($row['client_name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($row['partner_name'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+            <td><?= htmlspecialchars((string)($row['status'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= number_format($row['fee'], 2, ',', '.') ?> €</td>
             <td><?= number_format($row['collected'], 2, ',', '.') ?> €</td>
             <td><?= htmlspecialchars((string)($row['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
@@ -106,9 +123,10 @@ $res = $stmt->get_result();
 
     <tfoot>
         <tr>
-            <td colspan="6" style="font-weight:bold;">Σύνολα</td>
+            <td colspan="5" style="font-weight:bold;">Σύνολα</td>
             <td><?= number_format($sum_fee, 2, ',', '.') ?> €</td>
             <td><?= number_format($sum_collected, 2, ',', '.') ?> €</td>
+            <td></td>
             <td><?= number_format($sum_fee - $sum_collected, 2, ',', '.') ?> €</td>
         </tr>
     </tfoot>

@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
-require_once "../includes/db.php";
-require_once "../includes/functions.php";
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
 
 
 $partner_id = crm_export_optional_id('partner_id');
@@ -76,9 +76,10 @@ $final_balance = $total_fee - $total_collected;
 
 echo "
 <tr style='font-weight:bold; background:#f0f0f0;'>
-    <td colspan='5'>Σύνολα</td>
+    <td colspan='4'>Σύνολα</td>
     <td>".number_format($total_fee,2,',','.')."</td>
     <td>".number_format($total_collected,2,',','.')."</td>
+    <td></td>
     <td>".number_format($final_balance,2,',','.')."</td>
 </tr>
 </table>";

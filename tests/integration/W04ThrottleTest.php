@@ -11,7 +11,7 @@ final class W04ThrottleTest extends TestCase
     {
         $this->db = new mysqli((string)getenv('DB_HOST'), (string)getenv('DB_USER'), (string)getenv('DB_PASSWORD'), (string)getenv('DB_NAME'));
         self::assertSame(CRM_TEST_DATABASE, $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
-        self::assertSame('crm_test_native_20261118', CRM_TEST_DATABASE);
+        self::assertTrue(CRM_TEST_DB_SAFE);
         $this->db->query('DELETE FROM login_throttle');
         $this->db->query('DELETE FROM security_events');
     }

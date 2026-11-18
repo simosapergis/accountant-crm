@@ -13,7 +13,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <!-- Global CSS -->
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/assets/style.css">
 
     <style>
         body {
@@ -165,17 +165,17 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
 
         <!-- DESKTOP MENU -->
         <nav class="menu-links">
-            <a href="index.php" class="<?= $pageTitle=='Αρχική' ? 'active':'' ?>">Αρχική</a>
-            <a href="tasks.php" class="<?= $pageTitle=='Εργασίες' ? 'active':'' ?>">Εργασίες</a>
-            <a href="recurring_tasks.php" class="<?= $pageTitle=='Επαναλαμβανόμενες εργασίες' ? 'active':'' ?>">Επαναλήψεις</a>
-            <a href="clients.php" class="<?= $pageTitle=='Πελάτες' ? 'active':'' ?>">Πελάτες</a>
-            <a href="partners.php" class="<?= $pageTitle=='Συνεργάτες' ? 'active':'' ?>">Συνεργάτες</a>
-            <a href="calendar.php" class="<?= $pageTitle=='Ημερολόγιο Εργασιών' ? 'active':'' ?>">Ημερολόγιο</a>
-            <a href="active_professionals.php" class="<?= $pageTitle=='Ενεργοί Επαγγελματίες' ? 'active':'' ?>">Ενεργοί Επαγγελματίες</a>
-                <a href="mydiary.php" class="<?= $pageTitle=='MyDiary' ? 'active':'' ?>">MyDiary</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/index.php" class="<?= $pageTitle=='Αρχική' ? 'active':'' ?>">Αρχική</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/tasks.php" class="<?= $pageTitle=='Εργασίες' ? 'active':'' ?>">Εργασίες</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/recurring_tasks.php" class="<?= $pageTitle=='Επαναλαμβανόμενες εργασίες' ? 'active':'' ?>">Επαναλήψεις</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/clients.php" class="<?= $pageTitle=='Πελάτες' ? 'active':'' ?>">Πελάτες</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/partners.php" class="<?= $pageTitle=='Συνεργάτες' ? 'active':'' ?>">Συνεργάτες</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/calendar.php" class="<?= $pageTitle=='Ημερολόγιο Εργασιών' ? 'active':'' ?>">Ημερολόγιο</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/active_professionals.php" class="<?= $pageTitle=='Ενεργοί Επαγγελματίες' ? 'active':'' ?>">Ενεργοί Επαγγελματίες</a>
+                <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/mydiary.php" class="<?= $pageTitle=='MyDiary' ? 'active':'' ?>">MyDiary</a>
             <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
-                <a href="payment_methods.php" class="<?= $pageTitle=='Μέσα είσπραξης' ? 'active':'' ?>">Μέσα είσπραξης</a>
-                <a href="task_titles.php" class="<?= $pageTitle=='Τίτλοι εργασιών' ? 'active':'' ?>">Τίτλοι εργασιών</a>
+                <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/payment_methods.php" class="<?= $pageTitle=='Μέσα είσπραξης' ? 'active':'' ?>">Μέσα είσπραξης</a>
+                <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/task_titles.php" class="<?= $pageTitle=='Τίτλοι εργασιών' ? 'active':'' ?>">Τίτλοι εργασιών</a>
             <?php endif; ?>
 
         </nav>
@@ -183,7 +183,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         <!-- USER (desktop) -->
         <div class="menu-user">
             Συνδεδεμένος ως: <b><?= htmlspecialchars((string)$_SESSION['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></b> |
-            <form action="logout.php" method="post" style="display:inline;">
+            <form action="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/logout.php" method="post" style="display:inline;">
                 <?= csrf_field() ?>
                 <button type="submit" style="padding:0;border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;">Αποσύνδεση</button>
             </form>
@@ -197,22 +197,22 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
     <!-- MOBILE MENU (drawer) -->
     <div class="mobile-menu" id="mobileMenu">
 
-        <a href="index.php">Αρχική</a>
-        <a href="tasks.php">Εργασίες</a>
-        <a href="recurring_tasks.php">Επαναλήψεις</a>
-        <a href="clients.php">Πελάτες</a>
-        <a href="partners.php">Συνεργάτες</a>
-        <a href="calendar.php">Ημερολόγιο</a>
-        <a href="active_professionals.php">Ενεργοί Επαγγελματίες</a>
-        <a href="mydiary.php">MyDiary</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/index.php">Αρχική</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/tasks.php">Εργασίες</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/recurring_tasks.php">Επαναλήψεις</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/clients.php">Πελάτες</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/partners.php">Συνεργάτες</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/calendar.php">Ημερολόγιο</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/active_professionals.php">Ενεργοί Επαγγελματίες</a>
+        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/mydiary.php">MyDiary</a>
         <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
-            <a href="payment_methods.php">Μέσα είσπραξης</a>
-            <a href="task_titles.php">Τίτλοι εργασιών</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/payment_methods.php">Μέσα είσπραξης</a>
+            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/task_titles.php">Τίτλοι εργασιών</a>
         <?php endif; ?>
         <div class="mobile-user-box">
             Συνδεδεμένος ως:<br>
             <b><?= htmlspecialchars((string)$_SESSION['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></b><br>
-            <form action="logout.php" method="post">
+            <form action="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/logout.php" method="post">
                 <?= csrf_field() ?>
                 <button type="submit" style="padding:0;border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;">Αποσύνδεση</button>
             </form>

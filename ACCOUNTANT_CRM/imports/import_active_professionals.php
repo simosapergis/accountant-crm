@@ -1,7 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/includes/auth.php';
-require_once "../includes/db.php";
-require_once "../vendor/autoload.php"; // PhpSpreadsheet
+require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php'; // PhpSpreadsheet
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -34,7 +34,7 @@ function importIniSizeBytes(string $value): int
 function convertDateExcelToDb($value)
 {
     // Κενό → επιστροφή κενό
-    if (trim($value) === "") return "";
+    if (trim($value) === "") return null;
 
     // Αν είναι ήδη YYYY-MM-DD
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
@@ -132,7 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 'start_date' => convertDateExcelToDb(trim((string)($rows[$i]['D'] ?? ''))),
                                 'end_date' => convertDateExcelToDb(trim((string)($rows[$i]['E'] ?? ''))),
                                 'has_vat' => strtoupper(trim((string)($rows[$i]['F'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
-                                'vat_type' => trim((string)($rows[$i]['G'] ?? '')),
+                                'vat_type' => trim((string)($rows[$i]['G'] ?? '')) ?: null,
                                 'has_payroll' => strtoupper(trim((string)($rows[$i]['H'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
                             ];
                         }
@@ -181,7 +181,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-require "../includes/header.php";
+require dirname(__DIR__) . '/includes/header.php';
 ?>
 
 <div class="page-container">
@@ -225,7 +225,7 @@ require "../includes/header.php";
 
 </div>
 
-<?php require "../includes/footer.php"; ?>
+<?php require dirname(__DIR__) . '/includes/footer.php'; ?>
 
 <?php
 // Σωστό redirect μετά από 2''
