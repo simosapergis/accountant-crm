@@ -1,5 +1,22 @@
 # G01 baseline evaluation
 
+## Current re-evaluation - 18 November 2026
+
+Reviewed code: `251a35c1251c4307f81afe6b6a9300fd9db5c1e7` on `codex/crm-remaining-tasks`.
+Result: `NOT_EVALUATED` pending the required human inspection of key application layouts.
+
+- The current source review reconciles all 33 HTTP entrypoints with authentication, role, CSRF, ownership, SQL, output and private-file evidence in [W02 route review](w02-route-review.md).
+- The logout issue, recurrence empty state and desktop header overflow are fixed with HTTP/browser regression coverage.
+- Full guarded PHPUnit suite: PASS, 162 tests / 1,024 assertions on `crm_test_w08_closeout_20261118`.
+- Browser E2E suite: PASS, 8 checks, including compact and desktop header layouts and protected login/logout flows.
+- PHP syntax checks and CRLF-aware `git diff --check` passed.
+- Independent read-only review of the exact commit found no new critical/high security issue and confirmed the empty-state, header and test-isolation changes.
+- Agent browser inspection covered the recurring empty state and the compact header at `/crm/`; the 1600-pixel header geometry is checked by Playwright.
+  A human has not yet inspected and accepted these resulting layouts, as required by AT-50 and G01.
+
+No production or hosting checks were performed.
+Do not mark G01 PASS until the human layout inspection is recorded against this exact commit.
+
 Date: 18 November 2026.
 Reviewed code: `c9652a7` on `codex/crm-remaining-tasks`.
 Result: `NOT_PASS`.

@@ -8,7 +8,8 @@ The header now accounts for its horizontal padding, uses a compact hamburger nav
 The browser regression verifies no horizontal overflow, account/logout access through the compact menu, and the full desktop account block within a 1600-pixel viewport.
 The E2E suite passed all 8 checks, and the full guarded PHP suite passed with 162 tests / 1,024 assertions.
 Manual browser inspection at 1280 pixels showed the hamburger menu and full account name in its drawer; the 1600-pixel geometry is checked by Playwright.
-An independent review of the final header state is pending; G01 remains `NOT_EVALUATED` until that review and exact commit record.
+Independent review of exact commit `251a35c1251c4307f81afe6b6a9300fd9db5c1e7` found no new critical/high security issue and confirmed the responsive header and recurrence test setup.
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts.
 
 ### G01 re-review follow-up - 18 November 2026
 
@@ -16,7 +17,8 @@ The independent review of `51f2100ad85a4166c145a2cb5b989d2ebc87c955` confirmed t
 It flagged that recurrence tests require a clean schema; that precondition is now explicit in the test and `tests/README.md`.
 After this clarification, focused `W06RecurringTasksTest` passes with 19 tests / 138 assertions and the full guarded suite passes with 162 tests / 1,024 assertions.
 The reviewer also noted the authenticated username was clipped in the desktop header; this was subsequently fixed with user authorization as recorded above.
-G01 remains `NOT_EVALUATED` pending a final review of the exact committed state and resolution or disposition of the header issue.
+The final review of that fix is recorded in [W02 route review](evidence/w02-route-review.md).
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts.
 
 ### Recurring-task empty-state fix - 18 November 2026
 
@@ -25,10 +27,10 @@ Reproduced the empty recurring list in the authenticated browser at `/crm/recurr
 Added `W06RecurringTasksTest::testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule`; its pre-fix HTTP run failed because the empty page had no guidance or create action.
 The page now shows an accessible empty-state message explaining that a new task can enable monthly recurrence, plus a `Δημιουργία εργασίας` action leading to the existing task form.
 The non-empty list continues to render rule rows, covered by the existing recurrence HTTP test.
-Focused `W06RecurringTasksTest`: PASS, 19 tests / 137 assertions; full guarded PHPUnit suite: PASS, 162 tests / 1,023 assertions.
+Focused `W06RecurringTasksTest`: PASS, 19 tests / 138 assertions; full guarded PHPUnit suite: PASS, 162 tests / 1,024 assertions.
 Browser verification confirmed the empty-state layout and that its action opens the new-task form with the recurrence control.
-The desktop screenshot also shows the authenticated username clipped at the right edge of the navigation; this separate issue is recorded and remains unchanged.
-G01 remains `NOT_EVALUATED` pending an independent review of the exact resulting commit; no production or hosting access occurred.
+The desktop screenshot also showed the authenticated username clipped at the right edge of the navigation; this was fixed with user authorization in commit `251a35c`.
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts; no production or hosting access occurred.
 
 ### G01 follow-up review - 18 November 2026
 

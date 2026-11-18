@@ -132,7 +132,7 @@ The empty state was reproduced in the authenticated browser with zero recurring 
 The new regression `W06RecurringTasksTest::testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule` failed before the fix because the response had no empty-state guidance or create action.
 The page now replaces the empty table with a labeled empty-state section that explains how to create the first recurring rule and links to the task form, where monthly recurrence can be enabled.
 The existing recurring-rule creation test now also verifies that the non-empty list still displays its rule and does not show the empty-state message.
-Focused `W06RecurringTasksTest` passed with 19 tests / 137 assertions; the full guarded PHPUnit suite passed with 162 tests / 1,023 assertions.
+Focused `W06RecurringTasksTest` passed with 19 tests / 138 assertions; the full guarded PHPUnit suite passed with 162 tests / 1,024 assertions.
 Browser verification at a 1280-pixel viewport showed the guidance and action in a centered panel; activating the action opened `/crm/task_form.php` with the recurrence checkbox visible.
 No data was created or changed during the browser inspection.
 The same desktop screenshot shows the authenticated username clipped at the right edge of the top navigation.
@@ -151,4 +151,6 @@ The shared header now uses border-box sizing, tighter flexible desktop navigatio
 The E2E regression verifies no horizontal overflow at 1280 pixels, that the user name and logout remain available in the compact drawer, and that the desktop account block stays inside a 1600-pixel viewport.
 All 8 browser E2E checks passed after the fix, and the full guarded PHP suite passed with 162 tests / 1,024 assertions.
 Manual browser inspection confirmed the compact menu and account name display correctly at 1280 pixels.
-The header fix and updated evidence require an independent review against their resulting commit before recording a G01 outcome.
+The independent reviewer checked exact commit `251a35c1251c4307f81afe6b6a9300fd9db5c1e7`, confirmed the empty-state and header fixes and recurrence test precondition, and found no new critical/high security issue.
+The reviewer confirmed the corresponding E2E and PHPUnit results.
+G01 remains `NOT_EVALUATED` because its checklist still requires a human inspection of the key layouts.
