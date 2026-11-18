@@ -1,5 +1,17 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W03 local completion evidence - 18 Νοεμβρίου 2026
+
+Το native CLI είναι PHP 8.3.36 και η τοπική MariaDB είναι 10.11.19.
+Το `php -m` επιβεβαίωσε τα απαιτούμενα extensions `ctype`, `dom`, `fileinfo`, `gd`, `iconv`, `libxml`, `mbstring`, `mysqli`, `mysqlnd`, `session`, `SimpleXML`, `xml`, `xmlreader`, `xmlwriter`, `zip` και `zlib`.
+Το `composer check-platform-reqs --working-dir=ACCOUNTANT_CRM --no-dev` πέρασε για PHP 8.3.36, 64-bit και όλα τα απαιτούμενα extensions του PhpSpreadsheet.
+Το αρχικό-user CLI `ACCOUNTANT_CRM/create_user.php` έχει ήδη εκτελεστεί και επαληθευτεί στο απομονωμένο περιβάλλον, όπως καταγράφεται στο [W02 closeout](evidence/w02-closeout.md). Η επανάληψή του δεν απαιτείται για το W03.
+Δεν επιβεβαιώθηκε production PHP/MariaDB/config ούτε πραγματική συμπεριφορά Plesk· αυτά παραμένουν deployment checks.
+CLI failure probe: με επιβεβαιωμένο `crm_test_native_20261118`, προσωρινή migration που εκτοξεύει εξαίρεση μέσω του ίδιου runner επέστρεψε exit status 1 από PHP CLI. Δεν ενεργοποιήθηκε κανένα release.
+Τελικός focused έλεγχος: `php tests/bin/assert-test-db.php && tests/vendor/bin/phpunit -c tests/phpunit.xml tests/integration/W03MigrationTest.php` — PASS, 3 tests / 23 assertions. `php -l` για migration runner και W03 test — PASS· `git diff --check` — PASS.
+Τοπικά εφικτά acceptance checks AT-45/46 καλύπτονται για legacy upgrade, schema additions, διατήρηση δεδομένων, idempotency, failure recording και CLI exit. Δεν εκτελέστηκε πραγματική ενεργοποίηση release.
+Παραμένουν μόνο hosting-dependent επιβεβαιώσεις: πραγματική Plesk release activation/stop procedure και επιθεώρηση ότι η χωριστή WordPress βάση δεν επηρεάζεται στο hosting. Δεν γίνεται τοπικός ισχυρισμός για αυτές.
+
 ### Ολοκλήρωση W02 σε τοπικό baseline - 18 Νοεμβρίου 2026
 
 Το W02 ολοκληρώθηκε για τα τοπικά baseline acceptance checks AT-01 έως AT-09, AT-13 έως AT-18 και AT-27.
@@ -127,7 +139,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 |---|---|---|
 | W01 | DONE | [W01 baseline](evidence/w01-baseline.md), test harness, fixtures, clock και runners. |
 | W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
-| W03 | NOT_STARTED | Feature-specific additive migrations and a version/checksum runner are used by W05/W06; the W03 baseline install/upgrade/failure criteria remain deferred. |
+| W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | NOT_STARTED | — |
 | W08 | NOT_STARTED | — |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
@@ -139,7 +151,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 
 ## Ακριβές επόμενο βήμα
 
-W02 local baseline is complete. Continue with W03, W04 and W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
+W03 local work is complete. Continue with W04 and W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
 
 ## Τελευταίο βήμα TDD
 

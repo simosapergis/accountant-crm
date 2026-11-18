@@ -4,6 +4,9 @@ declare(strict_types=1);
 function crm_apply_migrations(mysqli $db, ?string $directory = null): array
 {
     $directory ??= dirname(__DIR__) . '/migrations';
+    if (!is_dir($directory) || !is_readable($directory)) {
+        throw new RuntimeException('Migration directory is missing or unreadable: ' . $directory);
+    }
     $db->query(
         'CREATE TABLE IF NOT EXISTS schema_migrations (' .
         'version VARCHAR(100) NOT NULL PRIMARY KEY, ' .
