@@ -1,5 +1,21 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### G01 follow-up review - 18 November 2026
+
+Continued from commit `393ac41` on `codex/crm-remaining-tasks`.
+Extended `W05CatalogsTest::testUserCannotViewOrPostToCatalogManagement` to cover unauthorized GET access to both catalog form routes and to assert rejected catalog writes create no rows.
+Added `W06RecurringTasksTest::testAdminCanEditSharedTaskAndCreateMonthlyRule` to verify ROL-02 for the admin role over real authenticated HTTP.
+The first test attempt was blocked by the absent loopback server; a second attempt exposed the missing test-only HMAC key in the temporary server setup.
+After starting the loopback server on `127.0.0.1:18096` with the verified isolated MariaDB target and a fictional HMAC key, the focused suite passed: `W05CatalogsTest` — 7 tests / 62 assertions.
+The route evidence now maps anonymous, role, CSRF, diary ownership, catalog, recurrence, import/export and deletion regressions to their integration suites.
+Extended source review across application PHP query, output and file access sites found no new concrete security defect; its limits and exact coverage are recorded in [W02 route review](evidence/w02-route-review.md).
+The full suite passed on `crm_test_w08_closeout_20261118` after setting the required test-only environment: 161 tests / 1,014 assertions.
+Representative mobile browser inspection at `/crm/` covered login, dashboard/navigation, task list/form, client list and diary; the hostile client fixture rendered as text.
+The recurring-task empty screen has an unexplained blank rounded panel; recorded as a visible UI issue for review, with no change made.
+An independent read-only G01 review is being repeated against the reconciled route count and admin-role regression.
+G01 remains `NOT_EVALUATED` pending the final independent review and exact reviewed code-state record.
+No deployment or production access occurred.
+
 ### G01 baseline evaluation - 18 November 2026
 
 G01 was evaluated at `c9652a7` with an independent read-only review and the full isolated native MariaDB suite.

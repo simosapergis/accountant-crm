@@ -6,7 +6,7 @@ Review type: source review against SEC-01 to SEC-06 and SEC-13, plus ROL-01 to R
 
 ## Route inventory
 
-The review covered 33 HTTP PHP entrypoints: the root pages and forms, client-search AJAX endpoint, eight exports and the active-professional import.
+The review covered 33 HTTP PHP entrypoints: the root pages and forms, client-search and client-save AJAX endpoints, eight exports and the active-professional import.
 It also checked the CLI-only account creation and three `bin/` tools, shared includes and migration files for accidental web entry.
 
 | Route group | Authentication and authorization | Methods and CSRF | Review result |
@@ -19,6 +19,28 @@ It also checked the CLI-only account creation and three `bin/` tools, shared inc
 | Imports and exports | Import and all eight export scripts load `includes/auth.php`. | Import mutates only on POST and therefore receives the shared CSRF check. Exports are read-only. | Existing W02/W08 evidence covers import validation, private cache headers, export formula handling and current output routes. |
 | Login and logout | Login is public with CSRF protection. Logout now runs the shared authenticated route guard after enforcing POST. | Both state-changing flows use POST and validate CSRF. | Anonymous logout is rejected by redirect without destroying its session; authenticated logout remains covered by existing tests. |
 | CLI tools, includes, migrations, Composer and private files | CLI scripts check CLI execution; `.htaccess` denies `includes`, `vendor`, `logs`, backups, `bin`, migrations, dotfiles and sensitive extensions. | Not browser mutation routes. | Local HTTP denials are recorded in W02 closeout evidence. Actual hosting behavior remains unverified. |
+
+The final entrypoint reconciliation below enumerates each web route from the current application tree.
+All are included in the anonymous entrypoint inventory in `W01EnvironmentTest`, except public `login.php`; CLI `create_user.php` is excluded from the HTTP inventory.
+
+| Route(s) | Guard or operation | Runtime evidence |
+|---|---|---|
+| `/login.php` | Public login only; CSRF required for POST. | `W02CsrfTest` missing-token and password behavior; W04 throttle suite. |
+| `/logout.php` | Authenticated POST only; CSRF required. | `W02CsrfTest::testLogoutRequiresCsrfProtectedPostAndEndsSession` and `testAnonymousLogoutPostIsRejectedWithoutInvalidatingItsSession`. |
+| `/index.php` | Authenticated shared dashboard. | `W01EnvironmentTest`; browser inspection; shared-header escaping test in `W02CsrfTest`. |
+| `/clients.php`, `/partners.php`, `/tasks.php`, `/active_professionals.php`, `/calendar.php`, `/analysis_partners.php`, `/partner_tasks.php` | Authenticated shared-data views; request filters use prepared values/allowlists. | `W02CsrfTest` SQL-like search tests, XSS list/calendar test and W08 export/integration coverage; anonymous inventory. |
+| `/client_form.php`, `/partner_form.php`, `/active_professional_form.php`, `/task_form.php` | Authenticated forms; mutations require POST and shared CSRF; deletion cannot use GET. | `W02CsrfTest` POST/CSRF/delete/task tests; `W08CollaboratorTest`; `W05TaskPaymentsTest`; anonymous inventory. |
+| `/mydiary.php`, `/update_event.php` | Authenticated personal diary; owner ID is part of diary reads and writes; POST mutations require CSRF. | `W02CsrfTest` foreign note/event read, update, delete, and mutation tests. |
+| `/recurring_tasks.php`, `/recurring_task_form.php` | Authenticated shared recurrence view and management; POST mutations require CSRF. | `W06RecurringTasksTest` user create, update, stop, restart, idempotency, retry and scheduler cases; anonymous inventory. |
+| `/payment_methods.php`, `/payment_method_form.php`, `/task_titles.php`, `/task_title_form.php` | Authenticated admin-only catalog access, including direct form URLs. | `W05CatalogsTest::testUserCannotViewOrPostToCatalogManagement` checks user GET denial for all four screens and denied writes; admin create/edit/deactivate cases. |
+| `/ajax/search_clients.php` | Authenticated read-only JSON search; request values bound. | `W02CsrfTest::testPartnerAndAutocompleteSearchesDoNotBroadenForSqlLikeInput`; autocomplete XSS/browser checks. |
+| `/save_client_ajax.php` | Authenticated POST, shared CSRF, prepared insert, JSON-safe response. | `W02CsrfTest::testAjaxClientCreationDoesNotEmbedSubmittedNameAsExecutableScript` and all-POST missing-token sweep. |
+| `/imports/import_active_professionals.php` | Authenticated POST, shared CSRF, upload format/size validation and transactional row validation. | `W02CsrfTest` hostile feedback, invalid/oversized/corrupt/truncated/invalid-row cases; `W08ExportsTest` valid import flow. |
+| `/exports/export_active_professionals_excel.php`, `/exports/export_active_professionals_pdf.php`, `/exports/export_analysis_partners_excel.php`, `/exports/export_analysis_partners_pdf.php`, `/exports/export_clients_excel.php`, `/exports/export_clients_pdf.php`, `/exports/export_tasks_excel.php`, `/exports/export_tasks_pdf.php` | Authenticated read-only exports; private cache headers; spreadsheet formula handling and context-safe output. | `W08ExportsTest`, `W08PdfTest`, `W02ExportSqlTest`, `W02CsrfTest::testPartnerExcelExportEscapesUntrustedPartnerName`; anonymous inventory. |
+
+This is route-by-route source and test reconciliation, not a statement that each route has a separate test method.
+Shared guard behavior is covered by the common HTTP regressions, while route-specific business mutations are covered by their acceptance suites.
+The local suite does not prove the Apache/Plesk configuration on the production host.
 
 ## SQL, output and file-access review
 
@@ -50,7 +72,47 @@ The full suite passed with 160 tests / 1,001 assertions against the guarded isol
 
 ## Remaining limits
 
-This source pass is not a complete runtime role/CSRF matrix.
-The W02 evidence still marks route-level tests for all mutations and roles as partial, so each relevant route needs matching HTTP regression evidence before G01.
-The output review used source searches and prior hostile-value tests; it does not replace a final output-context inventory and representative browser review.
-The route source review began read-only; the focused logout fix and regression are the only code/test changes made in its follow-up.
+## Follow-up verification
+
+On the current follow-up checkout, `W05CatalogsTest::testUserCannotViewOrPostToCatalogManagement` also checks direct GET access to both catalog form routes and confirms denied writes leave no catalog rows.
+The focused suite passed against the guarded isolated database: 7 tests / 62 assertions.
+
+The broader HTTP behavior is distributed across the acceptance-specific integration suites rather than a single route matrix class:
+
+- Anonymous access and web exposure: `W01EnvironmentTest`.
+- Missing, invalid, cross-session and valid CSRF; all POST entrypoints; GET deletion; logout; diary ownership: `W02CsrfTest`.
+- Admin/user catalog permissions: `W05CatalogsTest`.
+- Shared task and recurrence access for both roles: `W02CsrfTest` and `W06RecurringTasksTest::testAdminCanEditSharedTaskAndCreateMonthlyRule`.
+- Catalog/task/payment mutations and server validation: `W05CatalogsTest` and `W05TaskPaymentsTest`.
+- Recurrence create, update, stop, restart, retries and idempotency: `W06RecurringTasksTest`.
+- Collaborator, professional, import and export flows: `W08CollaboratorTest` and `W08ExportsTest`, with import rejection cases in `W02CsrfTest`.
+
+The first focused test attempt failed at setup because the loopback server lacked `CRM_SECURITY_HMAC_KEY`; this was a harness configuration issue. After starting the loopback server with a fictional test-only key, the guarded focused suite passed.
+The full suite subsequently passed on the established isolated closeout schema: 161 tests / 1,014 assertions after adding the admin-role route regression.
+The route-by-route source/test reconciliation is recorded above.
+
+The source output review was extended through HTML/JavaScript sinks, SQL query sites and file access sites across application PHP files.
+The search confirms remaining direct `query()` calls are fixed-value reads, schema/migration operations, scheduler bookkeeping or bounded validated retention intervals; request-derived filters are prepared and sort expressions are allowlisted.
+Output sinks were reviewed with context-aware escaping or fixed markup, with client autocomplete data inserted via `textContent` and fixed literal `innerHTML` used only for static status markup.
+Existing hostile-value regressions cover shared headers, list/calendar pages, task forms, diary JavaScript, import feedback, autocomplete and partner spreadsheet HTML.
+The representative rendered browser inspection is recorded below.
+
+The route review began from `c9652a7`; the logout correction was committed as `393ac41`.
+The catalog-form authorization test extension is currently uncommitted.
+
+## Browser inspection
+
+On 18 November 2026, the app was opened at `http://127.0.0.1:18096/crm/` in the local in-app browser and signed in with the fictional `w01-fake-user` test account.
+At the browser's 495-pixel mobile viewport, the dashboard rendered its task totals and both filter groups, and the hamburger menu exposed the expected navigation links.
+The task list showed the fixture task and collection method column; the new task form showed title, client search, partner, status, fee, collection, payment method, balance and recurrence controls.
+The client list displayed the hostile XSS fixture as literal text, with no image or script execution observed.
+The personal diary rendered the November 2026 month grid, selected-day notes and appointment form.
+These were read-only inspections; no records were submitted or changed.
+
+The recurring-task screen rendered its heading followed by a blank rounded white panel when there were no rules.
+The panel is visually unexplained and looks like an empty list container without empty-state text or action.
+This should be reviewed as a UI defect; no change was made during the security audit.
+
+The full PHPUnit suite passed on the established isolated database after setting `APP_ENV=test` and `CRM_TEST_ADMIN_USER=root`: 161 tests / 1,014 assertions.
+An earlier run on `crm_test_native_20261118` was invalid as a full-suite baseline because it omitted those test-only runner settings and contained unrelated recurrence rows; it failed 6 tests / 979 assertions.
+No cleanup was performed on that database.
