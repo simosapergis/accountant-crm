@@ -34,3 +34,4 @@ Thumbs.db
 # Machine-specific local setup notes
 /DOCKER_CODEX_STEPS.txt
 /DOCKER_CODEX_GROUP_FIX.txt
+/.local-baseline/
