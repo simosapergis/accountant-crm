@@ -38,6 +38,7 @@ final class W05CatalogsTest extends TestCase
         if (isset($this->db) && $this->db->connect_errno === 0) {
             $this->db->query("DELETE FROM payment_methods WHERE normalized_name IN ('bank transfer', 'cash', 'card')");
             $this->db->query("DELETE FROM task_title_templates WHERE normalized_name LIKE 'w05%'");
+            $this->db->query('DELETE FROM tasks WHERE id = 910021');
             $stmt = $this->db->prepare('DELETE FROM users WHERE id = ? AND username = ?');
             $id = self::ADMIN_ID;
             $username = self::ADMIN_USERNAME;
@@ -153,11 +154,25 @@ final class W05CatalogsTest extends TestCase
         self::assertSame(302, $created['status']);
         $item = $this->db->query("SELECT id FROM task_title_templates WHERE normalized_name='w05 quarterly return'")->fetch_assoc();
         $id = (int)$item['id'];
+        $taskId = 910021;
+        $taskDate = '2026-11-18';
+        $taskTitle = 'W05 Quarterly Return';
+        $clientId = 910001;
+        $status = 'Σε εξέλιξη';
+        $fee = '25.00';
+        $collected = '0.00';
+        $task = $this->db->prepare('INSERT INTO tasks (id,task_date,title,client_id,status,fee,collected) VALUES (?,?,?,?,?,?,?)');
+        $task->bind_param('ississs', $taskId, $taskDate, $taskTitle, $clientId, $status, $fee, $collected);
+        $task->execute();
         $edit = $this->request('/task_title_form.php?id=' . $id, 'GET', [], $admin['cookie']);
         $edited = $this->request('/task_title_form.php', 'POST', [
-            'id' => (string)$id, 'name' => 'W05 Annual Return', 'save_catalog' => '1', '_csrf_token' => $this->csrfToken($edit['body']),
+            'id' => (string)$id, 'name' => 'W05 Annual Return', 'is_active' => '1', 'save_catalog' => '1', '_csrf_token' => $this->csrfToken($edit['body']),
         ], $admin['cookie']);
         self::assertSame(302, $edited['status']);
+        self::assertSame('W05 Quarterly Return', $this->db->query('SELECT title FROM tasks WHERE id=910021')->fetch_row()[0]);
+        $taskEdit = $this->request('/task_form.php?id=910021', 'GET', [], $admin['cookie']);
+        self::assertStringContainsString('value="W05 Quarterly Return"', $taskEdit['body']);
+        self::assertStringContainsString('value="W05 Annual Return"', $taskEdit['body']);
         $deactivateForm = $this->request('/task_title_form.php?id=' . $id, 'GET', [], $admin['cookie']);
         $deactivated = $this->request('/task_title_form.php', 'POST', [
             'id' => (string)$id, 'name' => 'W05 Annual Return', 'save_catalog' => '1', '_csrf_token' => $this->csrfToken($deactivateForm['body']),

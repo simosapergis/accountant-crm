@@ -14,7 +14,7 @@ Status: local implementation and focused acceptance coverage complete; visual/mo
 
 - RED: initial `W05CatalogsTest::testAdminCanOpenBothCatalogManagementScreens` failed with HTTP 404 for both catalog routes.
 - RED: `W05TaskPaymentsTest` initially failed because title options/payment fields did not exist and positive collection was accepted without method validation.
-- GREEN: isolated full PHPUnit suite, 128 tests / 557 assertions. It includes catalog role/duplicate/reactivation/soft-deactivation cases, task label snapshot and zero-clearing cases, inactive and legacy payment behavior, title length and options, over-collection, list/export rendering, and existing W02 regressions.
+- GREEN: isolated full PHPUnit suite, 130 tests / 577 assertions. It includes catalog role/duplicate/reactivation/soft-deactivation cases, task label snapshot and zero-clearing cases, inactive and legacy payment behavior, title length/options and preservation of an old task title after a catalog rename, over-collection, list/export rendering, and existing W02 regressions.
 - Focused command:
 
   ```sh

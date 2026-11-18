@@ -12,7 +12,7 @@ Status: implementation and local MariaDB acceptance coverage complete; Plesk/pro
 ## Evidence
 
 - RED: calendar unit test initially failed because recurrence date helpers did not exist.
-- GREEN: full isolated PHPUnit suite, 128 tests / 557 assertions. New recurrence coverage includes Jan/Feb/Mar/Apr clamping, leap day, month arithmetic and UTC-to-Athens date conversion; rule activation/idempotency; historical fee versions; stop/restart; stale row version; source and generated task deletion; client deletion denial; batch continuation; read-only dry run; injected transactional failure and retry; CLI/migration HTTP denial; and two simultaneous CLI processes against real MariaDB.
+- GREEN: full isolated PHPUnit suite, 130 tests / 577 assertions. New recurrence coverage includes Jan/Feb/Mar/Apr clamping, leap day, month arithmetic and UTC-to-Athens date conversion; independently due rules; rule activation/idempotency; multiple historical day/fee versions during batched catch-up; stop/restart and stale row versions; source/generated task deletion; client deletion denial; read-only dry run; injected transactional failure/retry while another rule succeeds; CLI/migration HTTP denial; and two simultaneous CLI processes against real MariaDB.
 - Same guarded PHPUnit command recorded in [W05 evidence](w05-catalogs-payments.md). Test DB: `test-db / crm_w01_test`.
 - Real concurrent process result: exactly one task and one occurrence for the tested rule/month.
 - Injected failure result: task insert rolled back with no orphan occurrence, CLI returned nonzero, another rule still completed, and retry created the missing occurrence once.

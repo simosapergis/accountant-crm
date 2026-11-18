@@ -64,6 +64,22 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame(3, (int)$this->db->query('SELECT COUNT(*) FROM recurrence_occurrences WHERE rule_id=' . $ruleId)->fetch_row()[0]);
     }
 
+    public function testDifferentRulesBecomeDueOnTheirOwnDays(): void
+    {
+        $dayOne = $this->insertRule('2027-03-01', 1, '10.00', 910041, 'W06 Day One');
+        $dayFifteen = $this->insertRule('2027-03-01', 15, '15.00', 910042, 'W06 Day Fifteen');
+        $dayThirty = $this->insertRule('2027-03-01', 30, '30.00', 910043, 'W06 Day Thirty');
+        $beforeLaterDueDates = crm_recurrence_run($this->db, new DateTimeImmutable('2027-03-14', new DateTimeZone('Europe/Athens')));
+        self::assertSame(1, $beforeLaterDueDates['created']);
+        self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM recurrence_occurrences WHERE rule_id=' . $dayOne)->fetch_row()[0]);
+        self::assertSame(0, (int)$this->db->query('SELECT COUNT(*) FROM recurrence_occurrences WHERE rule_id IN (' . $dayFifteen . ',' . $dayThirty . ')')->fetch_row()[0]);
+
+        $afterAllDueDates = crm_recurrence_run($this->db, new DateTimeImmutable('2027-03-31', new DateTimeZone('Europe/Athens')));
+        self::assertSame(2, $afterAllDueDates['created']);
+        self::assertSame('2027-03-15', $this->db->query('SELECT due_date FROM recurrence_occurrences WHERE rule_id=' . $dayFifteen)->fetch_row()[0]);
+        self::assertSame('2027-03-30', $this->db->query('SELECT due_date FROM recurrence_occurrences WHERE rule_id=' . $dayThirty)->fetch_row()[0]);
+    }
+
     public function testFailureBetweenTaskAndOccurrenceRollsBackAndCanRetry(): void
     {
         $ruleId = $this->insertRule('2027-03-01', 15, '75.00');
@@ -95,14 +111,41 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame([['task_date' => '2027-03-15', 'fee' => '100.00'], ['task_date' => '2027-04-15', 'fee' => '120.00']], $marchApril);
     }
 
+    public function testMultipleHistoricalVersionsAreUsedDuringBatchedCatchUp(): void
+    {
+        $ruleId = $this->insertRule('2027-01-01', 30, '100.00');
+        $rule = $this->db->query('SELECT * FROM recurring_task_rules WHERE id=' . $ruleId)->fetch_assoc();
+        self::assertSame('2027-04-01', crm_recurrence_update_rule($this->db, $ruleId, (int)$rule['row_version'], 1, '100.00', '2027-03-10'));
+        $rule = $this->db->query('SELECT * FROM recurring_task_rules WHERE id=' . $ruleId)->fetch_assoc();
+        self::assertSame('2027-05-01', crm_recurrence_update_rule($this->db, $ruleId, (int)$rule['row_version'], 15, '120.00', '2027-04-10'));
+
+        $created = 0;
+        for ($run = 0; $run < 3; $run++) {
+            $created += crm_recurrence_run($this->db, new DateTimeImmutable('2027-06-30', new DateTimeZone('Europe/Athens')), 2)['created'];
+        }
+        self::assertSame(6, $created);
+        $rows = $this->db->query('SELECT period_month,due_date,fee FROM recurrence_occurrences o JOIN tasks t ON t.id=o.task_id WHERE o.rule_id=' . $ruleId . ' ORDER BY period_month')->fetch_all(MYSQLI_ASSOC);
+        self::assertSame([
+            ['period_month' => '2027-01-01', 'due_date' => '2027-01-30', 'fee' => '100.00'],
+            ['period_month' => '2027-02-01', 'due_date' => '2027-02-28', 'fee' => '100.00'],
+            ['period_month' => '2027-03-01', 'due_date' => '2027-03-30', 'fee' => '100.00'],
+            ['period_month' => '2027-04-01', 'due_date' => '2027-04-01', 'fee' => '100.00'],
+            ['period_month' => '2027-05-01', 'due_date' => '2027-05-15', 'fee' => '120.00'],
+            ['period_month' => '2027-06-01', 'due_date' => '2027-06-15', 'fee' => '120.00'],
+        ], $rows);
+    }
+
     public function testStoppingKeepsPastDuePeriodsAndExcludesFutureDueDates(): void
     {
         $ruleId = $this->insertRule('2027-01-01', 15, '50.00');
+        $dayThirtyRuleId = $this->insertRule('2027-01-01', 30, '60.00', 910044, 'W06 Day Thirty Stop');
         crm_recurrence_stop_rule($this->db, $ruleId, 1, '2027-03-20');
+        crm_recurrence_stop_rule($this->db, $dayThirtyRuleId, 1, '2027-03-20');
         $result = crm_recurrence_run($this->db, new DateTimeImmutable('2027-04-30', new DateTimeZone('Europe/Athens')));
-        self::assertSame(3, $result['created']);
+        self::assertSame(5, $result['created']);
         $periods = $this->db->query('SELECT period_month FROM recurrence_occurrences WHERE rule_id=' . $ruleId . ' ORDER BY period_month')->fetch_all(MYSQLI_NUM);
         self::assertSame([['2027-01-01'], ['2027-02-01'], ['2027-03-01']], $periods);
+        self::assertSame([['2027-01-01'], ['2027-02-01']], $this->db->query('SELECT period_month FROM recurrence_occurrences WHERE rule_id=' . $dayThirtyRuleId . ' ORDER BY period_month')->fetch_all(MYSQLI_NUM));
     }
 
     public function testDeletingGeneratedTaskRetainsOccurrenceAndDoesNotRecreateIt(): void
@@ -110,12 +153,15 @@ final class W06RecurringTasksTest extends TestCase
         $ruleId = $this->insertRule('2027-03-01', 10, '80.00');
         crm_recurrence_run($this->db, new DateTimeImmutable('2027-03-31', new DateTimeZone('Europe/Athens')));
         $taskId = (int)$this->db->query('SELECT task_id FROM recurrence_occurrences WHERE rule_id=' . $ruleId)->fetch_row()[0];
+        $rule = $this->db->query('SELECT * FROM recurring_task_rules WHERE id=' . $ruleId)->fetch_assoc();
+        self::assertSame('2027-04-01', crm_recurrence_update_rule($this->db, $ruleId, (int)$rule['row_version'], 10, '90.00', '2027-03-31'));
         $this->db->query('DELETE FROM tasks WHERE id=' . $taskId);
         $result = crm_recurrence_run($this->db, new DateTimeImmutable('2027-03-31', new DateTimeZone('Europe/Athens')));
 
         self::assertSame(0, $result['created']);
         self::assertSame(1, $result['skipped']);
         self::assertNull($this->db->query('SELECT task_id FROM recurrence_occurrences WHERE rule_id=' . $ruleId)->fetch_row()[0]);
+        self::assertSame(1, crm_recurrence_run($this->db, new DateTimeImmutable('2027-04-30', new DateTimeZone('Europe/Athens')))['created']);
     }
 
     public function testDeletingSourceTaskDoesNotDeleteRuleOrItsFutureWork(): void
@@ -199,6 +245,9 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame((string)$oldId, (string)$new['previous_rule_id']);
         self::assertSame('2027-05-01', $new['start_month']);
         self::assertSame('active', $new['state']);
+        $run = crm_recurrence_run($this->db, new DateTimeImmutable('2027-06-30', new DateTimeZone('Europe/Athens')));
+        self::assertSame(5, $run['created']);
+        self::assertSame([['2027-05-01'], ['2027-06-01']], $this->db->query('SELECT period_month FROM recurrence_occurrences WHERE rule_id=' . $newId . ' ORDER BY period_month')->fetch_all(MYSQLI_NUM));
         try {
             crm_recurrence_update_rule($this->db, $newId, 0, 20, '60.00', '2027-04-01');
             self::fail('A stale row version should be rejected.');
