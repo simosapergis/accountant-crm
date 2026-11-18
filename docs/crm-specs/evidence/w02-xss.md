@@ -35,3 +35,10 @@ Additional output review found that the dynamic partner page title was printed r
 ## Remaining scope
 
 AT-06 remains partial: broader outputs such as task/client/partner fields, autocomplete responses, export documents and other dynamic JavaScript sinks need their own context-specific tests and review. G01 remains `NOT_EVALUATED`.
+
+## Status update - 2026-11-18
+
+This earlier evidence recorded AT-06 as partial at that checkpoint.
+The local W02 baseline is now `DONE_LOCAL`; the later output review, catalog hostile-value regression and full verification results are recorded in [w02-closeout.md](w02-closeout.md).
+PDF rendering remains a separate W08 dependency item.
+G01 remains `NOT_EVALUATED`.

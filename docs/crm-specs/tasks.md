@@ -11,7 +11,7 @@
 
 | Πακέτο | Προϋπόθεση | Παραδοτέο | Αποδεικτικό ολοκλήρωσης |
 |---|---|---|---|
-| W01 - Baseline, test harness και αναπαραγωγή | Ανάγνωση όλων των specs και διορθωμένου CRM `AGENTS.md`. | Στρατηγική SET, απομονωμένο Docker test περιβάλλον στο `/crm/`, test-only dependencies, επαληθευμένη test βάση, runners, fixtures, clock και inventory endpoints. | Smoke tests υποδομής, πραγματικές εντολές και αποτυχημένα regression tests των επιλεγμένων γνωστών bugs πριν από τις διορθώσεις. |
+| W01 - Baseline, test harness και αναπαραγωγή | Ανάγνωση όλων των specs και διορθωμένου CRM `AGENTS.md`. | Στρατηγική SET, απομονωμένο test περιβάλλον στο `/crm/` ανά λειτουργικό σύστημα σύμφωνα με το `development-workflow.md`, test-only dependencies, επαληθευμένη πραγματική MariaDB test βάση, runners, fixtures, clock και inventory endpoints. | Smoke tests υποδομής, πραγματικές εντολές και αποτυχημένα regression tests των επιλεγμένων γνωστών bugs πριν από τις διορθώσεις. |
 | W02 - Ασφαλής κοινή υποδομή | W01. | Bootstrap, base path, auth guards, session, CSRF, server-side role checks, input/output handling και ακριβή ποσά. | Τα σχετικά baseline σκέλη AT-01 έως AT-09, AT-13 έως AT-18 και AT-27 στην υπάρχουσα εφαρμογή. |
 | W03 - Υποδομή migrations και τεχνικός έλεγχος | W01 και σχεδιασμός schema από W02. | Μη καταστροφικά migrations για ασφαλή βάση λειτουργίας, έλεγχος MariaDB/CLI/config και αρχικού χρήστη. | Τα baseline σκέλη AT-45 και AT-46 μαζί με τους εφικτούς τεχνικούς ελέγχους περιβάλλοντος. |
 | W04 - Throttle και security events | W02 και W03. | Atomic counters, ιδιωτικά logs και παραμετροποιήσιμη πολιτική. | AT-10 έως AT-12 με πραγματικά HTTP αιτήματα. |

@@ -14,6 +14,8 @@ services:
       DB_NAME: crm_w01_test
       DB_USER: crm_w01_user
       DB_PASSWORD: crm_w01_only_password
+      CRM_TEST_DB_NAME: crm_w01_test
+      CRM_APP_ROOT: /var/www/html/crm
     depends_on:
       test-db:
         condition: service_healthy

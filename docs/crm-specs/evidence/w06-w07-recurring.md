@@ -31,4 +31,9 @@ Run migrations once as the restricted CRM database user with `php bin/migrate.ph
 ## Still open
 
 - Actual Plesk scheduler invocation, production-like timezone/DST configuration, real backup/restore, responsive/browser review and independent QA remain open under AT-43, AT-49 to AT-52 and W08/W09/W10.
-- G01 remains `NOT_EVALUATED`; W02/W03/W04/W08 are still deferred and not passed.
+- At the time of this feature evidence, W02/W03/W04/W08 were deferred and G01 was `NOT_EVALUATED`; see the status update below for current W02 state.
+
+## Status update - 2026-11-18
+
+W02 has since completed its local baseline and is recorded as `DONE_LOCAL` in [implementation-status.md](../implementation-status.md).
+W03, W04, W08 and G01 remain open.

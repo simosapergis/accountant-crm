@@ -79,22 +79,34 @@ Authentication, ασφάλεια και τα γνωστά λειτουργικά
 
 **Υποδομή tests του W01**
 
-Ως βάση χρησιμοποιείται το Docker setup του CRM, αφού επαληθευτούν τα πραγματικά αρχεία και οι διαθέσιμες δυνατότητες του workspace.
-Στο commit αναφοράς το Dockerfile χρησιμοποιεί `php:8.3.36-apache`, το Compose MariaDB 10.11 και η βασική εφαρμογή εξυπηρετείται στο `/`.
-Αυτές οι ρυθμίσεις τοπικής ανάπτυξης δεν αποδεικνύουν ταυτόσημη MariaDB ή web server διαμόρφωση στο Otenet.
+Ανίχνευσε πρώτα το λειτουργικό σύστημα και επίλεξε την αντίστοιχη μέθοδο.
+Σε macOS δοκιμάζουμε με native PHP και MariaDB.
+Σε Linux δοκιμάζουμε μέσω Docker Compose με PHP και MariaDB containers.
+
+Σε macOS χρησιμοποιούνται native PHP, MariaDB και Composer, χωρίς Docker.
+Πριν από την εργασία ελέγχονται η διαθεσιμότητα και οι εκδόσεις τους, τα απαιτούμενα PHP extensions και η σύνδεση PHP με MariaDB.
+Η MariaDB ξεκινά όταν χρειάζεται και η τοπική ανάπτυξη χρησιμοποιεί ξεχωριστή βάση και χρήστη CRM.
+Τα αυτοματοποιημένα tests χρησιμοποιούν απομονωμένη test βάση ή προσωρινό test-owned data directory.
+
+Σε Linux η αφετηρία είναι το υπάρχον Docker configuration του repository, με συμβατότητα PHP 8.3 και MariaDB 10.11.
+Τα tests χρησιμοποιούν ξεχωριστή test βάση ή απομονωμένο Compose project με test-owned volumes και credentials.
+Το test περιβάλλον εγκαθιστά τα απαραίτητα development dependencies, καθώς το production Dockerfile εκτελεί Composer με `--no-dev`.
+Οι τοπικές ρυθμίσεις δεν αποδεικνύουν ταυτόσημη διαμόρφωση στο Otenet.
 
 Το W01 πρέπει να παραδώσει τα παρακάτω πριν από αλλαγές συμπεριφοράς:
 
 - Test περιβάλλον που εξυπηρετεί πραγματικά την εφαρμογή στο `/crm/` με τις σωστές nested διαδρομές και ρυθμίσεις cookies.
 - Ελεγχόμενη HTTPS δοκιμή για τις ιδιότητες ασφαλούς session cookie, χωρίς χαλάρωση της παραγωγικής πολιτικής για να περάσουν τα tests.
-- Test-only εγκατάσταση των απαιτούμενων development dependencies, επειδή το υπάρχον Dockerfile εκτελεί Composer με `--no-dev`.
-- Ξεχωριστό test service, stage ή τεκμηριωμένη override διαδικασία, χωρίς εισαγωγή test dependencies στο production release.
-- Απομονωμένη προσωρινή MariaDB βάση ή ξεχωριστό Compose project με test-owned volumes και credentials.
+- Εγκατάσταση των απαιτούμενων development dependencies στο test περιβάλλον, χωρίς εισαγωγή τους στο production release.
+- Σε Linux, ξεχωριστό test service, stage ή τεκμηριωμένη override διαδικασία και απομονωμένη test βάση ή Compose project.
+- Σε macOS, απομονωμένη test βάση ή προσωρινό test-owned data directory, χωριστά από τη βάση ανάπτυξης.
 - Έλεγχο του πραγματικού host και ονόματος βάσης πριν από reset, import ή cleanup, με άρνηση εκτέλεσης αν δεν επιβεβαιώνεται ο αναμενόμενος test στόχος.
-- Προστασία των συνηθισμένων development `db_data` και `app_vendor` volumes από διαγραφή ή αντικατάσταση λόγω test setup.
+- Προστασία των development και production βάσεων και, στο Linux, των συνηθισμένων development `db_data` και `app_vendor` volumes από διαγραφή ή αντικατάσταση.
 - Ανάγνωση υπάρχοντος `.env` χωρίς αντιγραφή του `.env.example` πάνω σε υπάρχον αρχείο και χωρίς κληρονομιά της συνηθισμένης βάσης ως test στόχου.
 - Αναπαραγώγιμες, πραγματικά εκτελεσμένες εντολές για focused unit, integration και E2E checks στο `implementation-status.md`.
 
+Δεν καταγράφονται credentials σε εντολές αποδεικτικών ή logs.
+Η εγκατάσταση runtimes από μόνη της δεν ολοκληρώνει το W01 και δεν αποτελεί PASS της εφαρμογής.
 Δεν θεωρείται δεδομένο ότι υπάρχει ήδη runner ή test command και δεν αναφέρονται μη δοκιμασμένες εντολές ως λειτουργικές.
 Η παραγωγική εγκατάσταση εξακολουθεί να χρησιμοποιεί μόνο τα απαιτούμενα production dependencies.
 
@@ -107,7 +119,7 @@ Authentication, ασφάλεια και τα γνωστά λειτουργικά
 Η λογική ημερομηνιών και λήξης συνεδρίας δέχεται ελεγχόμενο clock ή ρητή τιμή χρόνου.
 Τα tests δεν χρησιμοποιούν μεγάλες αναμονές ή αλλαγή του πραγματικού server clock.
 Οι καθαροί ημερολογιακοί κανόνες δεν εξαρτώνται από database connection ή browser session.
-Τα tests συναλλαγών, constraints και concurrency χρησιμοποιούν πραγματική MariaDB, χωρίς SQLite ή mock που προσποιείται την κρίσιμη συμπεριφορά της βάσης.
+Όλα τα integration tests και τα tests SQL, συναλλαγών, constraints και concurrency χρησιμοποιούν πραγματική MariaDB, χωρίς SQLite ή mock που προσποιείται την κρίσιμη συμπεριφορά της βάσης.
 Ταυτόχρονες εκτελέσεις συγχρονίζονται με ελεγχόμενο σημείο έναρξης, αντί να στηρίζονται στην τύχη ή σε αυθαίρετο sleep.
 Κάθε test έχει απομονωμένα δεδομένα και δεν εξαρτάται από τη σειρά εκτέλεσης.
 Δεν γίνονται tests που γράφουν σε παραγωγική βάση ή περιέχουν πραγματικά δεδομένα πελατών.

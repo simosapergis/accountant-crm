@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-require_once '/var/www/html/crm/includes/session_lifecycle.php';
+require_once CRM_TEST_APP_ROOT . '/includes/session_lifecycle.php';
 require_once __DIR__ . '/../support/FrozenClock.php';
 
 final class W01RuntimeTest extends TestCase

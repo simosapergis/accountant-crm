@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once '/var/www/html/crm/includes/recurrence.php';
+require_once CRM_TEST_APP_ROOT . '/includes/recurrence.php';
 
 use PHPUnit\Framework\TestCase;
 

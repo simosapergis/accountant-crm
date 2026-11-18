@@ -135,7 +135,7 @@ final class W02ExportSqlTest extends TestCase
             (string)getenv('DB_PASSWORD'),
             (string)getenv('DB_NAME')
         );
-        self::assertSame('crm_w01_test', $db->query('SELECT DATABASE()')->fetch_row()[0]);
+        self::assertSame(CRM_TEST_DATABASE, $db->query('SELECT DATABASE()')->fetch_row()[0]);
 
         $professionalBefore = $db->query('SELECT fullname FROM active_professionals WHERE id = 910099')->fetch_assoc();
         if ($professionalBefore === null) {
@@ -274,7 +274,7 @@ final class W02ExportSqlTest extends TestCase
 
     private static function assertXlsxDoesNotContain(string $contents, string $needle): void
     {
-        require_once '/var/www/html/crm/vendor/autoload.php';
+        require_once CRM_TEST_APP_ROOT . '/vendor/autoload.php';
         $path = tempnam(sys_get_temp_dir(), 'w02-export-');
         file_put_contents($path, $contents);
         try {
@@ -291,7 +291,7 @@ final class W02ExportSqlTest extends TestCase
 
     private static function assertXlsxCellIsLiteralText(string $contents, string $expected): void
     {
-        require_once '/var/www/html/crm/vendor/autoload.php';
+        require_once CRM_TEST_APP_ROOT . '/vendor/autoload.php';
         $path = tempnam(sys_get_temp_dir(), 'w02-formula-');
         file_put_contents($path, $contents);
         try {

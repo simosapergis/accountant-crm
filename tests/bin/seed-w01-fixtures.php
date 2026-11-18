@@ -1,14 +1,15 @@
 <?php
 declare(strict_types=1);
 
-if (getenv('DB_HOST') !== 'test-db' || getenv('DB_NAME') !== 'crm_w01_test' || getenv('DB_USER') !== 'crm_w01_user') {
-    fwrite(STDERR, "Refusing to seed fixtures outside the isolated W01 database.\n");
+require_once dirname(__DIR__) . '/bootstrap.php';
+if (!CRM_TEST_DB_SAFE || getenv('DB_NAME') !== CRM_TEST_DATABASE || getenv('DB_USER') === 'root') {
+    fwrite(STDERR, "Refusing to seed fixtures outside the explicitly configured isolated test database.\n");
     exit(2);
 }
 
 $db = new mysqli(getenv('DB_HOST'), getenv('DB_USER'), getenv('DB_PASSWORD'), getenv('DB_NAME'));
-if ($db->connect_error) {
-    fwrite(STDERR, "Cannot seed W01 fixtures: isolated MariaDB is unavailable.\n");
+if ($db->connect_error || $db->query('SELECT DATABASE()')->fetch_row()[0] !== CRM_TEST_DATABASE) {
+    fwrite(STDERR, "Cannot seed fixtures: configured MariaDB target could not be verified.\n");
     exit(2);
 }
 

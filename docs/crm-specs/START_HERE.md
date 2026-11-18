@@ -71,7 +71,9 @@ Keep docs/crm-specs/ as the canonical specification location without duplicate f
 
 Για τη στρατηγική και την υποδομή tests χρησιμοποίησε τον SET agent του `.codex/agents/set.toml` όταν είναι διαθέσιμος ως custom agent.
 Αν δεν είναι διαθέσιμος, ακολούθησε τις οδηγίες του αρχείου απευθείας και κατέγραψε την πραγματική δυνατότητα του περιβάλλοντος.
-Οι λεπτομέρειες απομόνωσης Docker, dependencies και βάσης για το W01 ορίζονται στο `development-workflow.md`.
+Οι λεπτομέρειες επιλογής περιβάλλοντος ανά λειτουργικό σύστημα, απομόνωσης, dependencies και βάσης για το W01 ορίζονται στο `development-workflow.md`.
+Σε macOS δοκιμάζουμε με native PHP και MariaDB.
+Σε Linux δοκιμάζουμε μέσω Docker Compose με PHP και MariaDB containers.
 
 Τα failing regression tests του W01 είναι αναμενόμενα RED αποδεικτικά και δεν σημαίνουν PASS της εφαρμογής.
 Το test harness πρέπει να λειτουργεί ώστε η αποτυχία να προέρχεται από το πραγματικό bug και όχι από προβληματικό περιβάλλον.

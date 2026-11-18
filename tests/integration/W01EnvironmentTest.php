@@ -15,7 +15,7 @@ final class W01EnvironmentTest extends TestCase
             (string) getenv('DB_NAME')
         );
 
-        self::assertSame('crm_w01_test', $db->query('SELECT DATABASE()')->fetch_row()[0]);
+        self::assertSame(CRM_TEST_DATABASE, $db->query('SELECT DATABASE()')->fetch_row()[0]);
         self::assertStringStartsWith('10.11', $db->server_info);
     }
 
@@ -25,6 +25,31 @@ final class W01EnvironmentTest extends TestCase
 
         self::assertSame(200, $response['status']);
         self::assertStringContainsString('name="username"', $response['body']);
+    }
+
+    public function testEveryPhpEntrypointRequiresAuthenticationOrIsInternal(): void
+    {
+        $root = CRM_TEST_APP_ROOT;
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+        $checked = 0;
+
+        foreach ($iterator as $file) {
+            if (!$file->isFile() || strtolower($file->getExtension()) !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($root) + 1);
+            if ($relative === 'login.php' || $relative === 'create_user.php' || str_starts_with($relative, 'vendor/')) {
+                continue;
+            }
+
+            $response = $this->get('/' . $relative);
+            self::assertContains($response['status'], [302, 403, 404, 405], $relative . ' must not be publicly callable.');
+            self::assertStringNotContainsString('W01 Fixture', $response['body']);
+            $checked++;
+        }
+
+        self::assertGreaterThan(20, $checked, 'The unauthenticated entrypoint inventory should be broad.');
     }
 
     public function testProtectedTaskListRedirectsUnauthenticatedRequestsToNestedLogin(): void
@@ -124,6 +149,9 @@ final class W01EnvironmentTest extends TestCase
         return [
             'dotenv above app root' => ['/../.env'],
             'database dump above app root' => ['/../accountant_crm.sql'],
+            'database backups' => ['/backups/accountant_crm.sql'],
+            'application logs' => ['/logs/application.log'],
+            'root backup artifact' => ['/accountant_crm.backup'],
             'database include' => ['/includes/db.php'],
             'composer manifest' => ['/composer.json'],
             'composer lock' => ['/composer.lock'],

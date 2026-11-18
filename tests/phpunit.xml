@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit colors="true" cacheDirectory="/tmp/phpunit-cache">
+<phpunit colors="true" cacheDirectory="/tmp/phpunit-cache" bootstrap="bootstrap.php">
     <testsuites>
         <testsuite name="W01 unit smoke">
-            <directory suffix="Test.php">/opt/crm-tests/unit</directory>
+            <directory suffix="Test.php">unit</directory>
         </testsuite>
         <testsuite name="W01 database and HTTP integration">
-            <directory suffix="Test.php">/opt/crm-tests/integration</directory>
+            <directory suffix="Test.php">integration</directory>
         </testsuite>
     </testsuites>
     <php>
-        <env name="CRM_BASE_URL" value="http://app/crm" force="false"/>
+        <env name="CRM_BASE_URL" value="http://127.0.0.1:18080/crm" force="false"/>
     </php>
 </phpunit>

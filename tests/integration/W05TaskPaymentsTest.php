@@ -13,7 +13,7 @@ final class W05TaskPaymentsTest extends TestCase
     protected function setUp(): void
     {
         $this->db = new mysqli((string)getenv('DB_HOST'), (string)getenv('DB_USER'), (string)getenv('DB_PASSWORD'), (string)getenv('DB_NAME'));
-        self::assertSame('crm_w01_test', $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
+        self::assertSame(CRM_TEST_DATABASE, $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
         $clientId = self::CLIENT_ID;
         $clientName = 'W05 Fictional Payment Client';
         $client = $this->db->prepare("INSERT INTO clients (id, name, category) VALUES (?, ?, 'Ιδιώτης') ON DUPLICATE KEY UPDATE name=VALUES(name)");
@@ -30,7 +30,7 @@ final class W05TaskPaymentsTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (isset($this->db) && $this->db->connect_errno === 0 && $this->db->query('SELECT DATABASE()')->fetch_row()[0] === 'crm_w01_test') {
+        if (isset($this->db) && $this->db->connect_errno === 0 && $this->db->query('SELECT DATABASE()')->fetch_row()[0] === CRM_TEST_DATABASE) {
             $this->db->query('DELETE FROM tasks WHERE id = 910020');
             $this->db->query("DELETE FROM task_title_templates WHERE normalized_name LIKE 'w05 %'");
             $this->db->query('DELETE FROM payment_methods WHERE id = 910020');

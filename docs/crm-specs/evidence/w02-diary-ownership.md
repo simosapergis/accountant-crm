@@ -26,3 +26,9 @@ The read test already confirmed that another user's event and note were not rend
 ## Remaining scope
 
 AT-04 remains partial pending review of every personal diary read/write path and broader authorization tests. The broader SEC-03 role checks and other W02 security acceptance criteria are still open; G01 remains `NOT_EVALUATED`.
+
+## Status update - 2026-11-18
+
+This earlier evidence recorded AT-04 as partial at that checkpoint.
+The local W02 baseline is now `DONE_LOCAL`; added note-write isolation and diary mutation CSRF coverage are recorded in [w02-closeout.md](w02-closeout.md).
+G01 remains `NOT_EVALUATED`.

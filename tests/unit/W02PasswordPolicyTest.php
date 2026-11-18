@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-require_once '/var/www/html/crm/includes/password_policy.php';
+require_once CRM_TEST_APP_ROOT . '/includes/password_policy.php';
 
 final class W02PasswordPolicyTest extends TestCase
 {

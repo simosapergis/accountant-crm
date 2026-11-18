@@ -33,3 +33,9 @@ The suite used only the `test-db / crm_w01_test` database. The test restores/rem
 ## Limits and next work
 
 AT-05 remains partial: remaining mutation paths and deletion flows need route-by-route coverage and manual UI review. SEC-04 is not declared complete. Other W02 work remains, including authorization/role checks, XSS-safe output across all contexts, prepared SQL audit, private diary ownership checks, password policy, login throttling/events, cache controls, and further endpoint/method validation. G01 remains `NOT_EVALUATED`.
+
+## Status update - 2026-11-18
+
+This earlier evidence recorded AT-05 as partial at that checkpoint.
+The local W02 baseline is now `DONE_LOCAL`; expanded route and mutation coverage, exact commands and current suite results are recorded in [w02-closeout.md](w02-closeout.md).
+G01 remains `NOT_EVALUATED`.

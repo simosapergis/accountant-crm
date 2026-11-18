@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once '/var/www/html/crm/includes/recurrence.php';
+require_once CRM_TEST_APP_ROOT . '/includes/recurrence.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -16,7 +16,7 @@ final class W06RecurringTasksTest extends TestCase
     protected function setUp(): void
     {
         $this->db = new mysqli((string)getenv('DB_HOST'), (string)getenv('DB_USER'), (string)getenv('DB_PASSWORD'), (string)getenv('DB_NAME'));
-        self::assertSame('crm_w01_test', $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
+        self::assertSame(CRM_TEST_DATABASE, $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
         $id = self::CLIENT_ID;
         $name = 'W06 Fictional Recurrence Client';
         $stmt = $this->db->prepare("INSERT INTO clients (id,name,category) VALUES (?,?,'Ιδιώτης') ON DUPLICATE KEY UPDATE name=VALUES(name)");
@@ -31,7 +31,7 @@ final class W06RecurringTasksTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (!isset($this->db) || $this->db->connect_errno !== 0 || $this->db->query('SELECT DATABASE()')->fetch_row()[0] !== 'crm_w01_test') return;
+        if (!isset($this->db) || $this->db->connect_errno !== 0 || $this->db->query('SELECT DATABASE()')->fetch_row()[0] !== CRM_TEST_DATABASE) return;
         foreach ($this->ruleIds as $id) {
             $this->db->query('DELETE FROM recurrence_occurrences WHERE rule_id=' . (int)$id);
             $this->db->query('DELETE FROM recurring_task_rule_versions WHERE rule_id=' . (int)$id);
@@ -84,7 +84,7 @@ final class W06RecurringTasksTest extends TestCase
     {
         $ruleId = $this->insertRule('2027-03-01', 15, '75.00');
         $otherRuleId = $this->insertRule('2027-03-01', 15, '60.00', 910031, 'W06 Other Rule');
-        $process = proc_open([PHP_BINARY, '/var/www/html/crm/bin/run-recurring-tasks.php', '--as-of=2027-03-31', '--fail-after-task=' . $ruleId . ':2027-03-01'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $process = proc_open([PHP_BINARY, CRM_TEST_APP_ROOT . '/bin/run-recurring-tasks.php', '--as-of=2027-03-31', '--fail-after-task=' . $ruleId . ':2027-03-01'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         self::assertIsResource($process);
         fclose($pipes[0]);
         $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);
@@ -255,7 +255,7 @@ final class W06RecurringTasksTest extends TestCase
     public function testTwoRealSchedulerProcessesCreateOnlyOneOccurrence(): void
     {
         $ruleId = $this->insertRule('2027-03-01', 15, '90.00');
-        $command = [PHP_BINARY, '/var/www/html/crm/bin/run-recurring-tasks.php', '--as-of=2027-03-31'];
+        $command = [PHP_BINARY, CRM_TEST_APP_ROOT . '/bin/run-recurring-tasks.php', '--as-of=2027-03-31'];
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
         $first = proc_open($command, $descriptors, $firstPipes);
         $second = proc_open($command, $descriptors, $secondPipes);
@@ -323,7 +323,7 @@ final class W06RecurringTasksTest extends TestCase
     public function testCliDryRunUsesTestClockAndDoesNotWrite(): void
     {
         $ruleId = $this->insertRule('2027-02-01', 31, '50.00');
-        $process = proc_open([PHP_BINARY, '/var/www/html/crm/bin/run-recurring-tasks.php', '--dry-run', '--as-of=2027-02-28'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $process = proc_open([PHP_BINARY, CRM_TEST_APP_ROOT . '/bin/run-recurring-tasks.php', '--dry-run', '--as-of=2027-02-28'], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         self::assertIsResource($process);
         fclose($pipes[0]);
         $out = stream_get_contents($pipes[1]); $err = stream_get_contents($pipes[2]);

@@ -5,6 +5,7 @@
 
 # Dependencies
 /ACCOUNTANT_CRM/vendor/
+/tests/vendor/
 /tests/e2e/node_modules/
 
 # User data and generated output

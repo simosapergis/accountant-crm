@@ -26,7 +26,7 @@ final class W02CsrfTest extends TestCase
 
     protected function tearDown(): void
     {
-        if ($this->db->connect_errno === 0 && $this->databaseName() === 'crm_w01_test') {
+        if ($this->db->connect_errno === 0 && $this->databaseName() === CRM_TEST_DATABASE) {
             $ajaxFixtureName = 'W02 XSS </script><script>window.crmXss=1</script>';
             $deleteAjaxFixture = $this->db->prepare('DELETE FROM clients WHERE name = ?');
             $deleteAjaxFixture->bind_param('s', $ajaxFixtureName);
@@ -36,11 +36,14 @@ final class W02CsrfTest extends TestCase
             $this->db->query('DELETE FROM diary_events WHERE id = 910099');
             $this->db->query('DELETE FROM diary_events WHERE id = 910098');
             $this->db->query("DELETE FROM diary_notes WHERE user_id = 910002 AND note_date = '2026-11-17'");
+            $this->db->query("DELETE FROM diary_notes WHERE user_id = 910001 AND note_date = '2026-11-17'");
             $this->db->query('DELETE FROM users WHERE id = 910002');
             $this->db->query("UPDATE users SET fullname = 'W01 Fictional User' WHERE id = 910001");
             $this->db->query("UPDATE partners SET fullname = 'W01 Fixture Collaborator' WHERE id = 910001");
             $this->db->query('DELETE FROM active_professionals WHERE id = 910099');
             $this->db->query('DELETE FROM clients WHERE id IN (910098, 910099)');
+            $this->db->query('DELETE FROM tasks WHERE id IN (910096, 910097)');
+            $this->db->query('DELETE FROM clients WHERE id = 910096');
         }
         $this->db->close();
     }
@@ -228,6 +231,30 @@ final class W02CsrfTest extends TestCase
         self::assertSame((string)$before, (string)$after);
     }
 
+    public function testClientFinancialTotalsDisplayExactCents(): void
+    {
+        $this->putClient(910096, 'W02 Exact Total Client');
+        foreach ([[910096, '100.05', '0.01'], [910097, '0.05', '0.02']] as [$id, $fee, $collected]) {
+            $date = '2026-11-18';
+            $title = 'W02 Exact Total Task ' . $id;
+            $clientId = 910096;
+            $status = 'Σε εξέλιξη';
+            $stmt = $this->db->prepare(
+                'INSERT INTO tasks (id,task_date,title,client_id,status,fee,collected) VALUES (?,?,?,?,?,?,?)'
+            );
+            $stmt->bind_param('ississs', $id, $date, $title, $clientId, $status, $fee, $collected);
+            $stmt->execute();
+        }
+
+        $session = $this->login();
+        $response = $this->request('/clients.php?search=' . rawurlencode('W02 Exact Total Client'), 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertSame(2, substr_count($response['body'], '100,10 €'));
+        self::assertSame(2, substr_count($response['body'], '0,03 €'));
+        self::assertSame(2, substr_count($response['body'], '100,07 €'));
+    }
+
     public function testClientSearchDoesNotBroadenForSqlLikeInput(): void
     {
         $session = $this->login();
@@ -377,6 +404,63 @@ final class W02CsrfTest extends TestCase
         self::assertSame(200, $response['status']);
         self::assertStringNotContainsString('W02 Private Diary Event', $response['body']);
         self::assertStringNotContainsString('W02 Private Diary Note', $response['body']);
+    }
+
+    public function testSavingDiaryNoteCannotChangeAnotherUsersNote(): void
+    {
+        $session = $this->login();
+        $page = $this->request('/mydiary.php?date=2026-11-17', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($page['body']);
+        $response = $this->request('/mydiary.php', 'POST', [
+            'note_date' => '2026-11-17',
+            'note_content' => 'W02 Attempted note change',
+            'save_note' => '1',
+            '_csrf_token' => $token,
+        ], $session['cookie']);
+
+        $foreign = $this->db->query('SELECT content FROM diary_notes WHERE user_id = 910002 AND note_date = \'2026-11-17\'')->fetch_assoc();
+        $own = $this->db->query('SELECT content FROM diary_notes WHERE user_id = 910001 AND note_date = \'2026-11-17\'')->fetch_assoc();
+
+        self::assertSame(302, $response['status']);
+        self::assertSame('W02 Private Diary Note', $foreign['content'] ?? null);
+        self::assertSame('W02 Attempted note change', $own['content'] ?? null);
+    }
+
+    public function testDiaryMutationsWithoutCsrfAreRejectedWithoutWrites(): void
+    {
+        $session = $this->login();
+        $beforeEvents = (int)$this->db->query('SELECT COUNT(*) FROM diary_events WHERE user_id = 910001')->fetch_row()[0];
+        $beforeNotes = (int)$this->db->query('SELECT COUNT(*) FROM diary_notes WHERE user_id = 910001')->fetch_row()[0];
+
+        $requests = [
+            ['/mydiary.php', ['save_note' => '1', 'note_date' => '2026-11-18', 'note_content' => 'forged note']],
+            ['/mydiary.php', ['save_event' => '1', 'event_date' => '2026-11-18', 'event_title' => 'forged event']],
+            ['/update_event.php', ['id' => 910098, 'event_date' => '2026-11-18', 'title' => 'forged update']],
+        ];
+
+        foreach ($requests as [$path, $payload]) {
+            $response = $this->request($path, 'POST', $payload, $session['cookie']);
+            self::assertSame(403, $response['status'], $path . ' mutation must require CSRF.');
+        }
+
+        self::assertSame($beforeEvents, (int)$this->db->query('SELECT COUNT(*) FROM diary_events WHERE user_id = 910001')->fetch_row()[0]);
+        self::assertSame($beforeNotes, (int)$this->db->query('SELECT COUNT(*) FROM diary_notes WHERE user_id = 910001')->fetch_row()[0]);
+    }
+
+    public function testEveryPostMutationEntrypointRejectsMissingCsrfToken(): void
+    {
+        $session = $this->login();
+        $routes = [
+            '/client_form.php', '/partner_form.php', '/active_professional_form.php',
+            '/task_form.php', '/mydiary.php', '/update_event.php', '/save_client_ajax.php',
+            '/imports/import_active_professionals.php', '/payment_method_form.php',
+            '/task_title_form.php', '/recurring_task_form.php',
+        ];
+
+        foreach ($routes as $route) {
+            $response = $this->request($route, 'POST', ['name' => 'forged W02 mutation'], $session['cookie']);
+            self::assertSame(403, $response['status'], $route . ' must reject POST without CSRF.');
+        }
     }
 
     public function testAnotherUsersDiaryEventCannotBeUpdated(): void
@@ -550,7 +634,7 @@ final class W02CsrfTest extends TestCase
 
     public function testImportDuplicateCodeErrorEscapesUntrustedCode(): void
     {
-        require_once '/var/www/html/crm/vendor/autoload.php';
+        require_once CRM_TEST_APP_ROOT . '/vendor/autoload.php';
 
         $session = $this->login();
         $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
@@ -650,9 +734,40 @@ final class W02CsrfTest extends TestCase
         self::assertSame($before, $after);
     }
 
+    public function testImportRejectsTruncatedXlsxArchiveWithoutPartialWrites(): void
+    {
+        require_once CRM_TEST_APP_ROOT . '/vendor/autoload.php';
+        $session = $this->login();
+        $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
+        $token = $this->csrfToken($form['body']);
+        $before = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        $workbook = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $workbook->getActiveSheet()->setCellValue('A1', 'truncated archive fixture');
+        $path = tempnam(sys_get_temp_dir(), 'crm-w02-truncated-');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($workbook))->save($path);
+        $xlsx = file_get_contents($path);
+        unlink($path);
+        $truncated = substr((string)$xlsx, 0, max(0, strlen((string)$xlsx) - 22));
+
+        $response = $this->requestMultipart(
+            '/imports/import_active_professionals.php',
+            ['_csrf_token' => $token],
+            'excel_file',
+            'truncated.xlsx',
+            $truncated,
+            $session['cookie']
+        );
+        $after = (int)$this->db->query('SELECT COUNT(*) FROM active_professionals')->fetch_row()[0];
+
+        self::assertSame(400, $response['status']);
+        self::assertStringNotContainsString('/tmp/', $response['body']);
+        self::assertSame($before, $after);
+    }
+
     public function testImportRejectsWorkbookWithInvalidRowWithoutPartialInsert(): void
     {
-        require_once '/var/www/html/crm/vendor/autoload.php';
+        require_once CRM_TEST_APP_ROOT . '/vendor/autoload.php';
         $session = $this->login();
         $form = $this->request('/imports/import_active_professionals.php', 'GET', [], $session['cookie']);
         $token = $this->csrfToken($form['body']);
@@ -943,8 +1058,8 @@ final class W02CsrfTest extends TestCase
 
     private function assertTestDatabase(): void
     {
-        if ($this->databaseName() !== 'crm_w01_test') {
-            throw new RuntimeException('Refusing W02 CSRF fixtures outside crm_w01_test.');
+        if ($this->databaseName() !== CRM_TEST_DATABASE) {
+            throw new RuntimeException('Refusing W02 CSRF fixtures outside the verified test database.');
         }
     }
 

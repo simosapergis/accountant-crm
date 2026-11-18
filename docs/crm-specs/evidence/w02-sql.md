@@ -21,3 +21,9 @@ The MyDiary regression first failed because an apostrophe in a fictional event t
 ## Follow-up
 
 The remaining task/client/professional export filters and partner-analysis export identifiers were reviewed in [w02-exports.md](w02-exports.md). Those export query values are now bound, invalid partner IDs are rejected, and client sorting is allowlisted. SEC-06 / AT-07 remains partial until the broader route, ID, custom-date and sort matrix is complete. G01 remains `NOT_EVALUATED`.
+
+## Status update - 2026-11-18
+
+This earlier evidence recorded AT-07 as partial at that checkpoint.
+The local W02 baseline is now `DONE_LOCAL`; the final dynamic-query source review and acceptance mapping are recorded in [w02-closeout.md](w02-closeout.md).
+G01 remains `NOT_EVALUATED`.

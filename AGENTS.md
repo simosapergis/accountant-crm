@@ -4,9 +4,12 @@
 
 - This is a procedural PHP CRM for an accounting office. PHP pages, shared includes, imports, and exports live in `ACCOUNTANT_CRM/`; the application directory is mounted as the web root by Docker Compose.
 - The root contains `compose.yaml`, `Dockerfile`, `accountant_crm.sql`, and project documentation. The app uses MySQLi and MariaDB. Composer dependencies for the app are declared in `ACCOUNTANT_CRM/composer.json`; PhpSpreadsheet is used for Excel exports.
-- The documented local setup is `docker compose up --build` after copying `.env.example` to `.env`. The compose file currently uses PHP 8.2+ and MariaDB 10.11. Treat these as the local development environment, not as proof of the production server's exact configuration.
-- Read `README.md` for setup, `COMMANDS.md` for local database commands, and `BUGS.md` for known issues. The README includes legacy setup guidance; prefer the Docker setup when working with this repository unless the task concerns the Otenet deployment.
-- The current application has no established automated test suite. Do not assume a test command or test framework exists. The project SET agent definition is `.codex/agents/set.toml`.
+- Detect the operating system first. Σε macOS δοκιμάζουμε με native PHP και MariaDB. Σε Linux δοκιμάζουμε μέσω Docker Compose με PHP και MariaDB containers. Use native Composer and no Docker on macOS, and start from the repository Docker configuration on Linux. Target PHP 8.3 and MariaDB 10.11; local versions do not establish the production configuration.
+- On macOS, verify PHP, MariaDB, Composer, required PHP extensions and PHP-to-MariaDB connectivity, start MariaDB when needed, and use a separate local CRM database and user. For automated tests use a separate isolated test database or temporary test-owned data directory.
+- On Linux, isolate tests in a separate database or Compose project and install development dependencies in the test environment; the production Dockerfile uses Composer `--no-dev`.
+- On both platforms, integration tests use real MariaDB, including SQL, constraints, transactions and concurrency. Verify the actual connection target before reset, import or cleanup; protect development and production databases, use fictional data only, and never log credentials. Test the application at `/crm/`.
+- Read `README.md` for setup, `COMMANDS.md` for local database commands, and `BUGS.md` for known issues. Where older setup guidance conflicts with these platform instructions, follow these instructions and `docs/crm-specs/development-workflow.md`.
+- An automated test harness exists under `tests/`; verify that its runner supports the selected environment before relying on it. The project SET agent definition is `.codex/agents/set.toml`.
 
 ## Product context and client brief
 

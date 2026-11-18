@@ -1,44 +1,107 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Ολοκλήρωση W02 σε τοπικό baseline - 18 Νοεμβρίου 2026
+
+Το W02 ολοκληρώθηκε για τα τοπικά baseline acceptance checks AT-01 έως AT-09, AT-13 έως AT-18 και AT-27.
+Το νέο evidence [w02-closeout.md](evidence/w02-closeout.md) καταγράφει αντιστοίχιση acceptance, πραγματικές εντολές και όρια της επιθεώρησης.
+Πλήρης native MariaDB σουίτα: PASS, 142 tests / 750 assertions.
+Browser E2E στο `/crm/`: PASS, 7 checks για login, session rotation/logout, autocomplete escaping και Secure/HttpOnly/SameSite/path cookie.
+AT-16 επιβεβαιώθηκε στο απομονωμένο local HTTP test setup και σε `.htaccess`· πραγματικό hosting/webroot και private backup/log locations μένουν για deployment verification, όχι για το τοπικό W02 baseline.
+AT-18: τα πραγματικά application task `.xls` και professional `.xlsx` exports ανοίχτηκαν από LibreOffice και μετατράπηκαν επιτυχώς.
+AT-17 προστέθηκε truncated XLSX regression, AT-04/05 πρόσθεσαν diary privacy και πλήρες POST mutation CSRF sweep, AT-06 πρόσθεσε hostile catalog output και AT-27 ακριβή client aggregate cents.
+Η CLI δημιουργία χρήστη εκτελέστηκε σε pseudo-terminal και επαληθεύτηκε αποθήκευση password hash χωρίς εκτύπωση password/hash.
+W02 καταγράφεται `DONE_LOCAL`; αυτό δεν αποτελεί G01 PASS, επειδή W03, W04 και W08 και η ανεξάρτητη συνολική QA παραμένουν ανοιχτά.
+
+## Earlier checkpoints (chronological, superseded by W02 closeout above)
+
+## Τοπική προεπισκόπηση macOS - 18 Νοεμβρίου 2026
+### Συνέχεια W02 - native regressions και CLI account creation - 18 Νοεμβρίου 2026
+
+Προστέθηκε αυτόματο AT-01 inventory που εντοπίζει όλα τα PHP αρχεία του app και επιβεβαιώνει ότι, χωρίς session, αποκρίνονται μόνο με redirect ή άρνηση (εξαιρούνται login και CLI account tool).
+Η πρώτη εκτέλεση βρήκε ότι το logout ορθά απαντά 405 σε GET· το assertion δέχεται πλέον 405 ως ασφαλή method rejection.
+Focused `php tests/vendor/bin/phpunit -c tests/phpunit.xml --filter W01EnvironmentTest` — PASS, 44 tests / 200 assertions.
+Πλήρης native suite μετά την αλλαγή — PASS, 136 tests / 704 assertions.
+Ο SQL source review σε δυναμικά queries δεν εντόπισε μεταβλητές τιμές ενσωματωμένες απευθείας σε `query()`· τα δυναμικά filters περνούν από prepared statements και τα sort clauses είναι σταθερά allowlisted.
+
+
+Διορθώθηκε η native test εκτέλεση των προηγούμενων οκτώ αποτυχιών με test router για απαγορευμένα εσωτερικά paths και test-only PHP ini που περνά το MariaDB socket στις scheduler child processes.
+Η native πλήρης σουίτα πέρασε αρχικά 132 tests / 592 assertions και μετά την επέκταση του AT-16 πέρασε 135 tests / 601 assertions.
+Το `W01EnvironmentTest` ελέγχει πλέον επιπλέον HTTP paths για backup και log αρχεία.
+Η διαδραστική εντολή `php ACCOUNTANT_CRM/create_user.php` εκτελέστηκε με pseudo-terminal απέναντι μόνο στη βάση `crm_test_native_20261118` και δημιούργησε τον πλασματικό admin `w02-cli-admin`· η εισαγωγή password έγινε με απενεργοποιημένη εμφάνιση τερματικού.
+Το E2E HTTPS run του native `/crm/` ολοκλήρωσε επιτυχώς 7 checks όπως καταγράφεται παραπάνω.
+W02 παραμένει `IN_PROGRESS`: το AT-06/07 output/query inventory δεν έχει πλήρη route-by-route ανεξάρτητη επιθεώρηση, το AT-16 δεν έχει επιβεβαιωθεί στο πραγματικό hosting και τα backup/log paths εκεί, το AT-17 χρειάζεται ευρύτερο corrupt-file corpus, το AT-18 δεν έχει χειροκίνητο άνοιγμα των CRM exports σε spreadsheet εφαρμογή, και το AT-27 χρειάζεται συνολική επαλήθευση ποσών/συνόλων στις αναφορές.
+Το PDF export και άλλες επιβεβαιωμένες λειτουργικές εκκρεμότητες παραμένουν στο W08 λόγω Dompdf/dependency και δεν χαρακτηρίζονται ως ολοκληρωμένες μέσω unit checks.
+Επόμενο W02 βήμα: ολοκλήρωση του source/output και SQL route inventory, προσθήκη regressions όπου εντοπιστούν μη καλυμμένοι sinks, και εκτέλεση της διαθέσιμης spreadsheet επιθεώρησης· hosting-only checks θα παραμείνουν ρητά `NOT_RUN` μέχρι το πραγματικό περιβάλλον να είναι διαθέσιμο.
+
+### Συνέχεια native test harness - 18 Νοεμβρίου 2026
+
+Εγκαταστάθηκαν οι PHPUnit dependencies με `composer install --working-dir=tests --prefer-dist --no-interaction` και οι Playwright dependencies με `npm install --prefix tests/e2e --ignore-scripts --cache /tmp/crm-w01-native-npm-cache`.
+Επιβεβαιώθηκε ξανά το προσωρινό MariaDB instance `@@datadir=/tmp/accountant-crm-preview-20261118/data/` και δημιουργήθηκε η ξεχωριστή βάση `crm_test_native_20261118` με χρήστη περιορισμένο μόνο σε αυτή.
+Έγινε import schema χωρίς `DROP TABLE`, έλεγχος preflight, migrations και seed μόνο πλασματικών fixtures.
+Το native PHP server εξυπηρέτησε την εφαρμογή κάτω από `/crm/`, με test router για προστασία εσωτερικών αρχείων και test-only PHP ini που περνά το socket στις CLI child processes.
+Focused suite `php tests/vendor/bin/phpunit -c tests/phpunit.xml --filter 'W01EnvironmentTest|W06RecurringTasksTest'` — PASS, 57 tests / 207 assertions.
+Πλήρης σουίτα `php tests/vendor/bin/phpunit -c tests/phpunit.xml` — PASS, 132 tests / 592 assertions.
+Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' CRM_BASE_URL=https://127.0.0.1:18443/crm npm --prefix tests/e2e --cache /tmp/crm-w01-native-npm-cache test` — PASS, 7 checks: `/crm/` login, session rotation/logout, autocomplete escaping και cookie Secure/HttpOnly/SameSite/path.
+Το HTTPS E2E έγινε μέσω προσωρινού loopback TLS proxy και self-signed certificate· δεν αποτελεί έλεγχο production TLS.
+Οι αποτυχίες της πρώτης native εκτέλεσης οφείλονταν στην έλλειψη test router και ini ρύθμισης στις child processes· μετά την προετοιμασία τους όλα τα 132 PHPUnit tests και τα 7 browser checks πέρασαν.
+Τα αποτελέσματα αυτά επαληθεύουν το τρέχον native harness, δεν αλλάζουν το G01 (`NOT_EVALUATED`) ούτε κλείνουν τα εκκρεμή W02/W03/W04/W08 acceptance criteria.
+
+Ξεκίνησε native PHP 8.3.36 και προσωρινό, απομονωμένο instance MariaDB 10.11.19 με data directory `/tmp/accountant-crm-preview-20261118/data` και socket στο ίδιο directory.
+Η σύνδεση επαλήθευσε το data directory και τη χωριστή βάση `crm_preview_20261118` πριν από την εισαγωγή μόνο του schema, χωρίς τις εντολές `DROP TABLE`.
+Εφαρμόστηκαν τα migrations και δημιουργήθηκε πλασματικός χρήστης προεπισκόπησης.
+Η εντολή `composer install --working-dir=ACCOUNTANT_CRM --no-dev --prefer-dist --no-interaction` ολοκληρώθηκε επιτυχώς με πρόσβαση δικτύου.
+Η εντολή `sh /tmp/accountant-crm-preview-20261118/start.sh` ξεκίνησε την εφαρμογή στο `http://127.0.0.1:18080/crm/`.
+Το `curl -sS -o /tmp/accountant-crm-preview-20261118/login.html -w 'HTTP %{http_code}\n' http://127.0.0.1:18080/crm/login.php` επέστρεψε HTTP 200.
+Το `python3 /tmp/accountant-crm-preview-20261118/smoke.py` επιβεβαίωσε σύνδεση και ανακατεύθυνση στο `/crm/index.php` με HTTP 200.
+Η πρώτη προσπάθεια δημιουργίας χρήστη με ελληνικό fullname απέτυχε λόγω της κωδικοποίησης της στήλης `users.fullname` και η προεπισκόπηση χρησιμοποιεί λατινικό fullname.
+Δεν εκτελέστηκε πλήρης σουίτα ή browser QA και τα G01 και τα ανοιχτά κριτήρια παραμένουν ως έχουν.
+Επόμενο βήμα είναι ο έλεγχος των ροών από τον χρήστη και η διερεύνηση του προβλήματος κωδικοποίησης πριν θεωρηθεί επιλυμένο.
+
+## Ενημέρωση περιβάλλοντος ανά λειτουργικό σύστημα - 18 Νοεμβρίου 2026
+
+Η ανάθεση ενημερώνει τις οδηγίες για native PHP και MariaDB σε macOS και Docker Compose σε Linux, χωρίς αλλαγή των λειτουργικών απαιτήσεων ή του G01.
+Η εντολή `uname -s && php -v && mariadb --version && composer --version` εκτελέστηκε στο παρόν μηχάνημα και επέστρεψε Darwin, PHP 8.3.36, MariaDB 10.11.19 και Composer 2.11.2.
+Η εντολή `git rev-parse --short HEAD` επέστρεψε `292a2f8` και το branch είναι `codex/crm-w05-w07-features`.
+Οι προηγούμενες αποδείξεις W01 αφορούν το τότε Docker περιβάλλον και διατηρούνται ως ιστορικές.
+Δεν επαληθεύτηκαν σε αυτή την αλλαγή extensions, σύνδεση βάσης, native test runner ή πραγματική ροή `/crm/` και δεν εκτελέστηκαν tests εφαρμογής.
+Η εγκατάσταση των runtimes δεν αποτελεί νέο PASS της εφαρμογής ούτε από μόνη της ολοκλήρωση του W01.
+Η υπάρχουσα ιστορική αποδοχή W01 δεν αποδεικνύει ότι η native υποδομή macOS είναι έτοιμη.
+Επόμενο βήμα για δοκιμές στο macOS είναι η προσαρμογή και επαλήθευση απομονωμένου native test περιβάλλοντος, με έλεγχο του πραγματικού στόχου πριν από κάθε import ή cleanup.
+Το G01 παραμένει `NOT_EVALUATED` και οι ήδη καταγεγραμμένες εκκρεμότητες και η ιστορική εξαίρεση σειράς παραμένουν ως έχουν.
+
 Τελευταία ενημέρωση: 18 Νοεμβρίου 2026.
-Κατάσταση: W01 ολοκληρώθηκε· W02 παραμένει ανοιχτό και αναβλημένο· W05/W06/W07 έχουν υλοποιηθεί τοπικά, με ορισμένα acceptance checks ακόμη ανοιχτά.
+Κατάσταση: W01 ολοκληρώθηκε· W02 ολοκληρώθηκε για τοπικό baseline· W03/W04/W08 και G01 παραμένουν ανοιχτά· W05/W06/W07 έχουν υλοποιηθεί τοπικά με ορισμένα acceptance checks ακόμη ανοιχτά.
 Έκδοση specs: 1.6.
 
 ## Εξαίρεση σειράς εργασιών
 
-Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να αναβληθεί η ολοκλήρωση των υπολοίπων W02/W03/W04/W08 και του G01, να υλοποιηθούν πρώτα τα νέα features W05/W06/W07 σε ξεχωριστό branch από το W02 και να επιστρέψει η εργασία στα υπολειπόμενα πακέτα μετά την υλοποίηση των features. Αυτό αποτελεί ρητή εξαίρεση από την κανονική πύλη `G01` στο `tasks.md`. Το `codex/crm-w05-w07-features` δημιουργήθηκε από το W02 checkpoint `466eb18`. Η τοπική υλοποίηση W05/W06/W07 έχει ολοκληρωθεί και checkpointed· ορισμένα browser/hosting acceptance checks παραμένουν ανοιχτά. Τα W02/W03/W04/W08 παραμένουν ανοιχτά, το G01 δεν έχει PASS και δεν γίνεται production sign-off ή deployment.
+Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να ολοκληρωθούν πρώτα τα W05/W06/W07 σε branch ξεχωριστό από το W02 και μετά να επιστρέψει η εργασία στα υπόλοιπα πακέτα. Η εξαίρεση σειράς υλοποιήθηκε: το `codex/crm-w05-w07-features` βασίστηκε στο W02 checkpoint `466eb18`, και τώρα το W02 ολοκληρώθηκε τοπικά. Το G01 δεν έχει PASS· W03/W04/W08, W05/W06/W07 sign-off, ανεξάρτητη QA και production checks παραμένουν ανοιχτά.
 
 Το αρχείο καταγράφει την πραγματική πρόοδο και τα αποδεικτικά. Δεν πιστοποιεί πρόσβαση ή εγκατάσταση στην παραγωγή.
 
 ## Σύνοψη τρέχουσας προόδου
 
-- Τρέχον branch: `codex/crm-w05-w07-features`, based on W02 commit `466eb18`; local feature implementation is complete. W02 security remainder is deferred by explicit user direction.
-- Formally accepted packages: 1 από 10 (W01). W05/W06/W07 are implemented locally but not signed off; G01 remains `NOT_EVALUATED`.
+- Τρέχον branch: `codex/crm-w05-w07-features`, based on W02 commit `466eb18`; local feature implementation is complete. W02 local baseline is now `DONE_LOCAL`; G01 and remaining package sign-offs are still open.
+- Formally accepted packages: W01 and W02 local baseline. W05/W06/W07 are implemented locally but not signed off; G01 remains `NOT_EVALUATED`.
 - W01: απομονωμένο Docker περιβάλλον, test DB guards/fixtures, PHPUnit και browser runners, frozen clock και baseline evidence.
-- W02 μέχρι τώρα: κοινό session bootstrap, session cookie policy, session ID rotation στο login, idle timeout, auth guards και `/crm/` redirects· CSRF validation για POST, POST-only logout/AJAX mutations και POST deletion forms.
-- W02 / SEC-04 / AT-05: PARTIAL — tests cover missing/invalid/foreign CSRF tokens, valid update/delete, login/logout and representative GET deletions. Δεν έχει ολοκληρωθεί ολόκληρο το route matrix ή το συνολικό W02 security audit.
-- W02 / ROL-03 / AT-04: PARTIAL — private diary read filtering and foreign event update/delete rejection have tests and implementation.
-- W02 / SEC-05 / AT-06: PARTIAL — existing header, diary, autocomplete, import feedback, AJAX handoff, partner Excel, active-professional PDF HTML and export-link attributes have targeted fixes. Full output inventory and Dompdf rendering remain unverified.
-- W02 / SEC-06 / AT-07: PARTIAL — client, partner, task, active-professional, autocomplete, MyDiary and remaining export query families use prepared statements for values. Export identifiers are strictly validated; sort clauses are fixed or allowlisted. Export regressions cover query filters, partner IDs, cache policy and spreadsheet text handling.
-- ROL-02 / AT-03: PARTIAL — a logged-in `user` can edit shared tasks and use recurrence flows with valid CSRF; catalog routes are restricted to admin and role tests cover their read/write denial. Remaining W02 role/route matrix is deferred. W05 catalog routes now exist and have focused acceptance tests.
-- SEC-07/08 / AT-08/09: password length/algorithm limits are enforced by shared policy, login preserves surrounding spaces, and tests verify no plaintext hash storage.
-- SEC-11/12 / AT-14/15: exact idle timeout boundary and cache headers on representative authenticated pages/exports are covered. Logout/old-cookie browser coverage remains in earlier evidence.
-- SEC-14 / AT-17/18: import size/type/preflight/transaction behavior and literal spreadsheet text handling have regressions; corrupt workbook breadth and real spreadsheet application verification remain open.
-- SEC-13 / AT-16: existing probes deny direct access to app config, include/vendor internals, Composer manifests and installer paths. W05/W06 also deny HTTP access to the new CLI/migration directories. Actual hosting/webroot behavior still requires verification.
-- PAY-08 / AT-27: task fee/collection input parses to integer cents and persists canonical decimal strings. W05 verifies the task payment snapshot, zero-clear behavior, legacy rows, exports and over-collection.
+- W02: DONE_LOCAL για AT-01..09, AT-13..18 και AT-27· πλήρες scope και evidence στο [W02 closeout](evidence/w02-closeout.md).
+- W02 baseline: `DONE_LOCAL`; detailed AT mapping and actual command output are in [W02 closeout](evidence/w02-closeout.md). Hosting verification remains a deployment check and W08 PDF dependency/rendering remains separate.
+- SEC-07/08 / AT-08/09: password length/algorithm limits are enforced by shared policy; the CLI-created test account was verified to contain a supported hash without exposing credential material.
+- SEC-11/12 / AT-13/14/15: idle timeout and cache controls have integration tests; native browser E2E verifies rotation, cookie attributes, logout and rejection of the old session.
+- W02 output/query/money scope: prepared-query review, hostile catalog/output tests, spreadsheet-open checks and exact aggregate cents are summarized in the W02 closeout evidence.
 - W05 catalogs/payments: see [W05 evidence](evidence/w05-catalogs-payments.md) for admin-only catalogs, task title suggestions, server-generated payment snapshots and views/exports.
 - W06/W07 recurrence: see [recurrence evidence](evidence/w06-w07-recurring.md) for temporal rule versions, stop/restart, transactional CLI scheduling, batch catch-up and MariaDB concurrency coverage.
 - REC-01 / AT-29: New task form offers monthly recurrence settings; task and rule persist in one transaction. Invalid recurrence settings do not leave an unlinked task. See [W06/W07 evidence](evidence/w06-w07-recurring.md).
-- Latest full PHPUnit run: PASS, 132 tests / 592 assertions in a fresh disposable Compose project targeting isolated `test-db / crm_w01_test`. In the long-lived preview DB, 130 tests / 565 assertions pass when excluding two global scheduler count checks affected by an existing active fictional rule; the two checks pass in the clean project. Browser/E2E has not been rerun; final keyboard/mobile review remains open.
-- Deferred W02 items: complete AT-04/05 route matrices; finish broader AT-06/07 output and query coverage; exercise CLI account creation for AT-08/09; verify AT-16 against actual hosting/webroot and backup/log paths; broaden corrupt import cases for AT-17; open real spreadsheet exports in a compatible application for AT-18; audit broader money displays/totals under AT-27.
-- Next sequencing: when work resumes, return to deferred W02, W03, W04 and W08, then evaluate G01. W05/W06/W07 do not receive a full PASS until their remaining acceptance checks are completed. Do not merge to `main`, deploy, or claim a security pass while required criteria remain open.
+- Latest full PHPUnit run: PASS, 142 tests / 750 assertions in the native macOS test environment; prior clean Compose run: 132 tests / 592 assertions targeting isolated `test-db / crm_w01_test`. In the long-lived preview DB, 130 tests / 565 assertions pass when excluding two global scheduler count checks affected by an existing active fictional rule; the two checks pass in the clean project. Browser/E2E: PASS, 7 checks in the native `/crm/` environment; final keyboard/mobile product review remains open.
+- W02 residual external check: verify private paths against actual hosting/webroot and backup/log configuration during deployment. This does not change the local W02 result. PDF rendering and Dompdf remain W08 items.
+- Next sequencing: proceed with W03, then W04/W08, then evaluate G01. W05/W06/W07 do not receive full sign-off until their remaining acceptance checks are completed. G01 is not a PASS and no production sign-off or deployment is recorded.
 
 ## Καταγραφή τρέχουσας εργασίας
 
 | Καταγραφή | Αποτέλεσμα |
 |---|---|
 | Αρχικό σημείο αναφοράς | `27a805fbafcab86d0673c1f7f4911a45c1fcc8f1`; branch `codex/crm-w01-bootstrap`. |
-| Τρέχον Git σημείο | W02 branch `codex/crm-w02-security-audit` includes progress-sequence commit `466eb18`; feature branch `codex/crm-w05-w07-features` was created from that commit. W05/W06/W07 local implementation and evidence are checkpointed on the feature branch; W02 and G01 remain open. |
+| Τρέχον Git σημείο | W02 branch `codex/crm-w02-security-audit` includes progress-sequence commit `466eb18`; feature branch `codex/crm-w05-w07-features` was created from that commit. W05/W06/W07 local implementation and evidence are checkpointed on the feature branch; W02 is now `DONE_LOCAL` and G01 remains open. |
 | Specs και οδηγίες | Το `docs/crm-specs/` εισήχθη ως canonical αντίγραφο. Ενημερώθηκε το `AGENTS.md` για το canonical spec path και την επιβεβαιωμένη συμπεριφορά recurring tasks χωρίς scheduled end date. |
 | W01 baseline | [w01-baseline.md](evidence/w01-baseline.md): 34 tests, 5 PASS / 29 RED πριν από τις W02 διορθώσεις. Καταγράφηκαν δημόσια routes/data exposure, redirects εκτός `/crm/` και cookie policy gaps. |
 | W02 RED | [w02-csrf.md](evidence/w02-csrf.md): πριν από την υλοποίηση, 38 tests / 3 failures για POST χωρίς CSRF, token field που έλειπε και GET διαγραφή πελάτη που εκτελούνταν. |
@@ -63,7 +126,7 @@
 | Πακέτο | Κατάσταση | Αποδεικτικό / εκκρεμότητα |
 |---|---|---|
 | W01 | DONE | [W01 baseline](evidence/w01-baseline.md), test harness, fixtures, clock και runners. |
-| W02 | IN_PROGRESS | Auth/session, selected CSRF/method, diary ownership, export filters and selected XSS paths verified; [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). Deferred under the user's sequencing exception: remainder of AT-04/05/06/07, CLI password flow, hosting path checks, broader import/formula safety and money review. G01 remains NOT_EVALUATED. |
+| W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
 | W03 | NOT_STARTED | Feature-specific additive migrations and a version/checksum runner are used by W05/W06; the W03 baseline install/upgrade/failure criteria remain deferred. |
 | W04 | NOT_STARTED | — |
 | W08 | NOT_STARTED | — |
@@ -76,7 +139,7 @@
 
 ## Ακριβές επόμενο βήμα
 
-When resumed, return to the deferred W02/W03/W04/W08 criteria and then evaluate G01. Keep the feature branch separate; G01 stays `NOT_EVALUATED` until its full criteria are verified and documented.
+W02 local baseline is complete. Continue with W03, W04 and W08, then evaluate G01. Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
 
 ## Τελευταίο βήμα TDD
 

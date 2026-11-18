@@ -18,7 +18,7 @@ final class W05CatalogsTest extends TestCase
             (string)getenv('DB_PASSWORD'),
             (string)getenv('DB_NAME')
         );
-        self::assertSame('crm_w01_test', $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
+        self::assertSame(CRM_TEST_DATABASE, $this->db->query('SELECT DATABASE()')->fetch_row()[0]);
 
         $username = self::ADMIN_USERNAME;
         $hash = password_hash(self::ADMIN_PASSWORD, PASSWORD_DEFAULT);
@@ -54,6 +54,36 @@ final class W05CatalogsTest extends TestCase
 
         self::assertSame(200, $this->request('/payment_methods.php', 'GET', [], $admin['cookie'])['status']);
         self::assertSame(200, $this->request('/task_titles.php', 'GET', [], $admin['cookie'])['status']);
+    }
+
+    public function testHostileCatalogNamesRemainEscapedInCatalogAndTaskForm(): void
+    {
+        $name = '<img src=x onerror="window.crmXss=1">';
+        $normalized = mb_strtolower($name, 'UTF-8');
+        foreach ([['payment_methods', 'name'], ['task_title_templates', 'name']] as [$table, $column]) {
+            $stmt = $this->db->prepare("INSERT INTO {$table} (name, normalized_name, is_active) VALUES (?, ?, 1)");
+            $stmt->bind_param('ss', $name, $normalized);
+            $stmt->execute();
+        }
+
+        try {
+            $admin = $this->login(self::ADMIN_USERNAME, self::ADMIN_PASSWORD);
+            $methods = $this->request('/payment_methods.php', 'GET', [], $admin['cookie']);
+            $titles = $this->request('/task_titles.php', 'GET', [], $admin['cookie']);
+            $task = $this->request('/task_form.php', 'GET', [], $admin['cookie']);
+
+            foreach ([$methods['body'], $titles['body'], $task['body']] as $body) {
+                self::assertStringNotContainsString('<img src=x', $body);
+                self::assertStringContainsString('&lt;img', $body);
+            }
+            self::assertStringNotContainsString('onerror="window.crmXss=1"', $task['body']);
+        } finally {
+            foreach (['payment_methods', 'task_title_templates'] as $table) {
+                $stmt = $this->db->prepare("DELETE FROM {$table} WHERE normalized_name = ?");
+                $stmt->bind_param('s', $normalized);
+                $stmt->execute();
+            }
+        }
     }
 
     public function testUserCannotViewOrPostToCatalogManagement(): void

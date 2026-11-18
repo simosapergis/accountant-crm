@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-require_once '/var/www/html/crm/includes/money.php';
+require_once CRM_TEST_APP_ROOT . '/includes/money.php';
 
 final class W02MoneyTest extends TestCase
 {

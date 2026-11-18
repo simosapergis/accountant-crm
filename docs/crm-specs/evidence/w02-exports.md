@@ -44,3 +44,10 @@ Latest complete isolated suite after these changes: PASS, 97 tests / 354 asserti
 Added a regression proving a logged-in `user` can edit a shared task with a valid CSRF token (ROL-02 / AT-03, existing-task slice). No existing catalog management route exists to test an admin-only boundary; AT-02 remains not applicable until the W05 catalog screens are introduced. New catalog role enforcement remains required in W05. Diary ownership regressions are recorded in `w02-diary-ownership.md`.
 
 AT-06 and AT-07 remain PARTIAL: the full output and export route/filter matrix has not been executed, and active-professional PDF rendering remains blocked by missing Dompdf. AT-16's app-local routes are denied in the isolated HTTP matrix; hosting webroot and backup/log path verification is deferred. AT-17 needs broader malformed/corrupt workbook cases; AT-18 needs opening the exported files in a compatible spreadsheet application. `create_user.php` still needs an interactive CLI acceptance run. AT-27 covers task form inputs; broader money displays and related export totals have not received a full audit. ROL-03/AT-04 and SEC-04/AT-05 route matrices remain partial. Per the user's sequencing exception documented in `implementation-status.md`, these remaining W02 checks are deferred until after the planned feature work; W02/G01 remain incomplete and no security pass is claimed.
+
+## Status update - 2026-11-18
+
+This earlier evidence recorded AT-06/07, AT-17/18 and AT-27 as partial at that checkpoint.
+The local W02 baseline is now `DONE_LOCAL`; truncated-import coverage, real spreadsheet opening, aggregate-cents verification and the final native suite are recorded in [w02-closeout.md](w02-closeout.md).
+Actual hosting verification is deferred to deployment, and PDF rendering remains a W08 dependency item.
+G01 remains `NOT_EVALUATED`.
