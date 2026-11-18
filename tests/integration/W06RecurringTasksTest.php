@@ -80,6 +80,18 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame(3, (int)$this->db->query('SELECT COUNT(*) FROM recurrence_occurrences WHERE rule_id=' . $ruleId)->fetch_row()[0]);
     }
 
+    public function testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule(): void
+    {
+        $session = $this->login();
+        $response = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('Δεν υπάρχουν ακόμη επαναλαμβανόμενες εργασίες</h3>', $response['body']);
+        self::assertStringContainsString('Για να δημιουργήσετε την πρώτη, προσθέστε εργασία και ενεργοποιήστε τη μηνιαία επανάληψη στη φόρμα.', $response['body']);
+        self::assertStringContainsString('href="task_form.php"', $response['body']);
+        self::assertStringContainsString('Δημιουργία εργασίας', $response['body']);
+    }
+
     public function testDifferentRulesBecomeDueOnTheirOwnDays(): void
     {
         $dayOne = $this->insertRule('2027-03-01', 1, '10.00', 910041, 'W06 Day One');
@@ -209,6 +221,9 @@ final class W06RecurringTasksTest extends TestCase
 
         self::assertSame(302, $this->request('/recurring_task_form.php?task_id=910030', 'POST', $payload, $session['cookie'])['status']);
         self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM recurring_task_rules WHERE source_task_id=910030 AND state="active"')->fetch_row()[0]);
+        $list = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+        self::assertStringContainsString('W06 Fictional Recurrence Client', $list['body']);
+        self::assertStringNotContainsString('Δεν υπάρχουν ακόμη επαναλαμβανόμενες εργασίες', $list['body']);
     }
 
     public function testAdminCanEditSharedTaskAndCreateMonthlyRule(): void

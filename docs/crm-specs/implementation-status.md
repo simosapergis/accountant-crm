@@ -1,5 +1,17 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Recurring-task empty-state fix - 18 November 2026
+
+The user authorized fixing the documented blank panel after previously choosing to leave it unchanged.
+Reproduced the empty recurring list in the authenticated browser at `/crm/recurring_tasks.php` with zero rules in the guarded isolated DB.
+Added `W06RecurringTasksTest::testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule`; its pre-fix HTTP run failed because the empty page had no guidance or create action.
+The page now shows an accessible empty-state message explaining that a new task can enable monthly recurrence, plus a `Δημιουργία εργασίας` action leading to the existing task form.
+The non-empty list continues to render rule rows, covered by the existing recurrence HTTP test.
+Focused `W06RecurringTasksTest`: PASS, 19 tests / 137 assertions; full guarded PHPUnit suite: PASS, 162 tests / 1,023 assertions.
+Browser verification confirmed the empty-state layout and that its action opens the new-task form with the recurrence control.
+The desktop screenshot also shows the authenticated username clipped at the right edge of the navigation; this separate issue is recorded and remains unchanged.
+G01 remains `NOT_EVALUATED` pending an independent review of the exact resulting commit; no production or hosting access occurred.
+
 ### G01 follow-up review - 18 November 2026
 
 Continued from commit `393ac41` on `codex/crm-remaining-tasks`.

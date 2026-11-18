@@ -124,3 +124,17 @@ It confirmed the 33-route inventory, the admin-role task/recurrence regression, 
 The reviewer did not approve G01 because the recurring-task empty screen has an unexplained blank panel and remains an open UI issue.
 G01 remains `NOT_EVALUATED` until that issue is resolved and the exact final state is reviewed.
 On 18 November 2026, the user asked to leave the UI unchanged and keep the issue documented.
+
+## Recurring-task empty-state regression and fix
+
+The user later authorized fixing this issue.
+The empty state was reproduced in the authenticated browser with zero recurring rules in the guarded isolated database; before the fix, the screen displayed only the table header inside a blank panel.
+The new regression `W06RecurringTasksTest::testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule` failed before the fix because the response had no empty-state guidance or create action.
+The page now replaces the empty table with a labeled empty-state section that explains how to create the first recurring rule and links to the task form, where monthly recurrence can be enabled.
+The existing recurring-rule creation test now also verifies that the non-empty list still displays its rule and does not show the empty-state message.
+Focused `W06RecurringTasksTest` passed with 19 tests / 137 assertions; the full guarded PHPUnit suite passed with 162 tests / 1,023 assertions.
+Browser verification at a 1280-pixel viewport showed the guidance and action in a centered panel; activating the action opened `/crm/task_form.php` with the recurrence checkbox visible.
+No data was created or changed during the browser inspection.
+The same desktop screenshot shows the authenticated username clipped at the right edge of the top navigation.
+This is a separate visual issue and was not changed as part of the authorized empty-state fix.
+The earlier independent review applies to commit `df84d7b`, before this fix; an independent re-review of the final fix commit is required before recording any G01 result.

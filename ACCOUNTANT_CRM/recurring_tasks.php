@@ -14,6 +14,13 @@ require __DIR__ . '/includes/header.php';
 ?>
 <div class="page-container">
     <h2>Επαναλαμβανόμενες εργασίες</h2>
+    <?php if ($result->num_rows === 0): ?>
+        <section class="empty-state" aria-labelledby="recurring-empty-title">
+            <h3 id="recurring-empty-title">Δεν υπάρχουν ακόμη επαναλαμβανόμενες εργασίες</h3>
+            <p>Για να δημιουργήσετε την πρώτη, προσθέστε εργασία και ενεργοποιήστε τη μηνιαία επανάληψη στη φόρμα.</p>
+            <a href="task_form.php" class="btn btn-primary">Δημιουργία εργασίας</a>
+        </section>
+    <?php else: ?>
     <div class="table-wrapper"><table>
         <thead><tr><th>Πελάτης</th><th>Τίτλος</th><th>Ημέρα</th><th>Έναρξη</th><th>Αμοιβή</th><th>Κατάσταση</th><th>Εργασίες</th><th>Ρυθμίσεις</th></tr></thead>
         <tbody>
@@ -31,5 +38,6 @@ require __DIR__ . '/includes/header.php';
         <?php endwhile; ?>
         </tbody>
     </table></div>
+    <?php endif; ?>
 </div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

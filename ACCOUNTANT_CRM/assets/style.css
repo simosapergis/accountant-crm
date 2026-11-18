@@ -87,6 +87,41 @@ body {
     margin-bottom: 20px;
 }
 
+.empty-state {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.10);
+    margin: 18px 0 20px;
+    padding: 32px 24px;
+    text-align: center;
+}
+
+.empty-state h3 {
+    margin: 0 0 10px;
+    font-size: 19px;
+}
+
+.empty-state p {
+    color: #555;
+    line-height: 1.6;
+    margin: 0 auto 20px;
+    max-width: 560px;
+}
+
+.empty-state .btn {
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .empty-state {
+        padding: 24px 18px;
+    }
+
+    .empty-state .btn {
+        width: 100%;
+    }
+}
+
 /* ----------------------------------------------------
    DASHBOARD CARDS (ΠΙΝΑΚΕΣ ΣΥΓΚΕΝΤΡΩΤΙΚΩΝ)
 ---------------------------------------------------- */
