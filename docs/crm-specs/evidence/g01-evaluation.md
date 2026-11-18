@@ -2,6 +2,9 @@
 
 ## Current re-evaluation - 18 November 2026
 
+The recurring-task list now has mobile cards after a RED/GREEN regression cycle; focused W06 passed with 20 tests / 149 assertions, full PHPUnit passed with 163 tests / 1,035 assertions, and all 9 browser checks passed.
+This working-tree change has received human visual acceptance for the recurring-rule cards, but has not yet received independent review; the previous exact-commit G01 result below remains historical and G01 remains `NOT_EVALUATED`.
+
 Reviewed code: `d7476c500ead6e5802228a229b789eea2e381ca8` on `codex/crm-remaining-tasks`.
 Result: `NOT_EVALUATED` pending human inspection and acceptance of the remaining key application layouts.
 
@@ -9,7 +12,7 @@ The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on clean
 The browser E2E suite passed all 8 checks, including both catalog cards at 390 and 320 pixels and desktop table behavior at 1024 pixels.
 PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
 The independent G01 reviewer checked the full checklist against this exact commit, found no open critical/high issue, and found the local route/security and existing-flow evidence sufficient.
-The user's visual approval covers the task-title and payment-method catalogs only.
+The user's visual approval covers the task-title and payment-method catalogs and the newly added recurring-rule cards.
 Human acceptance of the recurring-task empty state and compact navigation/header is still required.
 The reviewer did not grant G01 PASS because AT-50 human inspection remains incomplete and the final PASS record is not yet present.
 

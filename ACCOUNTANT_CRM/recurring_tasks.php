@@ -21,7 +21,30 @@ require __DIR__ . '/includes/header.php';
             <a href="task_form.php" class="btn btn-primary">Δημιουργία εργασίας</a>
         </section>
     <?php else: ?>
-    <div class="table-wrapper"><table>
+    <section class="recurring-mobile-list" aria-label="Επαναλαμβανόμενες εργασίες">
+        <?php while ($rule = $result->fetch_assoc()): ?>
+            <?php $isActive = $rule['state'] === 'active'; ?>
+            <article class="recurring-mobile-card">
+                <div class="recurring-mobile-card-top">
+                    <div class="recurring-mobile-name-group">
+                        <span class="recurring-mobile-field-label">Πελάτης</span>
+                        <p class="recurring-mobile-client"><?= htmlspecialchars((string)$rule['client_name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
+                    </div>
+                    <span class="recurring-status-pill <?= $isActive ? 'recurring-status-active' : 'recurring-status-stopped' ?>"><?= $isActive ? 'Ενεργός' : 'Σταματημένη' ?></span>
+                </div>
+                <h3 class="recurring-mobile-title"><?= htmlspecialchars((string)$rule['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h3>
+                <dl class="recurring-mobile-details">
+                    <div><dt>Ημέρα</dt><dd><?= (int)$rule['day_of_month'] ?> του μήνα</dd></div>
+                    <div><dt>Έναρξη</dt><dd><?= htmlspecialchars(substr((string)$rule['start_month'], 0, 7), ENT_QUOTES, 'UTF-8') ?></dd></div>
+                    <div><dt>Αμοιβή</dt><dd><?= formatMoney($rule['fee']) ?></dd></div>
+                    <div><dt>Εργασίες</dt><dd><?= (int)$rule['occurrence_count'] ?></dd></div>
+                </dl>
+                <a class="btn btn-secondary" href="recurring_task_form.php?<?= $isActive ? 'id' : 'restart_id' ?>=<?= (int)$rule['id'] ?>"><?= $isActive ? 'Ρυθμίσεις' : 'Επανέναρξη' ?></a>
+            </article>
+        <?php endwhile; ?>
+    </section>
+    <?php $result->data_seek(0); ?>
+    <div class="table-wrapper recurring-table-wrapper"><table class="recurring-table">
         <thead><tr><th>Πελάτης</th><th>Τίτλος</th><th>Ημέρα</th><th>Έναρξη</th><th>Αμοιβή</th><th>Κατάσταση</th><th>Εργασίες</th><th>Ρυθμίσεις</th></tr></thead>
         <tbody>
         <?php while ($rule = $result->fetch_assoc()): ?>

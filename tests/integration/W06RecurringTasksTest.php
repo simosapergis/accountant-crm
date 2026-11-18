@@ -95,6 +95,23 @@ final class W06RecurringTasksTest extends TestCase
         self::assertStringContainsString('Δημιουργία εργασίας', $response['body']);
     }
 
+    public function testRecurringTaskListRendersMobileCardsAndKeepsDesktopTable(): void
+    {
+        $ruleId = $this->insertRule('2026-12-01', 15, '125.50', 910045, 'W06 Mobile Card Filing');
+        $session = $this->login();
+        $response = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('class="recurring-mobile-list"', $response['body']);
+        self::assertStringContainsString('class="recurring-mobile-card"', $response['body']);
+        self::assertStringContainsString('W06 Fictional Recurrence Client', $response['body']);
+        self::assertStringContainsString('W06 Mobile Card Filing', $response['body']);
+        self::assertStringContainsString('125,50', $response['body']);
+        self::assertStringContainsString('href="recurring_task_form.php?id=' . $ruleId . '"', $response['body']);
+        self::assertStringContainsString('<table class="recurring-table">', $response['body']);
+        self::assertStringContainsString('<th>Πελάτης</th>', $response['body']);
+    }
+
     public function testDifferentRulesBecomeDueOnTheirOwnDays(): void
     {
         $dayOne = $this->insertRule('2027-03-01', 1, '10.00', 910041, 'W06 Day One');

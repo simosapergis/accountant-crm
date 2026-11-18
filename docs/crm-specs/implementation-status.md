@@ -1,5 +1,14 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Recurring-task mobile cards - 18 November 2026
+
+At the user's request, the recurring-task list now renders cards only at widths up to 768 pixels and retains its desktop table.
+Cards include the existing rule details and settings/restart action.
+The regression first failed without mobile markup, then the focused W06 suite passed with 20 tests / 149 assertions and the full isolated PHPUnit suite passed with 163 tests / 1,035 assertions.
+All 9 browser checks passed, including 390/320-pixel card layouts, 1024-pixel desktop table visibility and horizontal overflow checks.
+The browser fixture is seeded only after PHPUnit to preserve the clean recurrence-table precondition.
+The user visually approved the recurring-rule cards on 18 November 2026; the change awaits independent review and G01 remains `NOT_EVALUATED`.
+
 ### Mobile catalog card redesign - 18 November 2026
 
 The user rejected the narrow table layout on mobile and requested a card redesign for task titles and payment methods.

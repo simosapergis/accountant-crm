@@ -167,6 +167,33 @@ async function runCheck(name, check) {
       assert.equal(await page.locator('.catalog-mobile-list').isVisible(), false);
       await context.close();
     }));
+    checks.push(await runCheck('recurring tasks use cards on small screens and a table on desktop', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+
+      await page.goto(`${baseUrl}/recurring_tasks.php`);
+      assert.equal(await page.locator('.recurring-mobile-card').count() > 0, true, 'test database should contain the W01 mobile recurrence fixture');
+      assert.ok(await page.locator('.recurring-mobile-list').getByText('W01 Mobile Recurring Filing', { exact: true }).isVisible());
+      for (const width of [390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        assert.equal(await page.locator('.recurring-table-wrapper').isVisible(), false);
+        assert.equal(await page.locator('.recurring-mobile-list').isVisible(), true);
+        assert.equal(await page.locator('.recurring-mobile-card').first().getByRole('link', { name: 'Ρυθμίσεις' }).isVisible(), true);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      }
+
+      await page.setViewportSize({ width: 1024, height: 768 });
+      assert.equal(await page.locator('.recurring-table-wrapper').isVisible(), true);
+      assert.equal(await page.locator('.recurring-mobile-list').isVisible(), false);
+      assert.ok(await page.locator('.recurring-table').getByText('W01 Mobile Recurring Filing', { exact: true }).isVisible());
+      await context.close();
+    }));
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
     await page.goto(`${baseUrl}/login.php`);

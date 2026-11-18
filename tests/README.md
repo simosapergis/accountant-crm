@@ -9,6 +9,7 @@ All integration tests use real MariaDB. SQL behavior, constraints, transactions 
 
 The W06 recurrence HTTP suite requires a clean isolated schema with no pre-existing rows in the recurring-rule tables because recurrence rules are shared application data and the scheduler processes them globally.
 Use the schema-only test database plus the fictional fixtures described below; do not point the suite at a development database or a test database containing manually created recurrence rules.
+The browser regression for recurring-task mobile cards needs one display fixture, so run the full PHPUnit suite first and then seed it with `php tests/bin/seed-w01-mobile-recurrence.php` before the browser suite.
 
 ## macOS - native
 

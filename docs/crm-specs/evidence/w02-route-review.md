@@ -191,3 +191,16 @@ The independent reviewer checked exact commit `7f640e0596c1e53d18e7fc7e84e287e8d
 The reviewer confirmed context-safe escaping in card and table markup, fixed status classes, configured edit routes with integer IDs, isolated fixture guards, prepared fixture SQL and password hashing.
 The review was scoped to the catalog change and its fixture; the independent full G01 checklist review and any remaining human layout acceptance remain outstanding.
 G01 remains `NOT_EVALUATED`.
+
+## Recurring-task mobile cards
+
+The user reported that the recurring-task table disappears on small screens and asked for cards on mobile only, matching the task-title catalog pattern.
+The new `W06RecurringTasksTest::testRecurringTaskListRendersMobileCardsAndKeepsDesktopTable` regression failed before the change because the response had no mobile list markup.
+The page now renders each rule as a card with client, title, status, day, start month, fee, occurrence count and its existing settings/restart action; the desktop table remains available above 768 pixels.
+The card and table escape client/title values, and the state classes and action parameter are selected from the fixed state enum.
+Focused `W06RecurringTasksTest` passed with 20 tests / 149 assertions; the full guarded PHPUnit suite passed with 163 tests / 1,035 assertions on isolated database `crm_test_g01_mobile_catalog_20261118`.
+The browser suite passed all 9 checks, including card visibility at 390 and 320 pixels, desktop table visibility at 1024 pixels and no horizontal overflow.
+The mobile-only recurrence fixture is seeded by `tests/bin/seed-w01-mobile-recurrence.php` after PHPUnit, preserving the recurrence suite's clean-rule-table precondition.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The user visually approved the recurring-rule cards on 18 November 2026.
+This change still needs an independent review of its exact commit; G01 remains `NOT_EVALUATED`.
