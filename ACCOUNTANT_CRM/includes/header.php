@@ -22,6 +22,10 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
             font-family: 'Inter', sans-serif;
         }
 
+        header {
+            position: relative;
+        }
+
         /* =========================================
            DESKTOP TOP MENU
         ========================================== */
@@ -125,10 +129,11 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
             background: #1f1f1f;
             padding: 15px 20px;
             position: absolute;
-            top: 60px;
-            width: 100%;
-            box-sizing: border-box;
+            top: 100%;
+            right: 0;
             left: 0;
+            width: auto;
+            box-sizing: border-box;
             z-index: 999;
         }
 

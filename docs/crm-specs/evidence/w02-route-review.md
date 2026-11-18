@@ -154,3 +154,17 @@ Manual browser inspection confirmed the compact menu and account name display co
 The independent reviewer checked exact commit `251a35c1251c4307f81afe6b6a9300fd9db5c1e7`, confirmed the empty-state and header fixes and recurrence test precondition, and found no new critical/high security issue.
 The reviewer confirmed the corresponding E2E and PHPUnit results.
 G01 remains `NOT_EVALUATED` because its checklist still requires a human inspection of the key layouts.
+
+## Navigation drawer width alignment follow-up
+
+After the user requested a closer layout review, the open compact navigation drawer was found to be 20 pixels wider than the header at a 390-pixel viewport.
+The E2E geometry check reproduced the mismatch: the header occupied x=10..380 while the drawer occupied x=0..390.
+The drawer is now positioned relative to the header with its left and right edges set to the header bounds, and its top edge aligned to the bottom of the header.
+The browser regression checks matching drawer/header edges at 390 and 1280 pixels, no horizontal page overflow at 390 pixels, and the desktop navigation bounds at 1600 pixels.
+After the fix, all 8 browser E2E checks passed.
+The earlier full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on `crm_test_w08_closeout_20261118`.
+On the final repeat, MariaDB stopped accepting connections during W08 export tests: 162 tests ran with 4 connection errors and 2 downstream failures after 64 seconds.
+The repeat did not establish a code regression; those failing cases could not connect to the verified database.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+This follow-up requires an independent review of its exact code commit.
+G01 remains `NOT_EVALUATED` pending that review and the required human inspection of the key layouts.

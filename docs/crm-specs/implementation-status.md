@@ -1,5 +1,18 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Compact navigation drawer alignment - 18 November 2026
+
+The user reported that the compact navigation list container was wider than the header.
+At 390 pixels, the browser regression reproduced a 20-pixel mismatch: the header spanned x=10..380 and the drawer x=0..390.
+The drawer now uses the header as its positioning container, so its width and horizontal edges match the header.
+The E2E suite passed all 8 checks, including drawer/header alignment at 390 and 1280 pixels, no mobile horizontal overflow, and desktop navigation geometry at 1600 pixels.
+The earlier guarded PHPUnit run passed with 162 tests / 1,024 assertions.
+The final repeat encountered a MariaDB connection refusal during W08 export tests: 162 tests ran with 4 connection errors and 2 downstream failures after the database stopped accepting connections.
+The E2E result and syntax checks passed; the interrupted database run needs a healthy isolated MariaDB repeat for a fresh full-suite result.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+An independent review of this alignment follow-up is required before recording the final G01 evaluation.
+G01 remains `NOT_EVALUATED` pending that review and the required human layout inspection.
+
 ### Authenticated desktop header fix - 18 November 2026
 
 The user authorized fixing the separately observed clipping of the signed-in username in the desktop navigation.

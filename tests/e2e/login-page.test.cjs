@@ -97,6 +97,23 @@ async function runCheck(name, check) {
       await page.locator('.hamburger').click();
       assert.equal(await page.locator('.mobile-user-box').isVisible(), true);
       assert.match(await page.locator('.mobile-user-box').innerText(), /W01 Fictional User/);
+      const compactWidths = await page.evaluate(() => {
+        const header = document.querySelector('header').getBoundingClientRect();
+        const drawer = document.querySelector('.mobile-menu').getBoundingClientRect();
+        return { headerLeft: header.left, headerRight: header.right, drawerLeft: drawer.left, drawerRight: drawer.right };
+      });
+      assert.ok(Math.abs(compactWidths.headerLeft - compactWidths.drawerLeft) <= 1, JSON.stringify(compactWidths));
+      assert.ok(Math.abs(compactWidths.headerRight - compactWidths.drawerRight) <= 1, JSON.stringify(compactWidths));
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      const mobileWidths = await page.evaluate(() => {
+        const header = document.querySelector('header').getBoundingClientRect();
+        const drawer = document.querySelector('.mobile-menu').getBoundingClientRect();
+        return { headerLeft: header.left, headerRight: header.right, drawerLeft: drawer.left, drawerRight: drawer.right };
+      });
+      assert.ok(Math.abs(mobileWidths.headerLeft - mobileWidths.drawerLeft) <= 1, JSON.stringify(mobileWidths));
+      assert.ok(Math.abs(mobileWidths.headerRight - mobileWidths.drawerRight) <= 1, JSON.stringify(mobileWidths));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
 
       await page.setViewportSize({ width: 1600, height: 900 });
       await page.reload();
@@ -105,9 +122,12 @@ async function runCheck(name, check) {
       const desktopHeader = await page.evaluate(() => ({
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
+        headerRight: document.querySelector('header').getBoundingClientRect().right,
+        linksRight: document.querySelector('.menu-links').getBoundingClientRect().right,
         userRight: document.querySelector('.menu-user').getBoundingClientRect().right,
       }));
       assert.ok(desktopHeader.documentWidth <= desktopHeader.viewportWidth, JSON.stringify(desktopHeader));
+      assert.ok(desktopHeader.linksRight <= desktopHeader.headerRight, JSON.stringify(desktopHeader));
       assert.ok(desktopHeader.userRight <= desktopHeader.viewportWidth, JSON.stringify(desktopHeader));
       await context.close();
     }));
