@@ -167,11 +167,16 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
         <nav class="menu-links">
             <a href="index.php" class="<?= $pageTitle=='Αρχική' ? 'active':'' ?>">Αρχική</a>
             <a href="tasks.php" class="<?= $pageTitle=='Εργασίες' ? 'active':'' ?>">Εργασίες</a>
+            <a href="recurring_tasks.php" class="<?= $pageTitle=='Επαναλαμβανόμενες εργασίες' ? 'active':'' ?>">Επαναλήψεις</a>
             <a href="clients.php" class="<?= $pageTitle=='Πελάτες' ? 'active':'' ?>">Πελάτες</a>
             <a href="partners.php" class="<?= $pageTitle=='Συνεργάτες' ? 'active':'' ?>">Συνεργάτες</a>
             <a href="calendar.php" class="<?= $pageTitle=='Ημερολόγιο Εργασιών' ? 'active':'' ?>">Ημερολόγιο</a>
             <a href="active_professionals.php" class="<?= $pageTitle=='Ενεργοί Επαγγελματίες' ? 'active':'' ?>">Ενεργοί Επαγγελματίες</a>
                 <a href="mydiary.php" class="<?= $pageTitle=='MyDiary' ? 'active':'' ?>">MyDiary</a>
+            <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
+                <a href="payment_methods.php" class="<?= $pageTitle=='Μέσα είσπραξης' ? 'active':'' ?>">Μέσα είσπραξης</a>
+                <a href="task_titles.php" class="<?= $pageTitle=='Τίτλοι εργασιών' ? 'active':'' ?>">Τίτλοι εργασιών</a>
+            <?php endif; ?>
 
         </nav>
 
@@ -194,11 +199,16 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
 
         <a href="index.php">Αρχική</a>
         <a href="tasks.php">Εργασίες</a>
+        <a href="recurring_tasks.php">Επαναλήψεις</a>
         <a href="clients.php">Πελάτες</a>
         <a href="partners.php">Συνεργάτες</a>
         <a href="calendar.php">Ημερολόγιο</a>
         <a href="active_professionals.php">Ενεργοί Επαγγελματίες</a>
         <a href="mydiary.php">MyDiary</a>
+        <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
+            <a href="payment_methods.php">Μέσα είσπραξης</a>
+            <a href="task_titles.php">Τίτλοι εργασιών</a>
+        <?php endif; ?>
         <div class="mobile-user-box">
             Συνδεδεμένος ως:<br>
             <b><?= htmlspecialchars((string)$_SESSION['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></b><br>

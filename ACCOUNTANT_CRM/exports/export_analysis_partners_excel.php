@@ -37,7 +37,7 @@ echo "\xEF\xBB\xBF"; // UTF-8 BOM για ελληνικά
 // Πίνακας Excel
 echo "<table border='1'>
         <tr style='background:#d0d0d0; font-weight:bold;'>
-            <td colspan='7'>Ανάλυση Συνεργάτη: " . crm_excel_html_text($partner_name) . "</td>
+            <td colspan='8'>Ανάλυση Συνεργάτη: " . crm_excel_html_text($partner_name) . "</td>
         </tr>
         <tr>
             <th>Ημερομηνία</th>
@@ -46,6 +46,7 @@ echo "<table border='1'>
             <th>Κατάσταση</th>
             <th>Αμοιβή</th>
             <th>Είσπραξη</th>
+            <th>Μέσο είσπραξης</th>
             <th>Υπόλοιπο</th>
         </tr>
 ";
@@ -66,6 +67,7 @@ while ($row = $res->fetch_assoc()) {
             <td>".crm_excel_html_text($row['status'])."</td>
             <td>".number_format($row['fee'],2,',','.')."</td>
             <td>".number_format($row['collected'],2,',','.')."</td>
+            <td>".crm_excel_html_text((string)($row['payment_method_label'] ?? ''))."</td>
             <td>".number_format($balance,2,',','.')."</td>
           </tr>";
 }
@@ -74,7 +76,7 @@ $final_balance = $total_fee - $total_collected;
 
 echo "
 <tr style='font-weight:bold; background:#f0f0f0;'>
-    <td colspan='4'>Σύνολα</td>
+    <td colspan='5'>Σύνολα</td>
     <td>".number_format($total_fee,2,',','.')."</td>
     <td>".number_format($total_collected,2,',','.')."</td>
     <td>".number_format($final_balance,2,',','.')."</td>

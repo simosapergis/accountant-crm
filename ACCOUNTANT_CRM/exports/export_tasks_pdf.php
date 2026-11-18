@@ -75,6 +75,7 @@ $res = $stmt->get_result();
             <th>Κατάσταση</th>
             <th>Αμοιβή</th>
             <th>Είσπραξη</th>
+            <th>Μέσο είσπραξης</th>
             <th>Υπόλοιπο</th>
         </tr>
     </thead>
@@ -97,6 +98,7 @@ $res = $stmt->get_result();
             <td><?= htmlspecialchars($row['status']) ?></td>
             <td><?= number_format($row['fee'], 2, ',', '.') ?> €</td>
             <td><?= number_format($row['collected'], 2, ',', '.') ?> €</td>
+            <td><?= htmlspecialchars((string)($row['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= number_format($balance, 2, ',', '.') ?> €</td>
         </tr>
     <?php endwhile; ?>
@@ -104,7 +106,7 @@ $res = $stmt->get_result();
 
     <tfoot>
         <tr>
-            <td colspan="5" style="font-weight:bold;">Σύνολα</td>
+            <td colspan="6" style="font-weight:bold;">Σύνολα</td>
             <td><?= number_format($sum_fee, 2, ',', '.') ?> €</td>
             <td><?= number_format($sum_collected, 2, ',', '.') ?> €</td>
             <td><?= number_format($sum_fee - $sum_collected, 2, ',', '.') ?> €</td>

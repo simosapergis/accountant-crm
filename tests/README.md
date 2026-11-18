@@ -24,6 +24,13 @@ dependencies are pinned in `tests/composer.lock`; the application Composer
 install still uses `--no-dev`. Browser checks use pinned `playwright-core` with
 host Chrome and ignore only the self-signed test certificate.
 
+The guarded PHPUnit service applies versioned additive migrations before
+seeding fixtures. To inspect or apply schema changes manually in this isolated
+environment, run `php /var/www/html/crm/bin/migrate.php` in the app container.
+The recurring scheduler is CLI-only: `php /var/www/html/crm/bin/run-recurring-tasks.php`;
+use `--dry-run` to inspect due work without writes. Test clock/failure options
+are refused unless `APP_ENV=test`. Do not expose the scheduler as a web route.
+
 Choose another Compose project name and unused loopback ports for a parallel
 test environment. Do not run `down -v`: retaining the project-owned test volume
 avoids accidental deletion and supports repeat runs. Before any future test DB

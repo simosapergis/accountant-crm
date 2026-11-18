@@ -14,3 +14,11 @@ if (!isset($_SESSION['user_id'])) {
 header('Cache-Control: private, no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
+
+function require_admin_role(): void
+{
+    if (($_SESSION['role'] ?? null) !== 'admin') {
+        http_response_code(403);
+        exit('Forbidden');
+    }
+}

@@ -6,6 +6,7 @@ if (isset($_GET['delete'])) {
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
 require_once __DIR__ . '/includes/money.php';
+require_once __DIR__ . '/includes/catalog_admin.php';
 
 /* ----------------------------------------------------------
    ΔΙΑΓΡΑΦΗ
@@ -34,6 +35,8 @@ $task = [
     'status'       => 'Σε εξέλιξη',
     'fee'          => 0,
     'collected'    => 0,
+    'payment_method_id' => null,
+    'payment_method_label' => null,
     'notes'        => ''
 ];
 
@@ -56,6 +59,26 @@ if ($id) {
         if (!isset($task['client_name'])) $task['client_name'] = '';
     }
 }
+$originalPaymentMethodId = isset($task['payment_method_id']) ? (int)$task['payment_method_id'] : 0;
+$originalPaymentMethodLabel = (string)($task['payment_method_label'] ?? '');
+$recurrenceLinkId = null;
+$canEnableRecurrence = false;
+if ($id && isset($task['id'])) {
+    $occurrenceRule = $mysqli->prepare('SELECT rule_id FROM recurrence_occurrences WHERE task_id=? LIMIT 1');
+    $occurrenceRule->bind_param('i', $id);
+    $occurrenceRule->execute();
+    $occurrence = $occurrenceRule->get_result()->fetch_assoc();
+    if ($occurrence !== null) {
+        $recurrenceLinkId = (int)$occurrence['rule_id'];
+    } else {
+        $sourceRule = $mysqli->prepare('SELECT id FROM recurring_task_rules WHERE source_task_id=? AND state=\'active\' LIMIT 1');
+        $sourceRule->bind_param('i', $id);
+        $sourceRule->execute();
+        $activeRule = $sourceRule->get_result()->fetch_assoc();
+        if ($activeRule !== null) $recurrenceLinkId = (int)$activeRule['id'];
+        else $canEnableRecurrence = true;
+    }
+}
 
 /* ----------------------------------------------------------
    ΑΠΟΘΗΚΕΥΣΗ
@@ -63,7 +86,8 @@ if ($id) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
 
     $task_date  = $_POST['task_date'] ?? date('Y-m-d');
-    $title      = trim($_POST['title'] ?? '');
+    $titleInput = $_POST['title'] ?? '';
+    $title = is_string($titleInput) ? trim($titleInput) : '';
     $client_id  = (int)($_POST['client_id'] ?? 0);
     $partner_id = ($_POST['partner_id'] ?? '') !== '' ? (int)$_POST['partner_id'] : null;
     $status     = $_POST['status'] ?? 'Σε εξέλιξη';
@@ -72,14 +96,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
     $feeCents = crm_parse_money_cents($feeInput);
     $collectedCents = crm_parse_money_cents($collectedInput);
     $notes      = $_POST['notes'] ?? '';
+    $paymentMethodInput = is_string($_POST['payment_method_id'] ?? null) ? trim($_POST['payment_method_id']) : '';
+    $paymentMethodId = $paymentMethodInput !== '' && ctype_digit($paymentMethodInput) && (int)$paymentMethodInput > 0
+        ? (int)$paymentMethodInput : null;
+    $paymentMethodLabel = null;
 
     $task = array_merge($task, [
         'task_date' => $task_date, 'title' => $title, 'client_id' => $client_id,
         'partner_id' => $partner_id, 'status' => $status, 'fee' => $feeInput,
         'collected' => $collectedInput, 'notes' => $notes,
+        'payment_method_id' => $paymentMethodInput,
     ]);
     if ($feeCents === null || $collectedCents === null) {
         $formError = 'Παρακαλώ εισάγετε μη αρνητικά ποσά έως 99.999.999,99. Επιτρέπονται μορφές 100, 100,50, 100.50 και 1.234,56.';
+    }
+    if ($formError === '' && (!is_string($titleInput) || mb_strlen($title, 'UTF-8') > 255)) {
+        $formError = 'Ο τίτλος εργασίας πρέπει να έχει έως 255 χαρακτήρες.';
+    }
+
+    if ($formError === '' && $collectedCents > 0) {
+        if ($id && $originalPaymentMethodId > 0 && $paymentMethodId === $originalPaymentMethodId) {
+            // Keep the original label snapshot even if the catalog entry has since changed or been deactivated.
+            $paymentMethodLabel = $originalPaymentMethodLabel;
+            if ($paymentMethodLabel === '') {
+                $formError = 'Η παλιά είσπραξη χρειάζεται ενεργό μέσο είσπραξης.';
+            }
+        } elseif ($paymentMethodId === null) {
+            $formError = 'Για θετική είσπραξη απαιτείται ενεργό μέσο είσπραξης.';
+        } else {
+            $methodStmt = $mysqli->prepare('SELECT name FROM payment_methods WHERE id = ? AND is_active = 1');
+            $methodStmt->bind_param('i', $paymentMethodId);
+            $methodStmt->execute();
+            $method = $methodStmt->get_result()->fetch_assoc();
+            if ($method === null) {
+                $formError = 'Για θετική είσπραξη απαιτείται ενεργό μέσο είσπραξης.';
+            } else {
+                $paymentMethodLabel = (string)$method['name'];
+            }
+        }
     }
 
     if ($formError === '' && $client_id <= 0) {
@@ -93,12 +147,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
         $collected = crm_money_decimal($collectedCents);
         $stmt = $mysqli->prepare("
             UPDATE tasks
-            SET task_date=?, title=?, client_id=?, partner_id=?, status=?, fee=?, collected=?, notes=?, updated_at=NOW()
+            SET task_date=?, title=?, client_id=?, partner_id=?, status=?, fee=?, collected=?, payment_method_id=?, payment_method_label=?, notes=?, updated_at=NOW()
             WHERE id=?
         ");
 
         $stmt->bind_param(
-            "ssiissssi",
+            "ssiisssissi",
             $task_date,
             $title,
             $client_id,
@@ -106,6 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
             $status,
             $fee,
             $collected,
+            $paymentMethodId,
+            $paymentMethodLabel,
             $notes,
             $id
         );
@@ -114,12 +170,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
         $fee = crm_money_decimal($feeCents);
         $collected = crm_money_decimal($collectedCents);
         $stmt = $mysqli->prepare("
-            INSERT INTO tasks (task_date, title, client_id, partner_id, status, fee, collected, notes)
-            VALUES (?,?,?,?,?,?,?,?)
+            INSERT INTO tasks (task_date, title, client_id, partner_id, status, fee, collected, payment_method_id, payment_method_label, notes)
+            VALUES (?,?,?,?,?,?,?,?,?,?)
         ");
 
         $stmt->bind_param(
-            "ssiissss",
+            "ssiisssiss",
             $task_date,
             $title,
             $client_id,
@@ -127,12 +183,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
             $status,
             $fee,
             $collected,
+            $paymentMethodId,
+            $paymentMethodLabel,
             $notes
         );
     }
 
     if ($formError === '') {
         $stmt->execute();
+        if ($collectedCents === 0 && $originalPaymentMethodId > 0) {
+            $_SESSION['flash_message'] = 'Η είσπραξη μηδενίστηκε και το μέσο είσπραξης καθαρίστηκε.';
+        }
         header("Location: tasks.php");
         exit;
     }
@@ -142,6 +203,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
    ΛΙΣΤΑ ΣΥΝΕΡΓΑΤΩΝ
 ----------------------------------------------------------- */
 $partners = $mysqli->query("SELECT id, fullname FROM partners ORDER BY fullname");
+$titleTemplates = $mysqli->query("SELECT id, name FROM task_title_templates WHERE is_active = 1 ORDER BY name");
+$paymentMethods = $mysqli->query("SELECT id, name FROM payment_methods WHERE is_active = 1 ORDER BY name");
+$activePaymentMethods = [];
+while ($method = $paymentMethods->fetch_assoc()) {
+    $activePaymentMethods[] = $method;
+}
 
 $pageTitle = ($id ? "Επεξεργασία Εργασίας" : "Νέα Εργασία");
 require "includes/header.php";
@@ -200,7 +267,13 @@ function addClientToDropdown(id, name) {
             <div class="form-group">
                 <label>Τίτλος</label>
                 <input type="text" name="title" style="height:48px;"
-                       value="<?= htmlspecialchars($task['title']) ?>">
+                       list="task-title-options" maxlength="255"
+                       value="<?= htmlspecialchars((string)$task['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                <datalist id="task-title-options">
+                    <?php while ($titleTemplate = $titleTemplates->fetch_assoc()): ?>
+                        <option value="<?= htmlspecialchars((string)$titleTemplate['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+                    <?php endwhile; ?>
+                </datalist>
             </div>
         </div>
 
@@ -283,6 +356,20 @@ function addClientToDropdown(id, name) {
             </div>
 
             <div class="form-group">
+                <label for="payment-method">Μέσο είσπραξης</label>
+                <?php $currentMethodId = (string)($task['payment_method_id'] ?? ''); ?>
+                <select id="payment-method" name="payment_method_id" style="height:48px;">
+                    <option value="">— Χωρίς μέσο —</option>
+                    <?php foreach ($activePaymentMethods as $method): ?>
+                        <option value="<?= (int)$method['id'] ?>" <?= $currentMethodId === (string)$method['id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)$method['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                    <?php if ($currentMethodId !== '' && !array_filter($activePaymentMethods, static fn(array $method): bool => (string)$method['id'] === $currentMethodId)): ?>
+                        <option value="<?= (int)$currentMethodId ?>" selected><?= htmlspecialchars((string)($task['payment_method_label'] ?? 'Ανενεργό μέσο'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> (ανενεργό)</option>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>Υπόλοιπο (€)</label>
                 <?php $balanceCents = (crm_parse_money_cents((string)$task['fee']) ?? 0) - (crm_parse_money_cents((string)$task['collected']) ?? 0); ?>
                 <input type="text" disabled style="height:48px; background:#eee;"
@@ -299,6 +386,8 @@ function addClientToDropdown(id, name) {
 
         <div class="form-actions">
             <a href="tasks.php" class="btn btn-secondary">Άκυρο</a>
+            <?php if ($recurrenceLinkId !== null): ?><a href="recurring_task_form.php?id=<?= $recurrenceLinkId ?>" class="btn btn-secondary">Ρυθμίσεις επανάληψης</a>
+            <?php elseif ($canEnableRecurrence): ?><a href="recurring_task_form.php?task_id=<?= (int)$id ?>" class="btn btn-secondary">Μηνιαία επανάληψη</a><?php endif; ?>
             <?php if ($id): ?>
                 <button class="btn btn-danger" type="submit" name="delete_task" value="<?= (int)$id ?>"
                         onclick="return confirm('Διαγραφή εργασίας;')">Διαγραφή</button>

@@ -223,6 +223,11 @@ require "includes/header.php";
 
 <div class="page-container">
 
+    <?php if (!empty($_SESSION['flash_message'])): ?>
+        <div class="alert alert-success" role="status"><?= htmlspecialchars((string)$_SESSION['flash_message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div>
+        <?php unset($_SESSION['flash_message']); ?>
+    <?php endif; ?>
+
     <!-- Νέα εργασία -->
     <div class="new-task-top">
         <a href="task_form.php" class="new-task-btn">+ Νέα Εργασία</a>
@@ -312,6 +317,7 @@ require "includes/header.php";
                     <th>Συνεργάτης</th>
                     <th>Αμοιβή</th>
                     <th>Είσπραξη</th>
+                    <th>Μέσο είσπραξης</th>
                     <th>Υπόλοιπο</th>
                     <th style="text-align:center;">Ενέργειες</th>
                 </tr>
@@ -332,6 +338,7 @@ require "includes/header.php";
 
                     <td><?= number_format($row['fee'],2,',','.') ?> €</td>
                     <td><?= number_format($row['collected'],2,',','.') ?> €</td>
+                    <td><?= htmlspecialchars((string)($row['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                     <td><?= number_format($row['balance'],2,',','.') ?> €</td>
 
                     <td class="task-actions">
@@ -384,6 +391,7 @@ require "includes/header.php";
                 <div class="mobile-card-amounts">
                     <span><strong>Αμοιβή:</strong> <?= number_format($row['fee'],2,',','.') ?> €</span>
                     <span><strong>Είσπραξη:</strong> <?= number_format($row['collected'],2,',','.') ?> €</span>
+                    <span><strong>Μέσο είσπραξης:</strong> <?= htmlspecialchars((string)($row['payment_method_label'] ?? '—'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>
                     <span><strong>Υπόλοιπο:</strong> <?= number_format($row['balance'],2,',','.') ?> €</span>
                 </div>
 

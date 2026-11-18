@@ -115,6 +115,7 @@ require 'includes/header.php';
                         <th>Κατάσταση</th>
                         <th>Αμοιβή</th>
                         <th>Είσπραξη</th>
+                        <th>Μέσο είσπραξης</th>
                         <th>Υπόλοιπο</th>
                         <th style="text-align:center;">Ενέργειες</th>
                     </tr>
@@ -141,6 +142,7 @@ require 'includes/header.php';
                         <td><?= htmlspecialchars($t['status']) ?></td>
                         <td><?= number_format($t['fee'],2,',','.') ?> €</td>
                         <td><?= number_format($t['collected'],2,',','.') ?> €</td>
+                        <td><?= htmlspecialchars((string)($t['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                         <td><?= number_format($balance,2,',','.') ?> €</td>
                         <td class="task-actions">
                             <a class="icon-btn gray" href="task_form.php?id=<?= $t['id'] ?>">👁</a>

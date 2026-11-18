@@ -487,6 +487,7 @@ require "includes/header.php";
                         <th>Κατάσταση</th>
                         <th>Αμοιβή</th>
                         <th>Είσπραξη</th>
+                        <th>Μέσο είσπραξης</th>
                         <th>Ενέργειες</th>
                     </tr>
                 </thead>
@@ -507,6 +508,7 @@ require "includes/header.php";
                             <td><?= htmlspecialchars($t['status']) ?></td>
                             <td><?= number_format($t['fee'],2,',','.') ?> €</td>
                             <td><?= number_format($t['collected'],2,',','.') ?> €</td>
+                            <td><?= htmlspecialchars((string)($t['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
                             <td class="task-actions">
                                 <a class="icon-btn gray" href="task_form.php?id=<?= $t['id'] ?>">👁</a>
                                 <a class="icon-btn blue" href="task_form.php?id=<?= $t['id'] ?>">✏️</a>
@@ -515,7 +517,7 @@ require "includes/header.php";
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="7" style="text-align:center;">Δεν υπάρχουν εργασίες για αυτή την ημέρα.</td>
+                        <td colspan="8" style="text-align:center;">Δεν υπάρχουν εργασίες για αυτή την ημέρα.</td>
                     </tr>
                 <?php endif; ?>
                 </tbody>

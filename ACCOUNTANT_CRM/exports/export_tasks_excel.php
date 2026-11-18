@@ -78,6 +78,7 @@ echo "<tr>
         <th>Κατάσταση</th>
         <th>Αμοιβή</th>
         <th>Είσπραξη</th>
+        <th>Μέσο είσπραξης</th>
         <th>Υπόλοιπο</th>
       </tr>";
 
@@ -91,6 +92,7 @@ while ($row = $res->fetch_assoc()) {
     echo "<td>" . crm_excel_html_text($row['status']) . "</td>";
     echo "<td>" . number_format($row['fee'],2,',','.') . "</td>";
     echo "<td>" . number_format($row['collected'],2,',','.') . "</td>";
+    echo "<td>" . crm_excel_html_text((string)($row['payment_method_label'] ?? '')) . "</td>";
     echo "<td>" . number_format($balance,2,',','.') . "</td>";
     echo "</tr>";
 }

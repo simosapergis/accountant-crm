@@ -9,6 +9,13 @@ require_once 'includes/db.php';
 $id = $_GET['id'] ?? null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_client'])) {
     $deleteId = (int)$_POST['delete_client'];
+    $recurrenceUse = $mysqli->prepare('SELECT 1 FROM recurring_task_rules WHERE client_id=? LIMIT 1');
+    $recurrenceUse->bind_param('i', $deleteId);
+    $recurrenceUse->execute();
+    if ($recurrenceUse->get_result()->num_rows > 0) {
+        header('Location: client_form.php?id=' . $deleteId . '&delete_error=recurrence');
+        exit;
+    }
     $stmt = $mysqli->prepare('DELETE FROM clients WHERE id = ?');
     $stmt->bind_param('i', $deleteId);
     $stmt->execute();
@@ -23,7 +30,9 @@ $client = [
     'phone' => '',
     'email' => ''
 ];
-$saveError = '';
+$saveError = ($_GET['delete_error'] ?? '') === 'recurrence'
+    ? 'Ο πελάτης δεν μπορεί να διαγραφεί επειδή συνδέεται με ενεργό ή ιστορικό κανόνα επανάληψης.'
+    : '';
 
 if ($id) {
     $stmt = $mysqli->prepare("SELECT * FROM clients WHERE id = ?");

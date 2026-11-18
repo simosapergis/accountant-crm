@@ -85,6 +85,7 @@ $total_collected = 0;
             <th>Κατάσταση</th>
             <th>Αμοιβή</th>
             <th>Είσπραξη</th>
+            <th>Μέσο είσπραξης</th>
             <th>Υπόλοιπο</th>
         </tr>
     </thead>
@@ -101,6 +102,7 @@ $total_collected = 0;
             <td><?= htmlspecialchars($row['status']) ?></td>
             <td><?= number_format($row['fee'], 2, ',', '.') ?> €</td>
             <td><?= number_format($row['collected'], 2, ',', '.') ?> €</td>
+            <td><?= htmlspecialchars((string)($row['payment_method_label'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= number_format($balance, 2, ',', '.') ?> €</td>
         </tr>
     <?php endwhile; ?>
@@ -108,7 +110,7 @@ $total_collected = 0;
     <tfoot>
         <?php $final_balance = $total_fee - $total_collected; ?>
         <tr>
-            <td colspan="4">Σύνολα</td>
+            <td colspan="5">Σύνολα</td>
             <td><?= number_format($total_fee, 2, ',', '.') ?> €</td>
             <td><?= number_format($total_collected, 2, ',', '.') ?> €</td>
             <td><?= number_format($final_balance, 2, ',', '.') ?> €</td>

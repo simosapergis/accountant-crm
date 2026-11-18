@@ -45,7 +45,7 @@ services:
       context: .
       dockerfile: Dockerfile.w01
     entrypoint: ["sh", "-lc"]
-    command: ["php /opt/crm-tests/bin/assert-test-db.php && php /opt/crm-tests/bin/seed-w01-fixtures.php && /opt/crm-tests/vendor/bin/phpunit -c /opt/crm-tests/phpunit.xml"]
+    command: ["php /opt/crm-tests/bin/assert-test-db.php && php /var/www/html/crm/bin/migrate.php && php /opt/crm-tests/bin/seed-w01-fixtures.php && /opt/crm-tests/vendor/bin/phpunit -c /opt/crm-tests/phpunit.xml"]
     environment:
       APP_BASE_PATH: /crm
       APP_ENV: test

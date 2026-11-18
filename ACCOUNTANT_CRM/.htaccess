@@ -6,4 +6,5 @@ Options -Indexes
 
 RewriteEngine On
 RewriteRule ^(?:includes|vendor)(?:/|$) - [F,NC,L]
+RewriteRule ^(?:bin|migrations)(?:/|$) - [F,NC,L]
 RewriteRule ^(?:create_user|install|setup)\.php$ - [F,NC,L]
