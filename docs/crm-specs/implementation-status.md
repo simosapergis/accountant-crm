@@ -1,5 +1,13 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### G01 re-review follow-up - 18 November 2026
+
+The independent review of `51f2100ad85a4166c145a2cb5b989d2ebc87c955` confirmed the empty-state fix and found no new critical/high security issue.
+It flagged that recurrence tests require a clean schema; that precondition is now explicit in the test and `tests/README.md`.
+After this clarification, focused `W06RecurringTasksTest` passes with 19 tests / 138 assertions and the full guarded suite passes with 162 tests / 1,024 assertions.
+The reviewer also noted the authenticated username is clipped in the desktop header; this separate visual issue is documented and awaits the user's choice.
+G01 remains `NOT_EVALUATED` pending a final review of the exact committed state and resolution or disposition of the header issue.
+
 ### Recurring-task empty-state fix - 18 November 2026
 
 The user authorized fixing the documented blank panel after previously choosing to leave it unchanged.

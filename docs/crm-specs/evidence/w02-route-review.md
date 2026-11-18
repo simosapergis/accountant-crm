@@ -138,3 +138,12 @@ No data was created or changed during the browser inspection.
 The same desktop screenshot shows the authenticated username clipped at the right edge of the top navigation.
 This is a separate visual issue and was not changed as part of the authorized empty-state fix.
 The earlier independent review applies to commit `df84d7b`, before this fix; an independent re-review of the final fix commit is required before recording any G01 result.
+
+## Independent review after the empty-state fix
+
+The independent reviewer checked commit `51f2100ad85a4166c145a2cb5b989d2ebc87c955`, confirmed the recurring empty-state fix and found no new critical/high security issue.
+The reviewer identified the clean recurrence schema as a test precondition because rules are shared and processed globally.
+That precondition is now asserted by the empty-state HTTP test and documented in `tests/README.md`; focused W06 and full-suite runs passed again afterward.
+The reviewer also reported that the signed-in username is clipped at the right edge of the desktop header.
+This separate visual issue is documented, and the user has been asked whether to authorize a fix.
+The test guard and updated evidence are newer than `51f2100`; they require an independent review against their resulting commit before recording a G01 outcome.

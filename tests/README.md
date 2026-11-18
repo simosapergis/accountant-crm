@@ -7,6 +7,9 @@ Select the test environment by operating system before running any command.
 
 All integration tests use real MariaDB. SQL behavior, constraints, transactions and concurrency must not be replaced with SQLite or mocks. The application must be reachable under `/crm/` for HTTP tests.
 
+The W06 recurrence HTTP suite requires a clean isolated schema with no pre-existing rows in the recurring-rule tables because recurrence rules are shared application data and the scheduler processes them globally.
+Use the schema-only test database plus the fictional fixtures described below; do not point the suite at a development database or a test database containing manually created recurrence rules.
+
 ## macOS - native
 
 Install application and test dependencies:

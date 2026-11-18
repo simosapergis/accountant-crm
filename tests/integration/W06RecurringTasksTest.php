@@ -82,6 +82,9 @@ final class W06RecurringTasksTest extends TestCase
 
     public function testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule(): void
     {
+        $ruleCount = (int)$this->db->query('SELECT COUNT(*) FROM recurring_task_rules')->fetch_row()[0];
+        self::assertSame(0, $ruleCount, 'Run recurrence HTTP tests against a clean isolated schema with no pre-existing rules.');
+
         $session = $this->login();
         $response = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
 
