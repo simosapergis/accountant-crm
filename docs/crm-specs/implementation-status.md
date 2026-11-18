@@ -10,8 +10,11 @@ The earlier guarded PHPUnit run passed with 162 tests / 1,024 assertions.
 The final repeat encountered a MariaDB connection refusal during W08 export tests: 162 tests ran with 4 connection errors and 2 downstream failures after the database stopped accepting connections.
 The E2E result and syntax checks passed; the interrupted database run needs a healthy isolated MariaDB repeat for a fresh full-suite result.
 PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
-An independent review of this alignment follow-up is required before recording the final G01 evaluation.
-G01 remains `NOT_EVALUATED` pending that review and the required human layout inspection.
+The independent code review is recorded below; G01 remains `NOT_EVALUATED` pending a fresh green full-suite run and the required human layout inspection.
+
+Independent reviewer checked exact code commit `63fc9a7a603c90c54f7c00ac989327b715e7b50d`, confirmed the drawer bounds and E2E coverage, and found no security or functional regression.
+The latest full PHPUnit repeat lost its MariaDB connection in W08 exports, so the earlier 162-test pass is not a fresh green result for this follow-up.
+A fresh full-suite run and human visual acceptance remain open; G01 is still `NOT_EVALUATED`.
 
 ### Authenticated desktop header fix - 18 November 2026
 

@@ -168,3 +168,10 @@ The repeat did not establish a code regression; those failing cases could not co
 PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
 This follow-up requires an independent review of its exact code commit.
 G01 remains `NOT_EVALUATED` pending that review and the required human inspection of the key layouts.
+
+## Independent review of navigation drawer alignment
+
+The independent reviewer checked exact code commit `63fc9a7a603c90c54f7c00ac989327b715e7b50d`.
+The reviewer confirmed the header-relative bounds match the compact body padding and that the E2E assertions cover 390- and 1280-pixel alignment, mobile overflow and 1600-pixel desktop geometry.
+No security or functional regression was found, and the reviewer supports the code change.
+This is not a G01 PASS: a fresh green full-suite rerun and the required human layout inspection remain outstanding.

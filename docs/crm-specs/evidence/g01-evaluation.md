@@ -5,6 +5,12 @@
 Reviewed code: `251a35c1251c4307f81afe6b6a9300fd9db5c1e7` on `codex/crm-remaining-tasks`.
 Result: `NOT_EVALUATED` pending the required human inspection of key application layouts.
 
+Latest code follow-up: `63fc9a7a603c90c54f7c00ac989327b715e7b50d` aligns the compact drawer with the header.
+The independent reviewer supports this change and found no security or functional regression.
+Its browser E2E suite passed 8 checks.
+An earlier full guarded PHP run passed with 162 tests / 1,024 assertions, but a repeat during this follow-up lost its MariaDB connection during W08 exports and is not a passing rerun.
+The full suite must pass again on a healthy isolated database, and a human must inspect and accept the key layouts before G01 can be evaluated as PASS.
+
 - The current source review reconciles all 33 HTTP entrypoints with authentication, role, CSRF, ownership, SQL, output and private-file evidence in [W02 route review](w02-route-review.md).
 - The logout issue, recurrence empty state and desktop header overflow are fixed with HTTP/browser regression coverage.
 - Full guarded PHPUnit suite: PASS, 162 tests / 1,024 assertions on `crm_test_w08_closeout_20261118`.
