@@ -1,19 +1,19 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
 Τελευταία ενημέρωση: 18 Νοεμβρίου 2026.
-Κατάσταση: W01 ολοκληρώθηκε· W02 σε εξέλιξη· W05/W06/W07 υλοποιούνται σε τοπικό feature branch.
+Κατάσταση: W01 ολοκληρώθηκε· W02 παραμένει ανοιχτό και αναβλημένο· W05/W06/W07 έχουν υλοποιηθεί τοπικά, με ορισμένα acceptance checks ακόμη ανοιχτά.
 Έκδοση specs: 1.6.
 
 ## Εξαίρεση σειράς εργασιών
 
-Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να αναβληθεί η ολοκλήρωση των υπολοίπων W02/W03/W04/W08 και του G01, να υλοποιηθούν πρώτα τα νέα features W05/W06/W07 σε ξεχωριστό branch από το W02 και να επιστρέψει η εργασία στα υπολειπόμενα πακέτα μετά την ολοκλήρωση των features. Αυτό αποτελεί ρητή εξαίρεση από την κανονική πύλη `G01` στο `tasks.md`. Το `codex/crm-w05-w07-features` δημιουργήθηκε από το W02 checkpoint `466eb18`. Τα W02/W03/W04/W08 παραμένουν ανοιχτά, το G01 δεν έχει PASS και δεν γίνεται production sign-off ή deployment.
+Στις 18 Νοεμβρίου 2026 ο χρήστης ζήτησε να αναβληθεί η ολοκλήρωση των υπολοίπων W02/W03/W04/W08 και του G01, να υλοποιηθούν πρώτα τα νέα features W05/W06/W07 σε ξεχωριστό branch από το W02 και να επιστρέψει η εργασία στα υπολειπόμενα πακέτα μετά την υλοποίηση των features. Αυτό αποτελεί ρητή εξαίρεση από την κανονική πύλη `G01` στο `tasks.md`. Το `codex/crm-w05-w07-features` δημιουργήθηκε από το W02 checkpoint `466eb18`. Η τοπική υλοποίηση W05/W06/W07 έχει ολοκληρωθεί και checkpointed· ορισμένα browser/hosting acceptance checks παραμένουν ανοιχτά. Τα W02/W03/W04/W08 παραμένουν ανοιχτά, το G01 δεν έχει PASS και δεν γίνεται production sign-off ή deployment.
 
 Το αρχείο καταγράφει την πραγματική πρόοδο και τα αποδεικτικά. Δεν πιστοποιεί πρόσβαση ή εγκατάσταση στην παραγωγή.
 
 ## Σύνοψη τρέχουσας προόδου
 
-- Τρέχον πακέτο: W05/W06/W07 local implementation on `codex/crm-w05-w07-features`, branched from W02 commit `466eb18`. W02 security remainder is deferred by explicit user direction.
-- Ολοκληρωμένα πακέτα υλοποίησης: 1 από 10 (W01). Το G01 παραμένει `NOT_EVALUATED`.
+- Τρέχον branch: `codex/crm-w05-w07-features`, based on W02 commit `466eb18`; local feature implementation is complete. W02 security remainder is deferred by explicit user direction.
+- Formally accepted packages: 1 από 10 (W01). W05/W06/W07 are implemented locally but not signed off; G01 remains `NOT_EVALUATED`.
 - W01: απομονωμένο Docker περιβάλλον, test DB guards/fixtures, PHPUnit και browser runners, frozen clock και baseline evidence.
 - W02 μέχρι τώρα: κοινό session bootstrap, session cookie policy, session ID rotation στο login, idle timeout, auth guards και `/crm/` redirects· CSRF validation για POST, POST-only logout/AJAX mutations και POST deletion forms.
 - W02 / SEC-04 / AT-05: PARTIAL — tests cover missing/invalid/foreign CSRF tokens, valid update/delete, login/logout and representative GET deletions. Δεν έχει ολοκληρωθεί ολόκληρο το route matrix ή το συνολικό W02 security audit.
@@ -30,7 +30,7 @@
 - W06/W07 recurrence: see [recurrence evidence](evidence/w06-w07-recurring.md) for temporal rule versions, stop/restart, transactional CLI scheduling, batch catch-up and MariaDB concurrency coverage.
 - Latest full PHPUnit run: PASS, 130 tests / 577 assertions in isolated `test-db / crm_w01_test`. The suite includes W05/W06/W07 regressions, multi-rule timing and versioned catch-up, and `/bin`/`migrations` HTTP-denial checks. Browser/E2E has not been rerun; final keyboard/mobile review remains open.
 - Deferred W02 items: complete AT-04/05 route matrices; finish broader AT-06/07 output and query coverage; exercise CLI account creation for AT-08/09; verify AT-16 against actual hosting/webroot and backup/log paths; broaden corrupt import cases for AT-17; open real spreadsheet exports in a compatible application for AT-18; audit broader money displays/totals under AT-27.
-- Next sequencing: complete and verify local W05/W06/W07 criteria on the feature branch; then return to deferred W02, W03, W04 and W08 work before G01. Do not merge to `main`, deploy, or claim a security pass while required criteria remain open.
+- Next sequencing: when work resumes, return to deferred W02, W03, W04 and W08, then evaluate G01. W05/W06/W07 do not receive a full PASS until their remaining acceptance checks are completed. Do not merge to `main`, deploy, or claim a security pass while required criteria remain open.
 
 ## Καταγραφή τρέχουσας εργασίας
 
@@ -67,15 +67,15 @@
 | W04 | NOT_STARTED | — |
 | W08 | NOT_STARTED | — |
 | G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
-| W05 | IN_PROGRESS | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
-| W06 | IN_PROGRESS | Rule activation, effective versions, short-month dates, stop/restart and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
-| W07 | IN_PROGRESS | CLI scheduler, transactions, batch catch-up, dry-run, idempotency and concurrent MariaDB processes are covered locally. Actual Plesk Run Now and production-like timezone configuration remain open. |
+| W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
+| W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
+| W07 | IMPLEMENTED_LOCAL | CLI scheduler, transactions, batch catch-up, dry-run, idempotency and concurrent MariaDB processes are covered locally. Actual Plesk Run Now and production-like timezone configuration remain open. |
 | W09 | NOT_STARTED | Προϋπόθεση ολοκλήρωση προηγούμενων πακέτων. |
 | W10 | NOT_STARTED | Προϋποθέσεις W09 PASS, preflight και ανάθεση deployment. |
 
 ## Ακριβές επόμενο βήμα
 
-Finish the remaining local W05/W06/W07 checks on `codex/crm-w05-w07-features`, then return to W02/W03/W04/W08 before evaluating G01. G01 stays `NOT_EVALUATED` until its full criteria are verified and documented.
+When resumed, return to the deferred W02/W03/W04/W08 criteria and then evaluate G01. Keep the feature branch separate; G01 stays `NOT_EVALUATED` until its full criteria are verified and documented.
 
 ## Τελευταίο βήμα TDD
 
