@@ -10,7 +10,9 @@ The user visually approved both redesigned catalog pages.
 PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
 The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on clean isolated database `crm_test_g01_mobile_catalog_20261118`, including the W05 catalog tests.
 The browser suite passed all 8 checks against the clean test server, including both mobile catalog pages at 390 and 320 pixels and desktop behavior at 1024 pixels.
-The exact latest code state still requires independent review and any remaining required human layout acceptance; G01 remains `NOT_EVALUATED`.
+Independent review of exact commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e` supports the catalog change and found no security or functional regression.
+That review was scoped to the catalog implementation; the full G01 checklist review and any remaining required human layout acceptance are still open.
+G01 remains `NOT_EVALUATED`.
 
 ### Compact navigation drawer alignment - 18 November 2026
 

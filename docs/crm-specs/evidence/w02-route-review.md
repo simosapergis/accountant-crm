@@ -187,4 +187,7 @@ PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
 The user visually approved the redesigned catalog pages on 18 November 2026.
 The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on the new clean isolated database `crm_test_g01_mobile_catalog_20261118`; this includes the W05 catalog integration tests.
 The browser suite passed all 8 checks against the same database after the full suite, confirming that the seeded admin fixture remains available.
-An independent review of this latest code state and any remaining human layout acceptance remain outstanding; G01 remains `NOT_EVALUATED`.
+The independent reviewer checked exact commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e`, supports the mobile-card change, and found no security or functional regression.
+The reviewer confirmed context-safe escaping in card and table markup, fixed status classes, configured edit routes with integer IDs, isolated fixture guards, prepared fixture SQL and password hashing.
+The review was scoped to the catalog change and its fixture; the independent full G01 checklist review and any remaining human layout acceptance remain outstanding.
+G01 remains `NOT_EVALUATED`.

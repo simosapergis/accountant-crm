@@ -14,7 +14,9 @@ The full suite must pass again on a healthy isolated database, and a human must 
 The user has now visually approved the responsive card redesign for the task-title and payment-method catalogs.
 The browser suite passed all 8 checks, including both catalog cards at 390 and 320 pixels and desktop table behavior at 1024 pixels.
 The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on the clean isolated database `crm_test_g01_mobile_catalog_20261118`.
-That approval covers those two screens only; the latest card implementation still needs an independent code review, and any other required human layout acceptance must be recorded.
+The independent reviewer checked exact code commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e`, supports the catalog change and found no security or functional regression.
+That review was scoped to the mobile catalogs and their test fixture; the independent G01 checklist review and any other required human layout acceptance remain open.
+The user's visual approval covers the two catalog pages only.
 G01 remains `NOT_EVALUATED` while those checks remain open.
 
 - The current source review reconciles all 33 HTTP entrypoints with authentication, role, CSRF, ownership, SQL, output and private-file evidence in [W02 route review](w02-route-review.md).
