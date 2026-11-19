@@ -25,6 +25,14 @@ No critical/high finding was established within this narrow review scope; this i
 No tests or other guarded checks were run because this was read-only review and the worktree was clean.
 W09 remains `IN_PROGRESS`; AT-43, AT-44, AT-45, AT-48, AT-50 and AT-51 remain partial or not run as recorded in [W09 acceptance evidence](evidence/w09-acceptance.md).
 
+### `users` σε utf8mb4 και upgrade migration - 19 Νοεμβρίου 2026
+
+Το αρχικό `accountant_crm.sql` πλέον δημιουργεί τον πίνακα `users` σε `utf8mb4_general_ci`, όπως και τα υπόλοιπα application tables. Η migration `20261119_001_users_utf8mb4` μετατρέπει legacy `users` columns σε `utf8mb4` και αφήνει το migration runner να καταγράψει/ελέγξει την εφαρμογή της. Το W03 regression καλύπτει legacy ID, username, fullname, role, password hash, ελληνικά username/fullname και δεύτερη εκτέλεση.
+TDD RED: το αρχικό schema assertion απέτυχε με `users.fullname`=`latin1`. Μετά τη διόρθωση, `W03MigrationTest.php` PASS — 3 tests / 27 assertions σε απομονωμένο MariaDB 10.11 Compose database.
+Η πλήρης guarded σουίτα εκτελέστηκε σε Linux Compose, αλλά απέτυχε με 87/163 tests. Τα περισσότερα αποτυχημένα checks αναφέρουν HTTP 200 αντί για αναμενόμενη redirect μετά από login ή “The fictional W01 account should authenticate”. Η συγκεκριμένη σουίτα δεν είναι πράσινη· απαιτείται ξεχωριστή διερεύνηση των W01/W02/W05/W06/W08 fixture/authentication failures. Το focused W03 αποτέλεσμα δεν επηρεάζεται.
+Για να εκτελεστεί το W03 harness στο Compose, το test image περιλαμβάνει πλέον το root `accountant_crm.sql`, οι test admin μεταβλητές περνούν από το Compose και το test project χρησιμοποιεί τοπικά ports `18081/18444` ώστε να συνυπάρχει με άλλα projects. Το test MariaDB root επιτρέπεται από το δίκτυο Compose μόνο στο disposable W01 project.
+Δεν έγινε καμία αλλαγή στο Otenet/Plesk. Το G01 και τα υπόλοιπα εκκρεμή acceptance criteria παραμένουν ως έχουν.
+
 ### G01 exact-commit re-evaluation - 18 November 2026
 
 Current branch `codex/crm-remaining-tasks` has `HEAD` at `bc1406c064e1fa8829dee74da5aa86409c6f3793`, matching `origin/codex/crm-remaining-tasks`; the worktree was clean before this review, and only the three review-evidence documents are now modified.

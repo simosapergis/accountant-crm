@@ -20,7 +20,7 @@
 | `tasks.php` | Το link διαγραφής δείχνει σε διαφορετικό handler από εκείνον του form. | Ενιαίος πραγματικός handler διαγραφής με POST. |
 | `imports/import_active_professionals.php` | Το auth include δεν χρησιμοποιεί σωστή nested διαδρομή. | Includes με `__DIR__` και κοινό bootstrap. |
 | `exports/export_active_professionals_pdf.php` | Χρησιμοποιεί Dompdf που λείπει από το app Composer. | Συμβατό dependency και δοκιμή παραγωγής PDF με ελληνικά. |
-| `accountant_crm.sql` | Το αρχικό dump περιέχει `DROP TABLE`, ενώ ο πίνακας `users` έχει latin1. | Χρήση μόνο σε επιβεβαιωμένα κενή βάση και migrations με ελεγμένη κωδικοποίηση. |
+| `accountant_crm.sql` | Το αρχικό dump περιέχει `DROP TABLE`, ενώ ο πίνακας `users` έχει latin1. | Χρήση μόνο σε επιβεβαιωμένα κενή βάση. Το αρχικό schema ορίζει `users` σε `utf8mb4` και upgrade migration μετατρέπει παλιό latin1 `users` table χωρίς αλλαγή υπαρχόντων IDs, usernames, ονομάτων, ρόλων ή password hashes. |
 
 Πηγές: [schema](https://github.com/simosapergis/accountant-crm/blob/e8890078101022bffa06ab71c2de4e997192850c/accountant_crm.sql), [task form](https://github.com/simosapergis/accountant-crm/blob/e8890078101022bffa06ab71c2de4e997192850c/ACCOUNTANT_CRM/task_form.php), [login](https://github.com/simosapergis/accountant-crm/blob/e8890078101022bffa06ab71c2de4e997192850c/ACCOUNTANT_CRM/login.php).
 
@@ -74,6 +74,10 @@ docs/crm-specs/
 Χρησιμοποιείται σταθερό `APP_BASE_PATH=/crm`, χωρίς παραγωγή redirects από μη έμπιστα request headers.
 Τυχόν return URL είναι αυστηρά εσωτερικό στη βάση του CRM.
 Η υφιστάμενη προσωπική ιδιοκτησία εγγραφών ημερολογίου ελέγχεται σε SELECT, UPDATE και DELETE.
+
+**Επιλογή πελάτη στην εργασία**
+
+Το κουμπί φακού ζητά από το αυθεντικοποιημένο `ajax/search_clients.php` την πλήρη αλφαβητική λίστα μόνο όταν ανοίγει ο επιλογέας. Η ίδια λίστα εμφανίζεται σε scrollable results panel· όσο είναι ανοιχτή, το input φιλτράρει τοπικά με όνομα ή ΑΦΜ και κενή αναζήτηση επαναφέρει όλους τους πελάτες. Η υπάρχουσα AJAX αναζήτηση προτάσεων παραμένει για πληκτρολόγηση πριν ανοίξει ο επιλογέας. Η επιλογή αποτελέσματος ενημερώνει και το ορατό όνομα και το κρυφό `client_id`.
 
 **Συνεδρίες και σύνδεση**
 

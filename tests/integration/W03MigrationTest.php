@@ -10,12 +10,12 @@ final class W03MigrationTest extends TestCase
     public function testLegacyRecordsAndSchemaSurviveMigrationAndSecondRunIsEmpty(): void
     {
         self::assertTrue(CRM_TEST_DB_SAFE);
-        $admin = new mysqli((string)getenv('DB_HOST'), 'root', '', '', 0, (string)ini_get('mysqli.default_socket'));
+        $admin = new mysqli((string)getenv('CRM_TEST_ADMIN_HOST'), (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
         self::assertSame('root', (string)getenv('CRM_TEST_ADMIN_USER'));
         $database = 'crm_test_w03_' . bin2hex(random_bytes(6));
         $admin->query("CREATE DATABASE `$database` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
         $testUser = (string)getenv('DB_USER');
-        $admin->query("GRANT ALL PRIVILEGES ON `$database`.* TO '" . $admin->real_escape_string($testUser) . "'@'localhost'");
+        $admin->query("GRANT ALL PRIVILEGES ON `$database`.* TO '" . $admin->real_escape_string($testUser) . "'@'%'");
         $admin->close();
         $db = new mysqli((string)getenv('DB_HOST'), $testUser, (string)getenv('DB_PASSWORD'), $database);
         self::assertSame($database, $db->query('SELECT DATABASE()')->fetch_row()[0]);
@@ -25,6 +25,21 @@ final class W03MigrationTest extends TestCase
         if ($db->multi_query($legacySql)) {
             do { if ($result = $db->store_result()) { $result->free(); } } while ($db->more_results() && $db->next_result());
         }
+        $freshUsersCharset = $db->query("SELECT CHARACTER_SET_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'fullname'")->fetch_row()[0];
+        self::assertSame('utf8mb4', $freshUsersCharset, 'Fresh schema must store account names as Unicode.');
+
+        // Recreate the pre-migration latin1 definition to exercise upgrades from existing installations.
+        $db->query('ALTER TABLE users CONVERT TO CHARACTER SET latin1 COLLATE latin1_swedish_ci');
+        $db->query('ALTER TABLE users MODIFY password VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_general_ci NOT NULL');
+        $legacyUserId = 919903;
+        $legacyUsername = 'legacy_admin';
+        $legacyPasswordHash = password_hash('W03-fixture-password', PASSWORD_DEFAULT);
+        $legacyFullname = 'Legacy Admin';
+        $legacyRole = 'admin';
+        $stmt = $db->prepare('INSERT INTO users (id, username, password, fullname, role) VALUES (?, ?, ?, ?, ?)');
+        $stmt->bind_param('issss', $legacyUserId, $legacyUsername, $legacyPasswordHash, $legacyFullname, $legacyRole);
+        $stmt->execute();
+
         $clientId = 919901;
         $taskId = 919902;
         $db->query("DELETE FROM tasks WHERE id = $taskId");
@@ -42,16 +57,31 @@ final class W03MigrationTest extends TestCase
         $row = $db->query("SELECT c.id,c.name,t.id AS task_id,t.title,t.fee,t.collected FROM clients c JOIN tasks t ON t.client_id=c.id WHERE c.id=$clientId")->fetch_assoc();
         $afterTables = array_column($db->query('SHOW TABLES')->fetch_all(), 0);
         $afterSchema = $this->schemaSnapshot($db);
+        $migratedUser = $db->query("SELECT id, username, password, fullname, role FROM users WHERE id = $legacyUserId")->fetch_assoc();
+        $userCharsets = array_column($db->query("SELECT COLUMN_NAME, CHARACTER_SET_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME IN ('username', 'password', 'fullname') ORDER BY COLUMN_NAME")->fetch_all(MYSQLI_ASSOC), 'CHARACTER_SET_NAME', 'COLUMN_NAME');
+        $db->set_charset('utf8mb4');
+        $unicodeUserId = 919904;
+        $unicodeUsername = 'χρήστης_δοκιμής';
+        $unicodeFullname = 'Μαρία Δοκιμή';
+        $unicodePasswordHash = password_hash('W03-unicode-fixture-password', PASSWORD_DEFAULT);
+        $unicodeRole = 'user';
+        $stmt = $db->prepare('INSERT INTO users (id, username, password, fullname, role) VALUES (?, ?, ?, ?, ?)');
+        $stmt->bind_param('issss', $unicodeUserId, $unicodeUsername, $unicodePasswordHash, $unicodeFullname, $unicodeRole);
+        $stmt->execute();
+        $unicodeUser = $db->query("SELECT username, fullname FROM users WHERE id = $unicodeUserId")->fetch_assoc();
         self::assertSame(['id'=>(string)$clientId,'name'=>$name,'task_id'=>(string)$taskId,'title'=>$title,'fee'=>'1234.56','collected'=>'78.90'], $row);
+        self::assertSame(['id'=>(string)$legacyUserId,'username'=>$legacyUsername,'password'=>$legacyPasswordHash,'fullname'=>$legacyFullname,'role'=>$legacyRole], $migratedUser);
+        self::assertSame(['fullname'=>'utf8mb4','password'=>'utf8mb4','username'=>'utf8mb4'], $userCharsets);
+        self::assertSame(['username'=>$unicodeUsername,'fullname'=>$unicodeFullname], $unicodeUser);
         self::assertSame([], $again);
-        self::assertSame(['20261118_001_catalogs','20261118_002_recurring_tasks','20261118_003_security_events'], $applied);
+        self::assertSame(['20261118_001_catalogs','20261118_002_recurring_tasks','20261118_003_security_events','20261119_001_users_utf8mb4'], $applied);
         self::assertSame(['login_throttle','payment_methods','recurrence_occurrences','recurrence_run_log','recurring_task_rule_versions','recurring_task_rules','schema_migrations','security_events','task_title_templates'], array_values(array_diff($afterTables,$beforeTables)));
         self::assertSame(['payment_method_id INT(11) NULL','payment_method_label VARCHAR(100) NULL'], array_values(array_diff($afterSchema['columns']['tasks'], $beforeSchema['columns']['tasks'])));
         self::assertContains('idx_tasks_payment_method_id', array_diff($afterSchema['indexes']['tasks'], $beforeSchema['indexes']['tasks']));
         self::assertNotEmpty(array_diff(array_keys($afterSchema['foreign_keys']), array_keys($beforeSchema['foreign_keys'])));
         self::assertSame([], array_diff($beforeSchema['tables'], $afterSchema['tables']));
         $db->close();
-        $admin = new mysqli((string)getenv('DB_HOST'), 'root', '', '', 0, (string)ini_get('mysqli.default_socket'));
+        $admin = new mysqli((string)getenv('CRM_TEST_ADMIN_HOST'), (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
         $admin->query("DROP DATABASE `$database`");
         $admin->close();
     }
