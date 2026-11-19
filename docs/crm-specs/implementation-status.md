@@ -1,5 +1,19 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W03/W09 continuation at config-loader HEAD - 19 November 2026
+
+Verified branch `codex/crm-remaining-tasks` at `bf71c7119b5ea351069d955286dc8fe0ac7d8de8`; it matches `origin/codex/crm-remaining-tasks` and the worktree was clean before this documentation update.
+The private config-loader evidence below corresponds to this exact HEAD; its local fictional-config PHPUnit, browser, lint, Compose YAML and Node results are recorded in the preceding W03 checkpoint and [W09 evidence](evidence/w09-acceptance.md).
+Rechecked `tasks.md`, `acceptance.md`, the config-loader design and deployment runbook before evaluating the next hosting-dependent step.
+No authorized pre-production hosting target or access mechanism is available or documented in this workspace.
+The production-looking `elmico.gr` host in the runbook is not treated as authorization to probe or alter hosting, so AT-56 hosting checks were not run.
+No hosting, production, deployment or backup operation was performed, and no production or personal data was used.
+AT-56 remains PARTIAL: real web/CLI runtime identities, private-file placement and permissions, HTTP denial, shared pre-production DB/HMAC behavior, and encrypted backup/restore still need an explicitly authorized pre-production environment.
+The prior local full suite result is 210 tests / 1,282 assertions PASS, followed by 13 browser checks PASS; the required order is PHPUnit first, then seed the `W01 Mobile Recurring Filing` fixture before browser execution.
+These local results do not close AT-43/44/45/48/50/51, do not establish new G01 or W09 PASS, and do not verify AT-56 hosting behavior.
+W03 and W09 remain `IN_PROGRESS`; the historical G01 PASS remains scoped to its recorded older commit.
+Next: continue only independent local evidence work that does not depend on hosting; obtain an authorized non-production target before attempting AT-56 or other hosting-dependent criteria.
+
 ### W03 private config loader - 19 November 2026
 
 Pulled documentation commit `52dbc91` and merged as `aa45987`, preserving prior W09 checkpoints.

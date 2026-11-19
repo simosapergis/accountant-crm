@@ -1,5 +1,19 @@
 # W09 acceptance execution
 
+## Current-head hosting availability check - 19 November 2026
+
+Current branch: `codex/crm-remaining-tasks`.
+Current application HEAD: `bf71c7119b5ea351069d955286dc8fe0ac7d8de8`, matching `origin/codex/crm-remaining-tasks` at the start of this review.
+The exact-HEAD local config-loader results are recorded in [implementation status](../implementation-status.md): 210 PHPUnit tests / 1,282 assertions and 13 browser checks passed with fictional configuration/data, with PHPUnit run before the browser recurrence fixture was seeded.
+
+Availability result: no authorized pre-production host, credentials, or connected hosting access mechanism were available or identified for this task.
+The deployment runbook's `elmico.gr` URL does not establish that the host is pre-production or authorize a request to it.
+Therefore no remote HTTP, SSH, Plesk, filesystem, database, scheduler, or backup command was run.
+
+AT-56 remains PARTIAL pending an authorized pre-production environment for verification of web/CLI runtime identities, private config location and permissions, HTTP denial, shared database/HMAC behavior, and encrypted backup/restore.
+AT-43/44/45/48/50/51 remain open or partial as itemized in the acceptance disposition below.
+No new G01 or W09 PASS is claimed, and the historical G01 result remains scoped to its earlier recorded commit.
+
 ## Private CRM configuration continuation - 19 November 2026
 
 The private config loader work and local AT-56 evidence are summarized in the latest `implementation-status.md` entry.
