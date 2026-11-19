@@ -302,6 +302,11 @@ final class W02CsrfTest extends TestCase
         self::assertStringContainsString('W01 Fixture Collaborator', $partnerResponse['body']);
         self::assertStringNotContainsString('Deprecated: htmlspecialchars()', $clientResponse['body']);
         self::assertStringNotContainsString('Deprecated: htmlspecialchars()', $partnerResponse['body']);
+        foreach (['/client_form.php?id=910099', '/analysis_partners.php'] as $path) {
+            $response = $this->request($path, 'GET', [], $session['cookie']);
+            self::assertSame(200, $response['status']);
+            self::assertDoesNotMatchRegularExpression('/(?:Deprecated:|Warning:|Fatal error:)/', str_replace(['<b>', '</b>'], '', $response['body']));
+        }
     }
 
     public function testPartnerAndAutocompleteSearchesDoNotBroadenForSqlLikeInput(): void

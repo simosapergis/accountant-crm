@@ -1,13 +1,13 @@
 <?php
-$host = getenv('DB_HOST') ?: 'localhost';
-$user = getenv('DB_USER') ?: 'DB_USER';
-$password = getenv('DB_PASSWORD') ?: 'DB_PASSWORD';
-$database = getenv('DB_NAME') ?: 'DB_NAME';
+require_once __DIR__ . '/config.php';
+$host = crm_config('DB_HOST');
+$user = crm_config('DB_USER');
+$password = crm_config('DB_PASSWORD');
+$database = crm_config('DB_NAME');
 
-$mysqli = new mysqli($host, $user, $password, $database);
-
-if ($mysqli->connect_error) {
-    die('Database connection failed');
+try {
+    $mysqli = new mysqli($host, $user, $password, $database);
+    $mysqli->set_charset('utf8mb4');
+} catch (Throwable) {
+    crm_config_fail();
 }
-
-$mysqli->set_charset('utf8mb4');

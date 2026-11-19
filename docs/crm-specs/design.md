@@ -234,6 +234,19 @@ docs/crm-specs/
 Οι ρυθμίσεις παραγωγής του CRM αποθηκεύονται σε ξεχωριστό ιδιωτικό PHP config file, έξω από το public document root και το repository. Δεν επαναχρησιμοποιείται ούτε γίνεται include το WordPress `wp-config.php`: το CRM έχει δικά του DB credentials και `CRM_SECURITY_HMAC_KEY`.
 Ένα κοινό bootstrap είναι το μοναδικό σημείο φόρτωσης και χρησιμοποιείται τόσο από τα web entrypoints όσο και από τα CLI scripts. Ο loader επικυρώνει τις απαιτούμενες ρυθμίσεις, τις διαθέτει μέσω κεντρικού config API στους υπάρχοντες consumers και αποτυγχάνει κλειστά χωρίς να εμφανίζει τιμές ή διαδρομές στον browser. Δεν βασίζεται στην αυτόματη φόρτωση `.env` ούτε απαιτεί να περνά το Plesk αυθαίρετα environment variables.
 Η ακριβής θέση επιλέγεται κατά την εγκατάσταση, αφού επιβεβαιωθούν το document root και οι λογαριασμοί συστήματος που εκτελούν το web PHP και το CLI. Ο λογαριασμός του hosting πρέπει να μπορεί να διαβάζει το αρχείο, ενώ HTTP clients και μη εξουσιοδοτημένοι τοπικοί χρήστες όχι. Χρησιμοποιούνται τα ελάχιστα permissions που ταιριάζουν στην επιβεβαιωμένη ρύθμιση PHP/FastCGI. Το αρχείο δεν πρέπει να είναι αναγνώσιμο από όλους, να βρίσκεται σε Git, να παράγει output ή να περιέχει WordPress credentials. Τα backups περιλαμβάνουν το αρχείο μόνο σε προστατευμένο backup storage.
+Η επιλογή αρχείου γίνεται πρώτα από τη μη μυστική PHP ini τιμή `crm.config_file` (ανάγνωση με `get_cfg_var()`), έπειτα από το `CRM_CONFIG_FILE` environment και διαφορετικά από το `<parent του app parent>/private/accountant-crm.php`.
+Για τη συνήθη εγκατάσταση `<document-root>/crm`, η προεπιλογή είναι `<parent του document-root>/private/accountant-crm.php`.
+Το web και το CLI ορίζουν το ίδιο απόλυτο path· το ini locator επιτρέπει λειτουργία χωρίς αυθαίρετα Plesk environment variables.
+Το αρχείο είναι η αποκλειστική πηγή τιμών όταν επιλεγεί, χωρίς συγχώνευση DB/HMAC από το environment.
+Ρητή επιλογή ανύπαρκτου ή άκυρου αρχείου αποτυγχάνει ακόμη και σε test/development.
+Μόνο όταν δεν υπάρχει ιδιωτικό αρχείο και το process ορίζει ρητά `APP_ENV=test` ή `development`, χρησιμοποιούνται οι υφιστάμενες environment ρυθμίσεις.
+Το `APP_ENV` παραμένει process-only και απαγορεύεται μέσα στο ιδιωτικό αρχείο, ώστε config παραγωγής να μην ενεργοποιεί test-only clock/fault injection.
+Το αρχείο επιστρέφει μόνο επιτρεπόμενα keys, χωρίς output, με απαιτούμενα μη κενά DB strings και HMAC τουλάχιστον 32 χαρακτήρων.
+Τα προαιρετικά αριθμητικά όρια είναι θετικοί ακέραιοι έως 31536000, το timezone είναι `Europe/Athens` και το base path είναι έγκυρη τοπική διαδρομή.
+Ο loader απορρίπτει resolved paths εντός repository/public root, το `wp-config.php`, world-access permissions και group-write permissions.
+Ελλιπές, unreadable ή άκυρο αρχείο, output, warning ή exception δίνει μόνο `CRM configuration unavailable.` με HTTP 503 ή CLI exit 78, χωρίς αρχική exception ή path.
+Η πραγματική Plesk διαδρομή, ιδιοκτησία και κατάλληλο 0600/0640 επιλέγονται και ελέγχονται στην εγκατάσταση· δεν θεωρούνται επιβεβαιωμένα από τον τοπικό έλεγχο.
+
 Dependencies, CLI, logs και backups τοποθετούνται έξω από το δημόσιο root όπου η υφιστάμενη διάταξη το επιτρέπει, και εκτίθενται μόνο τα απαιτούμενα PHP entrypoints και assets.
 Αν το hosting επιβάλλει διαφορετική διάταξη, χρειάζονται επαληθευμένοι κανόνες πρόσβασης και για το πραγματικό web stack του Plesk πριν από δημοσίευση.
 Το path του cookie περιορίζει την αποστολή του, αλλά το `/crm/` παραμένει στην ίδια browser origin με το δημόσιο site.

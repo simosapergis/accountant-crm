@@ -1,5 +1,20 @@
 # W09 acceptance execution
 
+## Private CRM configuration continuation - 19 November 2026
+
+The private config loader work and local AT-56 evidence are summarized in the latest `implementation-status.md` entry.
+Execution order matters because the browser viewport suite needs a recurring-rule display fixture and W06's global scheduler consumes all active rules.
+Before PHPUnit, `crm_test_w09_20261119` was verified with non-root user `crm_test_w091119`; recurring-rule and occurrence tables were empty.
+The full suite then passed in private-file mode: 210 tests / 1282 assertions on PHP 8.3.36 and MariaDB 10.11.19.
+Only after PHPUnit passed were the documented W01 fixtures and `W01 Mobile Recurring Filing` browser rule seeded.
+The browser suite then passed all 13 checks, including AT-49 and the exercised AT-54 picker journey.
+The browser recurrence fixture remains in the disposable database after this final browser run.
+Before rerunning PHPUnit, use a fresh schema or remove only positively identified fixture-owned rows; do not run W06 after seeding the browser rule in the same database.
+
+Local tests verify loader resolution, validation, failure sanitization, permissions policy, web/CLI parity and private HMAC/database values despite conflicting environment values.
+They do not verify actual Plesk process users, production filesystem permissions, public hosting HTTP rules or encrypted backup/restore.
+AT-56 remains PARTIAL, and W03/W09 remain IN_PROGRESS.
+
 ## Post-pull isolated verification - 19 November 2026
 
 The preserved W09 work was committed as `9c912e5` before pulling, as requested.

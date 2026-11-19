@@ -1,13 +1,10 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/config.php';
 
 function crm_security_key(): string
 {
-    $key = (string)(getenv('CRM_SECURITY_HMAC_KEY') ?: '');
-    if (strlen($key) < 32) {
-        throw new RuntimeException('CRM_SECURITY_HMAC_KEY must contain at least 32 characters.');
-    }
-    return $key;
+    return crm_config('CRM_SECURITY_HMAC_KEY');
 }
 
 function crm_security_hash(string $value): string
@@ -49,9 +46,8 @@ function crm_login_failure(mysqli $db, string $identityHash, string $sourceHash)
 
 function crm_security_setting(string $name, int $default): int
 {
-    $value = getenv($name);
-    if ($value === false || $value === '') return $default;
-    if (!ctype_digit($value) || (int)$value < 1 || (int)$value > 31536000) throw new RuntimeException('Invalid security setting: ' . $name);
+    $value = crm_config($name);
+    if ($value === '') return $default;
     return (int)$value;
 }
 

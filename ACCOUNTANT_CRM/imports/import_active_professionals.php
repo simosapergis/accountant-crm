@@ -181,6 +181,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
+if ($inserted > 0 && empty($errors)) {
+    header("Refresh: 2; URL=../active_professionals.php");
+}
+
 require dirname(__DIR__) . '/includes/header.php';
 ?>
 
@@ -226,11 +230,3 @@ require dirname(__DIR__) . '/includes/header.php';
 </div>
 
 <?php require dirname(__DIR__) . '/includes/footer.php'; ?>
-
-<?php
-// Σωστό redirect μετά από 2''
-if ($inserted > 0 && empty($errors)) {
-    header("Refresh: 2; URL=../active_professionals.php");
-    exit;
-}
-?>

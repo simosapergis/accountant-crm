@@ -105,7 +105,7 @@ require 'includes/header.php';
         <div class="form-row">
             <div class="form-group">
                 <label>ΑΦΜ</label>
-                <input type="text" name="afm" value="<?= htmlspecialchars($client['afm']) ?>">
+                <input type="text" name="afm" value="<?= htmlspecialchars($client['afm'] ?? '') ?>">
             </div>
             <div class="form-group">
                 <label>Κατηγορία</label>
@@ -120,11 +120,11 @@ require 'includes/header.php';
         <div class="form-row">
             <div class="form-group">
                 <label>Τηλέφωνο</label>
-                <input type="text" name="phone" value="<?= htmlspecialchars($client['phone']) ?>">
+                <input type="text" name="phone" value="<?= htmlspecialchars($client['phone'] ?? '') ?>">
             </div>
             <div class="form-group">
                 <label>Email</label>
-                <input type="email" name="email" value="<?= htmlspecialchars($client['email']) ?>">
+                <input type="email" name="email" value="<?= htmlspecialchars($client['email'] ?? '') ?>">
             </div>
         </div>
 

@@ -175,6 +175,9 @@ final class W08ExportsTest extends TestCase
             $context = stream_context_create(['http' => ['method' => 'POST', 'header' => 'Cookie: ' . $this->cookie . "\r\nContent-Type: multipart/form-data; boundary=" . $boundary, 'content' => $body, 'ignore_errors' => true, 'follow_location' => 0]]);
             $response = file_get_contents(rtrim((string)getenv('CRM_BASE_URL'), '/') . '/imports/import_active_professionals.php', false, $context);
             self::assertStringContainsString('200', $http_response_header[0]);
+            self::assertMatchesRegularExpression('/^Refresh: 2; URL=\.\.\/active_professionals\.php$/mi', implode("\n", $http_response_header));
+            self::assertStringNotContainsString('Cannot modify header information', (string)$response);
+            self::assertStringNotContainsString('Warning:', (string)$response);
             self::assertStringContainsString('Επιτυχής εισαγωγή: 2 εγγραφές.', (string)$response);
             $stmt = $this->db->prepare('SELECT fullname, is_active, start_date, has_vat, vat_type, has_payroll FROM active_professionals WHERE code = ?');
             $stmt->execute([$this->prefix . 'IMPORT']);

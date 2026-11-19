@@ -29,7 +29,10 @@
 
 **W03 handoff - ιδιωτικό αρχείο ρυθμίσεων CRM**
 
-Κατάσταση υποεργασίας config loader: **OPEN / δεν έχει υλοποιηθεί**. Ο κώδικας αυτή τη στιγμή διαβάζει ρυθμίσεις με `getenv()` και δεν φορτώνει το ιδιωτικό PHP config. Η αλλαγή των προδιαγραφών δεν ενεργοποιεί από μόνη της αυτή τη λειτουργία.
+Κατάσταση υποεργασίας config loader: **IMPLEMENTED_LOCAL / AT-56 PARTIAL**.
+Ο κοινός loader και οι web/CLI consumers έχουν υλοποιηθεί και ελεγχθεί τοπικά με ιδιωτικά fictional αρχεία και πραγματική απομονωμένη MariaDB.
+Το pre-prod Plesk, η επιβεβαίωση runtime λογαριασμών/permissions και το encrypted backup/restore παραμένουν ανοιχτά.
+Οι παρακάτω οδηγίες διατηρούνται ως checklist επανελέγχου και εγκατάστασης· τα πραγματικά αποτελέσματα καταγράφονται στο `implementation-status.md`.
 
 - Διάβασε πρώτα τα `START_HERE.md`, `requirements.md` (CFG-01/02), `design.md` και `acceptance.md` (AT-56), καθώς και το σχετικό deployment τμήμα στο `deployment.md`.
 - Πρόσθεσε ένα κοινό config loader/bootstrap που φορτώνει αρχείο PHP εκτός repository και document root. Το αρχείο επιστρέφει array ρυθμίσεων, δεν παράγει output και δεν περιέχει/φορτώνει ρυθμίσεις από WordPress `wp-config.php`.

@@ -45,7 +45,8 @@
 1. Η PHP του web handler και η PHP CLI είναι 8.3 και διαθέτουν τις απαιτούμενες επεκτάσεις.
 2. Η MariaDB είναι συμβατή με InnoDB, foreign keys, `utf8mb4` και τα migrations του app.
 3. Το CRM χρησιμοποιεί ξεχωριστό ιδιωτικό αρχείο ρυθμίσεων και κοινό loader για web PHP και CLI tasks. Δεν εξαρτάται από το να περάσει το Plesk αυθαίρετες environment variables στον CGI/FastCGI handler, και δεν διαβάζει το `wp-config.php`.
-4. Ο τρέχων κώδικας διαβάζει αρκετές ρυθμίσεις με `getenv()` και δεν φορτώνει ακόμη ιδιωτικό PHP config. Πριν από deployment, υλοποίησε και έλεγξε το κοινό config loader που ορίζεται στο `design.md`; runbook ή Plesk setting μόνο του δεν αρκεί.
+4. Ο κοινός loader `includes/config.php` υποστηρίζει ιδιωτικό PHP config για web και CLI.
+   Πριν από deployment, επαλήθευσε τη φόρτωση στο πραγματικό Plesk και τα AT-56 permissions/HTTP/backup σκέλη· οι τοπικοί έλεγχοι δεν πιστοποιούν το hosting.
 5. Το app σήμερα φορτώνει Composer dependencies από `ACCOUNTANT_CRM/vendor/autoload.php`. Το `vendor/`, τα `bin/`, `migrations/`, `includes/` και τα Composer metadata βρίσκονται κάτω από το app tree. Το `.htaccess` περιέχει απαγορεύσεις, αλλά πρέπει να αποδειχθεί με HTTP requests ότι ισχύουν και στο πραγματικό Plesk web stack. Αν αρχεία είναι προσβάσιμα, σταμάτησε και ρύθμισε απαγορεύσεις Apache/nginx ή μετακίνησε dependencies/CLI έξω από το public root με αντίστοιχη υποστήριξη από τον κώδικα.
 6. Το Plesk Scheduled Task μπορεί να εκτελέσει τα CLI scripts με σωστή PHP, filesystem permissions και τις ίδιες database/key ρυθμίσεις.
 7. Το logging δεν αποκαλύπτει σφάλματα, paths, SQL ή credentials στον browser και τα αρχεία καταγραφής βρίσκονται εκτός public root.
@@ -199,7 +200,29 @@ openssl rand -hex 32
 
 Αντέγραψε την τιμή απευθείας στο ιδιωτικό αρχείο χωρίς να τη στείλεις στη συνομιλία ή να τη βάλεις σε Git, URL, δημόσιο PHP source ή command arguments. Χρησιμοποίησε μόνο τα credentials της ξεχωριστής pre-prod βάσης CRM· μην αντιγράψεις credentials του WordPress.
 
-Το κοινό CRM bootstrap πρέπει να φορτώνει το ίδιο αρχείο για web PHP και CLI, και ο κώδικας να χρησιμοποιεί αυτόν τον loader για DB/HMAC και τις υπόλοιπες ρυθμίσεις. Αυτή η υποστήριξη πρέπει να υλοποιηθεί και να επαληθευτεί πριν από deployment· η ενημέρωση αυτού του runbook από μόνη της δεν την ενεργοποιεί. Το υπάρχον `.env.example` αφορά μόνο το τοπικό Docker setup και δεν φορτώνεται αυτόματα.
+Ο κοινός loader `includes/config.php` χρησιμοποιείται από DB, session, security settings και CLI scheduler.
+Η προτεραιότητα επιλογής είναι PHP ini `crm.config_file`, environment `CRM_CONFIG_FILE`, και έπειτα το συμβατικό εξωτερικό `<parent του app parent>/private/accountant-crm.php`.
+Στη συνήθη εγκατάσταση `<document-root>/crm` η προεπιλογή αντιστοιχεί σε `<parent του document-root>/private/accountant-crm.php`.
+Το συγκεκριμένο production path δεν έχει ακόμη επιβεβαιωθεί.
+
+Αφού επιβεβαιωθεί η πραγματική ιδιωτική διαδρομή, μπορεί να οριστεί η μη μυστική ini τιμή και για web και CLI:
+
+```ini
+crm.config_file = "/confirmed/private/accountant-crm.php"
+```
+
+Στο CLI η ίδια μη μυστική επιλογή μπορεί να περάσει με `php -d crm.config_file=/confirmed/private/accountant-crm.php <script>`.
+Το custom ini διαβάζεται με `get_cfg_var()`· επιβεβαίωσε ότι ο πραγματικός FastCGI handler και η CLI διαβάζουν την ίδια τιμή.
+Μην περάσεις credentials ή HMAC μέσα σε command arguments.
+Αν το hosting δεν επιτρέπει αυτή την ini ρύθμιση, επιβεβαίωσε ότι η συμβατική εξωτερική διαδρομή είναι διαθέσιμη και ιδιωτική ή ότι το `CRM_CONFIG_FILE` δίνεται με ασφάλεια και στα δύο runtimes.
+
+Το επιλεγμένο αρχείο είναι αποκλειστική πηγή ρυθμίσεων και δεν συγχωνεύεται με environment DB/HMAC.
+Απουσία ή λάθος ρητά επιλεγμένου αρχείου, άκυρες τιμές, απαγορευμένο path/permissions, output ή PHP load error δίνουν γενικό HTTP 503 ή CLI exit 78.
+Ο loader απορρίπτει world-access και group-write στο αρχείο και επιτρέπει μόνο έγκυρο 0600/0640 που διαβάζουν οι αναγκαίοι λογαριασμοί.
+Το `APP_ENV` δεν επιτρέπεται μέσα στο αρχείο· η παραγωγή αφήνει το process mode unset ή `production`, ώστε να μη γίνουν διαθέσιμα τα test clock/fault overrides.
+Μόνο ρητό process `APP_ENV=test` ή `development` επιτρέπει environment-only λειτουργία όταν δεν υπάρχει επιλεγμένο/default ιδιωτικό αρχείο.
+Το υπάρχον `.env.example` αφορά μόνο το τοπικό Docker setup και δεν φορτώνεται αυτόματα.
+Αυτή η τοπική υποστήριξη δεν υποκαθιστά το πραγματικό pre-prod AT-56.
 
 Πριν ενεργοποιήσεις login ή scheduler, επιβεβαίωσε ότι (α) η διαδρομή βρίσκεται έξω από το public document root και το repository, (β) δεν υπάρχει HTTP URL που επιστρέφει το αρχείο ή το περιεχόμενό του, (γ) web και CLI μπορούν να το διαβάσουν, (δ) και τα δύο runtimes χρησιμοποιούν την ίδια pre-prod βάση και HMAC key χωρίς να εμφανίζουν μυστικά, και (ε) αποτυχία φόρτωσης δίνει ασφαλές γενικό σφάλμα χωρίς credentials, key ή filesystem path. Μην αφήσεις δημόσιο diagnostic script· οι έλεγχοι γίνονται με CLI ή σε προσωρινό προστατευμένο έλεγχο που αφαιρείται αμέσως.
 

@@ -72,8 +72,8 @@ require 'includes/header.php';
             ?>
                 <tr>
                     <td><?= htmlspecialchars($p['fullname']) ?></td>
-                    <td><?= htmlspecialchars($p['phone']) ?></td>
-                    <td><?= htmlspecialchars($p['email']) ?></td>
+                    <td><?= htmlspecialchars($p['phone'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($p['email'] ?? '') ?></td>
                     <td><?= (int)$p['task_count'] ?></td>
                     <td><?= formatMoney($p['total_fees']) ?></td>
                     <td><?= formatMoney($p['total_collected']) ?></td>

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/session_lifecycle.php';
+require_once __DIR__ . '/config.php';
 
 if (PHP_SAPI !== 'cli') {
     header('X-Robots-Tag: noindex, nofollow');
@@ -9,7 +10,7 @@ if (PHP_SAPI !== 'cli') {
 
 function crm_base_path(): string
 {
-    $configured = trim((string) (getenv('APP_BASE_PATH') ?: '/'));
+    $configured = crm_config('APP_BASE_PATH');
     $path = '/' . trim($configured, '/');
 
     return $path === '/' ? '' : $path;
@@ -22,7 +23,7 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.gc_maxlifetime', (string) SessionLifecycle::IDLE_TIMEOUT_SECONDS);
 
     $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && strtolower((string) $_SERVER['HTTPS']) !== 'off';
-    $secureCookie = $isHttps || getenv('APP_ENV') === 'test';
+    $secureCookie = $isHttps || crm_config('APP_ENV') === 'test';
     $basePath = crm_base_path();
     $cookiePath = $basePath === '' ? '/' : $basePath . '/';
 

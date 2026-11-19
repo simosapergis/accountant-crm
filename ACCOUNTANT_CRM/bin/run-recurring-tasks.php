@@ -17,7 +17,7 @@ foreach ($argv as $argument) {
     if (str_starts_with($argument, '--as-of=')) $asOf = substr($argument, 8);
     if (str_starts_with($argument, '--fail-after-task=')) $failAfterTask = substr($argument, 18);
 }
-if (($asOf !== null || $failAfterTask !== null) && getenv('APP_ENV') !== 'test') {
+if (($asOf !== null || $failAfterTask !== null) && crm_config('APP_ENV') !== 'test') {
     fwrite(STDERR, "Clock overrides and fault injection are test-only.\n");
     exit(2);
 }
@@ -28,7 +28,7 @@ if ($asOf !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $asOf)) {
 
 try {
     crm_apply_migrations($mysqli);
-    $timezone = new DateTimeZone('Europe/Athens');
+    $timezone = new DateTimeZone(crm_config('APP_TIMEZONE'));
     $clock = $asOf === null ? new DateTimeImmutable('now', $timezone) : new DateTimeImmutable($asOf . ' 23:59:59', $timezone);
     $result = crm_recurrence_run($mysqli, $clock, 100, $dryRun, $failAfterTask);
     fwrite(STDOUT, sprintf("Recurring scheduler %s: created=%d skipped=%d failed=%d\n", $dryRun ? 'dry-run' : 'run', $result['created'], $result['skipped'], $result['failed']));

@@ -1,5 +1,22 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W03 private config loader - 19 November 2026
+
+Pulled documentation commit `52dbc91` and merged as `aa45987`, preserving prior W09 checkpoints.
+Implemented common private PHP config loading for DB, session, security settings and recurring CLI through `includes/config.php`.
+The config file is authoritative; the loader supports the PHP ini locator, `CRM_CONFIG_FILE`, an external default, and process-only test/development environment fallback.
+Validation rejects incomplete or invalid values, public/repository paths, `wp-config.php`, unsafe permissions and output/errors; failures return a generic HTTP 503 or CLI exit 78.
+The SET agent added subprocess unit coverage and independently reviewed the loader; CLI working-directory, `open_basedir` warning leakage and permitted-hosting-directory cases were reproduced and fixed.
+Authenticated HTTP and CLI migration tests use the same private fictional config and guarded MariaDB target, with deliberately conflicting environment credentials.
+Final private-file full suite: **210 tests / 1282 assertions PASS** on PHP 8.3.36 and MariaDB 10.11.19.
+Browser suite then passed **13 checks**, including AT-49 viewport/keyboard coverage and the AT-54 exercised client-picker flow.
+The browser mobile recurrence fixture is seeded only after PHPUnit; it can make W06 tests fail if the full suite is run afterwards because the scheduler processes shared rules globally.
+The successful import response warning and nullable contact-field deprecations were reproduced with tests and fixed; the full private-file suite includes these regressions.
+`git diff --check`, focused PHP lint, Compose YAML parsing and Node syntax checks pass.
+AT-56 remains PARTIAL: the local test establishes config resolution, permissions checks, HTTP denial in the local `/crm/` harness and web/CLI parity, but actual Plesk identity/permissions and encrypted backup/restore remain unverified.
+W03 remains IN_PROGRESS for hosting acceptance; W09 remains IN_PROGRESS and no G01/W09 PASS is granted.
+Next: complete the independent review, then commit this checkpoint; keep Linux Compose rerun, AT-43/44/45/48/50/51 and Plesk AT-56 hosting checks open.
+
 ### W09 post-pull verification - 19 November 2026
 
 Committed the preserved W09 diff as `9c912e5`, pulled remote `152021f`, and completed merge `d8ab822` while retaining both sides of the progress-document conflict.
@@ -376,7 +393,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 |---|---|---|
 | W01 | DONE | [W01 baseline](evidence/w01-baseline.md), test harness, fixtures, clock και runners. |
 | W02 | DONE_LOCAL | AT-01..09, AT-13..18 and AT-27 pass locally; see [W02 closeout](evidence/w02-closeout.md). [CSRF](evidence/w02-csrf.md), [diary ownership](evidence/w02-diary-ownership.md), [XSS](evidence/w02-xss.md), [export/security follow-up](evidence/w02-exports.md). G01 remains NOT_EVALUATED. |
-| W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
+| W03 | IN_PROGRESS | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
 | W08 | DONE_LOCAL | AT-05/18/47 local checks pass; see [W08 evidence](evidence/w08-closeout.md). |
 | G01 | HISTORICAL_PASS_LOCAL | Exact commit `bc1406c064e1fa8829dee74da5aa86409c6f3793`; see [G01 evaluation](evidence/g01-evaluation.md). This is not a current merged-tree or production sign-off. |
