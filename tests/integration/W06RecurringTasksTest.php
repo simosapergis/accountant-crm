@@ -224,7 +224,7 @@ final class W06RecurringTasksTest extends TestCase
         $updated = $this->request('/task_form.php?id=' . $generatedTaskId, 'POST', [
             'id' => (string)$generatedTaskId,
             'task_date' => '2027-03-15',
-            'title' => 'W06 Edited One Generated Task',
+            'title_selection' => 'custom', 'custom_title' => 'W06 Edited One Generated Task',
             'client_id' => (string)self::CLIENT_ID,
             'partner_id' => '',
             'status' => 'Ολοκληρωμένη',
@@ -287,7 +287,7 @@ final class W06RecurringTasksTest extends TestCase
         $taskForm = $this->request('/task_form.php?id=910030', 'GET', [], $session['cookie']);
         self::assertSame(200, $taskForm['status']);
         $taskSaved = $this->request('/task_form.php?id=910030', 'POST', [
-            'id' => '910030', 'task_date' => '2026-11-18', 'title' => 'W06 Admin Edited Shared Task',
+            'id' => '910030', 'task_date' => '2026-11-18', 'title_selection' => 'custom', 'custom_title' => 'W06 Admin Edited Shared Task',
             'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
             'fee' => '100.00', 'collected' => '0', 'payment_method_id' => '', 'notes' => 'fictional admin role regression',
             'save_task' => '1', '_csrf_token' => $this->csrfToken($taskForm['body']),
@@ -318,7 +318,7 @@ final class W06RecurringTasksTest extends TestCase
 
         $nextMonth = crm_recurrence_month_add(substr(crm_recurrence_today(), 0, 7) . '-01', 1);
         $payload = [
-            'task_date' => '2026-11-18', 'title' => 'W06 Initial Recurrence Task',
+            'task_date' => '2026-11-18', 'title_selection' => 'custom', 'custom_title' => 'W06 Initial Recurrence Task',
             'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
             'fee' => '125,50', 'collected' => '0', 'payment_method_id' => '', 'notes' => 'Fictional initial recurring task',
             'enable_recurrence' => '1', 'recurrence_day' => '12',
@@ -345,7 +345,7 @@ final class W06RecurringTasksTest extends TestCase
         $session = $this->login();
         $form = $this->request('/task_form.php', 'GET', [], $session['cookie']);
         $payload = [
-            'task_date' => '2026-11-18', 'title' => 'W06 Invalid Initial Recurrence',
+            'task_date' => '2026-11-18', 'title_selection' => 'custom', 'custom_title' => 'W06 Invalid Initial Recurrence',
             'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
             'fee' => '125,50', 'collected' => '0', 'payment_method_id' => '', 'notes' => '',
             'enable_recurrence' => '1', 'recurrence_day' => '12',

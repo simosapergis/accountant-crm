@@ -1,5 +1,30 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W09 independent review and snapshot regression - 19 November 2026
+
+A separate SET reviewer completed the initial independent read-only AT-50 review of `88efb87` and found that historical green runs did not certify the merged title-selection UI.
+The authenticated W05 regression reproduced a snapshot race: renaming the catalog title while a task form was open changed the existing task title on an unrelated fee edit.
+The task form now defaults to its saved custom title; explicit catalog selection remains available.
+W05/W06/W02 payloads and the browser task-title selector were updated to the current form contract.
+Guarded W05 passed 9 tests / 78 assertions after the observed snapshot RED; guarded W02 passed 40 tests / 230 assertions.
+All 12 browser checks passed on the modified tree after correcting the obsolete title-field selector.
+The expanded date unit checks passed 5 tests / 22 assertions, including both Athens DST transitions and local-midnight boundaries.
+W06 stopped before the edit assertion because pre-existing fictional rules caused 5 scheduler creations instead of 1; no unknown fixture records were removed.
+See [W09 evidence](evidence/w09-acceptance.md) for commands, review scope and outstanding verification.
+The user could not confirm an authorized non-production hosting environment.
+W09 remains `IN_PROGRESS` and AT-50 remains `PARTIAL`; the historical G01 result is not a new PASS for this modified tree.
+
+### AT-50 read-only QA - 19 November 2026
+
+Reviewed the current committed snapshot `88efb87` on `codex/crm-remaining-tasks`; `git status --short --branch` was clean and there was no uncommitted W09 diff in this checkout.
+This was a self-review by the active agent, not an independent review; no separate reviewer was available, so AT-50 remains `PARTIAL`.
+The review reconciled `acceptance.md`, `tasks.md`, `evidence/w09-acceptance.md`, and `evidence/g01-evaluation.md`, then inspected the AT-49 browser assertions and the changed task-form focus CSS.
+The browser evidence is specific and reproducible: the recorded run covered 12 checks, seven viewport widths, the listed task/catalog/recurrence routes, keyboard traversal, focus indicators, overflow, and clipped visible text.
+Limits: those checks do not establish human visual acceptance of every listed layout, real-host behavior, DST/Plesk scheduling, static-site coexistence, a real legacy database/WordPress isolation, public-site sitemap/menu/cache behavior, or backup/restore.
+No critical/high finding was established within this narrow review scope; this is not a complete security audit or evidence that no such findings exist elsewhere.
+No tests or other guarded checks were run because this was read-only review and the worktree was clean.
+W09 remains `IN_PROGRESS`; AT-43, AT-44, AT-45, AT-48, AT-50 and AT-51 remain partial or not run as recorded in [W09 acceptance evidence](evidence/w09-acceptance.md).
+
 ### G01 exact-commit re-evaluation - 18 November 2026
 
 Current branch `codex/crm-remaining-tasks` has `HEAD` at `bc1406c064e1fa8829dee74da5aa86409c6f3793`, matching `origin/codex/crm-remaining-tasks`; the worktree was clean before this review, and only the three review-evidence documents are now modified.
@@ -15,7 +40,7 @@ The [G01 evaluation](evidence/g01-evaluation.md) now records `PASS` for the loca
 
 ### W09 acceptance execution - 19 November 2026
 
-Started W09 against HEAD `a2e805e2581542652ff7a007f9f980ad1f3c00c3` plus the current local changes; the code/evidence tree has not been committed.
+Started W09 against HEAD `a2e805e2581542652ff7a007f9f980ad1f3c00c3` plus local changes; those implementation changes are now present in the committed branch history.
 The complete AT disposition and command results are in [W09 acceptance evidence](evidence/w09-acceptance.md).
 Added the specified `X-Robots-Tag: noindex, nofollow` response header after observing the AT-48 HTTP regression fail on `/login.php`.
 Added explicit AT-26 mobile payment snapshot assertions and an AT-32 authenticated generated-task independence regression.
@@ -335,7 +360,7 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 
 ## Ακριβές επόμενο βήμα
 
-Complete independent QA for AT-50 after reviewing the local AT-49 evidence.
+Rerun W06 on a fresh guarded test database, then obtain final independent QA and any required human visual acceptance for the resulting tree.
 Keep AT-43/44/45 hosting-related checks, the public-site and cache-policy portions of AT-48, and AT-51 backup/restore for W10 in an authorized non-production deployment environment.
 
 ## Τελευταίο βήμα TDD

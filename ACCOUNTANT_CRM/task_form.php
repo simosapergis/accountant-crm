@@ -353,12 +353,7 @@ function updateTaskTitleInput() {
                 <?php
                     $currentTaskTitle = (string)($task['title'] ?? '');
                     $selectedTitleTemplateId = null;
-                    foreach ($titleTemplateOptions as $titleTemplate) {
-                        if ((string)$titleTemplate['name'] === $currentTaskTitle) {
-                            $selectedTitleTemplateId = (int)$titleTemplate['id'];
-                            break;
-                        }
-                    }
+                    // Existing titles are snapshots, independent of later catalog changes.
                     $customTitleSelected = $currentTaskTitle !== '' && $selectedTitleTemplateId === null;
                 ?>
                 <select id="title_selection" name="title_selection" style="height:48px;" onchange="updateTaskTitleInput()">

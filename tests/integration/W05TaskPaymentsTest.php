@@ -39,7 +39,7 @@ final class W05TaskPaymentsTest extends TestCase
         }
     }
 
-    public function testActiveTitleTemplateFillsEditableTaskTitleAndFreeTextIsPreserved(): void
+    public function testActiveTitleTemplateAndCustomTitleCanBeSaved(): void
     {
         $session = $this->login();
         $name = 'W05 Quarterly Return';
@@ -47,11 +47,52 @@ final class W05TaskPaymentsTest extends TestCase
         $stmt = $this->db->prepare('INSERT INTO task_title_templates (name, normalized_name, is_active) VALUES (?, ?, 1)');
         $stmt->bind_param('ss', $name, $normalized);
         $stmt->execute();
+        $templateId = (int)$this->db->insert_id;
 
         $form = $this->request('/task_form.php?id=910020', 'GET', [], $session['cookie']);
         self::assertSame(200, $form['status']);
         self::assertStringContainsString('W05 Quarterly Return', $form['body']);
-        self::assertStringContainsString('list="task-title-options"', $form['body']);
+        self::assertStringContainsString('name="title_selection"', $form['body']);
+        self::assertStringContainsString('value="template:' . $templateId . '"', $form['body']);
+        $saved = $this->request('/task_form.php?id=910020', 'POST', $this->taskPayload($this->csrfToken($form['body']), [
+            'title_selection' => 'template:' . $templateId,
+        ]), $session['cookie']);
+        self::assertSame(302, $saved['status']);
+        self::assertSame($name, $this->db->query('SELECT title FROM tasks WHERE id=910020')->fetch_row()[0]);
+
+        $form = $this->request('/task_form.php?id=910020', 'GET', [], $session['cookie']);
+        $saved = $this->request('/task_form.php?id=910020', 'POST', $this->taskPayload($this->csrfToken($form['body']), [
+            'title_selection' => 'custom', 'custom_title' => 'W05 Ελεύθερος τίτλος',
+        ]), $session['cookie']);
+        self::assertSame(302, $saved['status']);
+        self::assertSame('W05 Ελεύθερος τίτλος', $this->db->query('SELECT title FROM tasks WHERE id=910020')->fetch_row()[0]);
+    }
+
+    public function testUnchangedTitleSelectionPreservesSnapshotWhenTemplateIsRenamedWhileFormIsOpen(): void
+    {
+        $name = 'W05 Payment fixture';
+        $normalized = mb_strtolower($name, 'UTF-8');
+        $stmt = $this->db->prepare('INSERT INTO task_title_templates (name,normalized_name,is_active) VALUES (?,?,1)');
+        $stmt->bind_param('ss', $name, $normalized);
+        $stmt->execute();
+        $templateId = (int)$this->db->insert_id;
+        $session = $this->login();
+        $form = $this->request('/task_form.php?id=910020', 'GET', [], $session['cookie']);
+        self::assertSame(200, $form['status']);
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $form['body']);
+        $selected = (new DOMXPath($dom))->query('//select[@name="title_selection"]/option[@selected]');
+        self::assertSame(1, $selected->length);
+        $selection = $selected->item(0)->getAttribute('value');
+
+        $renamed = $this->db->prepare("UPDATE task_title_templates SET name='W05 Renamed title',normalized_name='w05 renamed title' WHERE id=?");
+        $renamed->bind_param('i', $templateId);
+        $renamed->execute();
+        $saved = $this->request('/task_form.php?id=910020', 'POST', $this->taskPayload($this->csrfToken($form['body']), [
+            'title_selection' => $selection, 'fee' => '30.00',
+        ]), $session['cookie']);
+        self::assertSame(302, $saved['status']);
+        self::assertSame(['title' => $name, 'fee' => '30.00'], $this->db->query('SELECT title,fee FROM tasks WHERE id=910020')->fetch_assoc());
     }
 
     public function testPositiveCollectionRequiresAnActivePaymentMethod(): void
@@ -99,7 +140,7 @@ final class W05TaskPaymentsTest extends TestCase
     {
         $session = $this->login();
         $form = $this->request('/task_form.php?id=910020', 'GET', [], $session['cookie']);
-        $payload = $this->taskPayload($this->csrfToken($form['body']), ['title' => str_repeat('x', 256)]);
+        $payload = $this->taskPayload($this->csrfToken($form['body']), ['custom_title' => str_repeat('x', 256)]);
         $response = $this->request('/task_form.php?id=910020', 'POST', $payload, $session['cookie']);
         self::assertSame(200, $response['status']);
         self::assertStringContainsString('έως 255 χαρακτήρες', $response['body']);
@@ -192,7 +233,7 @@ final class W05TaskPaymentsTest extends TestCase
     private function taskPayload(string $token, array $overrides = []): array
     {
         return array_merge([
-            'id' => '910020', 'task_date' => '2026-11-18', 'title' => 'W05 Payment fixture',
+            'id' => '910020', 'task_date' => '2026-11-18', 'title_selection' => 'custom', 'custom_title' => 'W05 Payment fixture',
             'client_id' => '910020', 'partner_id' => '', 'status' => 'Σε εξέλιξη',
             'fee' => '25.00', 'collected' => '0.00', 'notes' => '', 'save_task' => '1', '_csrf_token' => $token,
         ], $overrides);

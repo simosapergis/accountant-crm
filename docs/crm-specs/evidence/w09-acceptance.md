@@ -1,5 +1,29 @@
 # W09 acceptance execution
 
+## Independent QA follow-up - 19 November 2026
+
+Reviewed application baseline: `88efb87`, followed by the uncommitted snapshot fix and test updates in this session.
+The earlier commands below describe historical runs and do not certify this merged HEAD.
+A separate SET reviewer completed read-only source/evidence review and identified obsolete title POST payloads and a task-title snapshot race.
+The reviewer subsequently reviewed the fix read-only; its own intermediate test-editing work is distinct from the independent initial review.
+An authenticated HTTP regression reproduced the race: a catalog rename between opening and saving a task changed the task title when only the fee was edited.
+The task form now defaults existing titles to their saved custom text, preserving the snapshot until the user explicitly selects a catalog title.
+W05 and W02/W06 task POST tests now use the current `title_selection` / `custom_title` contract.
+
+- Guarded W05 RED: 9 tests, 78 assertions, one expected snapshot-title failure.
+- Guarded W05 GREEN: `php tests/vendor/bin/phpunit -c tests/phpunit.xml tests/integration/W05TaskPaymentsTest.php`, 9 tests / 78 assertions PASS.
+- Guarded W02: `php tests/vendor/bin/phpunit -c tests/phpunit.xml tests/integration/W02CsrfTest.php`, 40 tests / 230 assertions PASS.
+- DST unit: `php tests/vendor/bin/phpunit -c tests/phpunit.xml tests/unit/W06RecurrenceDateTest.php`, 5 tests / 22 assertions PASS, including UTC instants around both 2027 Athens DST transitions and local midnight.
+- Browser rerun: `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' CRM_BASE_URL=http://127.0.0.1:18098/crm npm --prefix tests/e2e --cache /tmp/crm-w01-native-npm-cache test`, all 12 checks PASS after replacing the obsolete `input[name="title"]` route selector with `#title_selection`.
+- W06 focused attempt: `--filter testEditingOneGeneratedTaskDoesNotChangeItsRecurrenceRuleOrFutureTasks`, 1 test / 2 assertions, failed before the HTTP edit because the scheduler created 5 tasks instead of the expected 1 in the existing fictional fixture database.
+
+Database commands used `crm_test_w09_20261118` with non-root user `crm_test_w09`, verified by `tests/bin/assert-test-db.php` before each invocation.
+The sandbox initially denied the MariaDB connection; the approved retry reached the guarded local target.
+W06 requires a fresh guarded test database or positively identified fixture cleanup before its current-code result can be certified.
+The unit DST result establishes date conversion, not real Plesk execution or calendar/list agreement.
+The user could not confirm an authorized non-production hosting environment in this session.
+AT-43/44/45/48/51 hosting checks remain open; AT-50 remains PARTIAL and W09 remains IN_PROGRESS.
+
 Date: 19 November 2026.
 Branch: `codex/crm-remaining-tasks`.
 Application baseline: `a2e805e2581542652ff7a007f9f980ad1f3c00c3` plus the uncommitted W09 changes listed in this record.

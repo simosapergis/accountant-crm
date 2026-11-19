@@ -202,7 +202,7 @@ final class W02CsrfTest extends TestCase
         $response = $this->request('/task_form.php?id=910001', 'POST', [
             'id' => 910001,
             'task_date' => '2026-11-17',
-            'title' => 'W02 User Role Task Edit',
+            'title_selection' => 'custom', 'custom_title' => 'W02 User Role Task Edit',
             'client_id' => 910001,
             'partner_id' => 910001,
             'status' => 'Σε εξέλιξη',
@@ -224,7 +224,7 @@ final class W02CsrfTest extends TestCase
         $form = $this->request('/task_form.php?id=910001', 'GET', [], $session['cookie']);
         $token = $this->csrfToken($form['body']);
         $base = [
-            'id' => 910001, 'task_date' => '2026-11-17', 'title' => 'W02 Exact Money Fixture',
+            'id' => 910001, 'task_date' => '2026-11-17', 'title_selection' => 'custom', 'custom_title' => 'W02 Exact Money Fixture',
             'client_id' => 910001, 'partner_id' => 910001, 'status' => 'Σε εξέλιξη',
             'notes' => 'fictional money regression', 'save_task' => '1', '_csrf_token' => $token,
         ];

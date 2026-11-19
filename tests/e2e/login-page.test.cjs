@@ -210,7 +210,7 @@ async function runCheck(name, check) {
       assert.ok(recurrenceSettingsHref, 'the recurring fixture should expose its settings action');
       const routes = [
         { path: 'tasks.php', selector: '.mobile-cards', mobile: true },
-        { path: 'task_form.php?id=910001', selector: 'input[name="title"]' },
+        { path: 'task_form.php?id=910001', selector: '#title_selection' },
         { path: 'payment_methods.php', selector: '.catalog-mobile-list', mobile: true },
         { path: 'payment_method_form.php', selector: '#catalog-name' },
         { path: 'task_titles.php', selector: '.catalog-mobile-list', mobile: true },

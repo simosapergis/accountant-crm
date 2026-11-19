@@ -33,4 +33,25 @@ final class W06RecurrenceDateTest extends TestCase
         $utc = new DateTimeImmutable('2027-03-27 22:30:00', new DateTimeZone('UTC'));
         self::assertSame('2027-03-28', crm_recurrence_today($utc));
     }
+
+    public function testAthensDateAcrossBothDstTransitionsAndLocalMidnight(): void
+    {
+        $cases = [
+            '2027-03-27 21:59:59' => '2027-03-27',
+            '2027-03-27 22:00:00' => '2027-03-28',
+            '2027-03-28 00:59:59' => '2027-03-28',
+            '2027-03-28 01:00:00' => '2027-03-28',
+            '2027-03-28 20:59:59' => '2027-03-28',
+            '2027-03-28 21:00:00' => '2027-03-29',
+            '2027-10-30 20:59:59' => '2027-10-30',
+            '2027-10-30 21:00:00' => '2027-10-31',
+            '2027-10-31 00:59:59' => '2027-10-31',
+            '2027-10-31 01:00:00' => '2027-10-31',
+            '2027-10-31 21:59:59' => '2027-10-31',
+            '2027-10-31 22:00:00' => '2027-11-01',
+        ];
+        foreach ($cases as $utc => $expected) {
+            self::assertSame($expected, crm_recurrence_today(new DateTimeImmutable($utc, new DateTimeZone('UTC'))), $utc);
+        }
+    }
 }
