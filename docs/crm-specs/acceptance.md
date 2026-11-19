@@ -183,6 +183,7 @@
 | AT-52 | OPS-10 | Νέος διαχειριστής ακολουθεί τις οδηγίες για αρχικό λογαριασμό, καταλόγους, επανάληψη και έλεγχο scheduler χωρίς μυστικά στα παραδείγματα. |
 | AT-53 | REC-11, REC-12 | Διαγραφή αρχικής εργασίας δεν εξαφανίζει τον κανόνα, ενώ διαγραφή πελάτη με κανόνα/occurrence απορρίπτεται με σαφή ενημέρωση και χωρίς cascade απώλεια. |
 | AT-55 | OPS-05 | Νέο schema ορίζει `users.username`, `users.fullname` και `users.password` σε `utf8mb4`. Migration από legacy latin1 schema διατηρεί υπάρχον account ID, username, fullname, role και password hash, δέχεται και ανακτά ελληνικό username/fullname, και δεύτερη εκτέλεση δεν μεταβάλλει ξανά το schema. |
+| AT-56 | CFG-01, CFG-02, SEC-13 | Σε pre-prod, το ιδιωτικό config βρίσκεται έξω από document root και repository, ξεχωρίζει από το WordPress config και είναι αναγνώσιμο μόνο από τους αναγκαίους runtime λογαριασμούς. HTTP αίτημα δεν ανακτά το αρχείο. Web και CLI φορτώνουν τις ίδιες DB/HMAC ρυθμίσεις χωρίς να τις εμφανίζουν σε output ή logs· ελλιπές ή άκυρο config αποτυγχάνει κλειστά χωρίς μυστικά ή filesystem paths στην απόκριση. Backup/restore διατηρεί την εμπιστευτικότητα και τα περιορισμένα permissions. |
 
 **Σενάρια επιλογής πελάτη**
 

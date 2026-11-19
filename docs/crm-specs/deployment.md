@@ -41,8 +41,8 @@
 
 1. Η PHP του web handler και η PHP CLI είναι 8.3 και διαθέτουν τις απαιτούμενες επεκτάσεις.
 2. Η MariaDB είναι συμβατή με InnoDB, foreign keys, `utf8mb4` και τα migrations του app.
-3. Το Plesk παρέχει τις `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `APP_BASE_PATH` και `CRM_SECURITY_HMAC_KEY` τόσο στο web PHP όσο και στα CLI scheduled tasks. Το Plesk PHP Settings από μόνο του δεν αποδεικνύει ότι περνά αυθαίρετες environment variables στον CGI/FastCGI handler.
-4. Το app σήμερα διαβάζει τις ρυθμίσεις βάσης με `getenv()` από `ACCOUNTANT_CRM/includes/db.php`. Δεν φορτώνει αυτόματα `.env` ή ιδιωτικό PHP config. Αν το hosting δεν παρέχει με ασφαλή τρόπο κοινές ρυθμίσεις web/CLI, σταμάτησε πριν από το deployment και πρόσθεσε/έλεγξε loader για ιδιωτικό config.
+3. Το CRM χρησιμοποιεί ξεχωριστό ιδιωτικό αρχείο ρυθμίσεων και κοινό loader για web PHP και CLI tasks. Δεν εξαρτάται από το να περάσει το Plesk αυθαίρετες environment variables στον CGI/FastCGI handler, και δεν διαβάζει το `wp-config.php`.
+4. Ο τρέχων κώδικας διαβάζει αρκετές ρυθμίσεις με `getenv()` και δεν φορτώνει ακόμη ιδιωτικό PHP config. Πριν από deployment, υλοποίησε και έλεγξε το κοινό config loader που ορίζεται στο `design.md`; runbook ή Plesk setting μόνο του δεν αρκεί.
 5. Το app σήμερα φορτώνει Composer dependencies από `ACCOUNTANT_CRM/vendor/autoload.php`. Το `vendor/`, τα `bin/`, `migrations/`, `includes/` και τα Composer metadata βρίσκονται κάτω από το app tree. Το `.htaccess` περιέχει απαγορεύσεις, αλλά πρέπει να αποδειχθεί με HTTP requests ότι ισχύουν και στο πραγματικό Plesk web stack. Αν αρχεία είναι προσβάσιμα, σταμάτησε και ρύθμισε απαγορεύσεις Apache/nginx ή μετακίνησε dependencies/CLI έξω από το public root με αντίστοιχη υποστήριξη από τον κώδικα.
 6. Το Plesk Scheduled Task μπορεί να εκτελέσει τα CLI scripts με σωστή PHP, filesystem permissions και τις ίδιες database/key ρυθμίσεις.
 7. Το logging δεν αποκαλύπτει σφάλματα, paths, SQL ή credentials στον browser και τα αρχεία καταγραφής βρίσκονται εκτός public root.
@@ -165,29 +165,42 @@ tar -tzf "accountant-crm-${release_sha}.tar.gz" | head -40
 
 Το app αναμένει το `vendor/autoload.php` κάτω από το `/crm/`. Επομένως το `vendor/` βρίσκεται φυσικά κάτω από το public tree και πρέπει να αποκλειστεί από HTTP με πραγματικούς κανόνες του ενεργού Apache/nginx setup. Αν το hosting δεν μπορεί να το εγγυηθεί, σταμάτησε πριν από το login και προχώρησε σε αλλαγή κώδικα/διάταξης ώστε τα dependencies να φορτώνονται από ιδιωτικό path.
 
-### 6. Ρύθμισε ιδιωτικά τις παραμέτρους
+### 6. Δημιούργησε και επαλήθευσε το ιδιωτικό αρχείο ρυθμίσεων
 
-Το app απαιτεί τις παρακάτω ρυθμίσεις από το περιβάλλον PHP:
+Το production config είναι ξεχωριστό αρχείο PHP, σε ιδιωτικό κατάλογο έξω από το document root, το `/crm/` και το repository. Μην το βάλεις στο WordPress `wp-config.php`, σε `.env` κάτω από το public tree, ή σε φάκελο που σερβίρεται από HTTP. Η ακριβής διαδρομή δεν έχει οριστεί εδώ: πρώτα επιβεβαίωσε το document root, διαθέσιμο ιδιωτικό χώρο και ποιος λογαριασμός τρέχει το web PHP και το Plesk CLI.
 
-```text
-APP_BASE_PATH=/crm
-APP_TIMEZONE=Europe/Athens
-DB_HOST=<database hostname του Plesk>
-DB_NAME=crm_preprod
-DB_USER=<pre-prod database user>
-DB_PASSWORD=<secret>
-CRM_SECURITY_HMAC_KEY=<ιδιωτικό τυχαίο κλειδί, τουλάχιστον 32 χαρακτήρες>
+Το αρχείο επιστρέφει τις παρακάτω ρυθμίσεις ως PHP array και δεν κάνει `echo`, `print_r`, `var_dump` ή logging τιμών:
+
+```php
+<?php
+return [
+    'APP_BASE_PATH' => '/crm',
+    'APP_TIMEZONE' => 'Europe/Athens',
+    'DB_HOST' => '<database hostname του Plesk>',
+    'DB_NAME' => 'crm_preprod',
+    'DB_USER' => '<pre-prod database user>',
+    'DB_PASSWORD' => '<secret>',
+    'CRM_SECURITY_HMAC_KEY' => '<ιδιωτικό τυχαίο κλειδί, τουλάχιστον 32 χαρακτήρες>',
+];
 ```
 
-Για να παραχθεί τυχαίο κλειδί μπορείς να εκτελέσεις τοπικά:
+Περιέλαβε τις προαιρετικές ρυθμίσεις `CRM_LOGIN_IDENTITY_LIMIT`, `CRM_LOGIN_SOURCE_LIMIT`, `CRM_LOGIN_WINDOW_SECONDS`, `CRM_LOGIN_COOLDOWN_SECONDS` και `CRM_SECURITY_RETENTION_DAYS` μόνο αν χρειάζεται να αλλάξουν από τις τεκμηριωμένες προεπιλογές. Ο loader ελέγχει τύπο και εγκυρότητα τιμών, ιδίως ότι το `CRM_SECURITY_HMAC_KEY` έχει τουλάχιστον 32 χαρακτήρες, και αποτυγχάνει με ασφαλές γενικό σφάλμα όταν απαιτούμενες τιμές λείπουν ή είναι άκυρες.
+
+Δημιούργησε το ιδιωτικό αρχείο με δικαιώματα περιορισμένα από την αρχή. Ο ιδιοκτήτης και τα permissions πρέπει να επιτρέπουν ανάγνωση από τον λογαριασμό PHP και CLI, αλλά όχι από άλλους λογαριασμούς ή HTTP. Μην υποθέσεις ότι `0600` ή `0640` είναι σωστό πριν επιβεβαιώσεις ποιος λογαριασμός εκτελεί την PHP και ποια δυνατότητα αλλαγής δικαιωμάτων παρέχει το Plesk. Ποτέ μην το κάνεις world-readable. Αν αλλάξεις το αρχείο, χρησιμοποίησε ασφαλή αντικατάσταση ώστε να μην μείνει προσωρινά μερικώς γραμμένο.
+
+Για να παραχθεί τυχαίο κλειδί, εκτέλεσε τοπικά:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Αποθήκευσε την τιμή σε password manager ή στον εγκεκριμένο ιδιωτικό μηχανισμό του Plesk. Μην τη στείλεις στη συνομιλία, μην την προσθέσεις σε Git, URL, PHP source ή command arguments.
+Αντέγραψε την τιμή απευθείας στο ιδιωτικό αρχείο χωρίς να τη στείλεις στη συνομιλία ή να τη βάλεις σε Git, URL, δημόσιο PHP source ή command arguments. Χρησιμοποίησε μόνο τα credentials της ξεχωριστής pre-prod βάσης CRM· μην αντιγράψεις credentials του WordPress.
 
-Ρύθμισε την ίδια πηγή τιμών για web PHP και Plesk CLI tasks. Το υπάρχον `.env.example` αφορά το τοπικό Docker setup· το app δεν φορτώνει `.env` αυτόματα. Αν το Plesk δεν δίνει αξιόπιστα κοινές environment variables στον τρέχοντα CGI/FastCGI handler και στα tasks, σταμάτησε. Χρειάζεται loader ιδιωτικού config ή άλλος επιβεβαιωμένος μηχανισμός hosting πριν ενεργοποιηθεί η εφαρμογή.
+Το κοινό CRM bootstrap πρέπει να φορτώνει το ίδιο αρχείο για web PHP και CLI, και ο κώδικας να χρησιμοποιεί αυτόν τον loader για DB/HMAC και τις υπόλοιπες ρυθμίσεις. Αυτή η υποστήριξη πρέπει να υλοποιηθεί και να επαληθευτεί πριν από deployment· η ενημέρωση αυτού του runbook από μόνη της δεν την ενεργοποιεί. Το υπάρχον `.env.example` αφορά μόνο το τοπικό Docker setup και δεν φορτώνεται αυτόματα.
+
+Πριν ενεργοποιήσεις login ή scheduler, επιβεβαίωσε ότι (α) η διαδρομή βρίσκεται έξω από το public document root και το repository, (β) δεν υπάρχει HTTP URL που επιστρέφει το αρχείο ή το περιεχόμενό του, (γ) web και CLI μπορούν να το διαβάσουν, (δ) και τα δύο runtimes χρησιμοποιούν την ίδια pre-prod βάση και HMAC key χωρίς να εμφανίζουν μυστικά, και (ε) αποτυχία φόρτωσης δίνει ασφαλές γενικό σφάλμα χωρίς credentials, key ή filesystem path. Μην αφήσεις δημόσιο diagnostic script· οι έλεγχοι γίνονται με CLI ή σε προσωρινό προστατευμένο έλεγχο που αφαιρείται αμέσως.
+
+Συμπερίλαβε το ιδιωτικό αρχείο στη διαδικασία backup/restore μόνο σε κρυπτογραφημένο αποθηκευτικό χώρο με ελεγχόμενη πρόσβαση. Έλεγξε ότι τα backups δεν σερβίρονται από το site, δεν μπαίνουν σε Git και ότι η επαναφορά αποκαθιστά τα περιορισμένα filesystem permissions. Φύλαξε το κλειδί κρυπτογράφησης backup ξεχωριστά από το backup. Μην αντιγράψεις το config σε email, ticket ή μη κρυπτογραφημένο backup.
 
 Στο PHP configuration του domain:
 
@@ -323,6 +336,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/create_user.php
 - [ ] Επιβεβαιώθηκε το ακριβές commit και το checksum του release archive.
 - [ ] Ενεργό URL είναι `https://elmico.gr/crm/` και το δημόσιο static site συνεχίζει να λειτουργεί.
 - [ ] PHP 8.3 web/CLI, MariaDB και Composer platform requirements επαληθεύτηκαν στο hosting.
+- [ ] Το CRM config βρίσκεται έξω από document root/repository, το διαβάζουν μόνο οι αναγκαίοι web/CLI λογαριασμοί, και δεν επιστρέφεται μέσω HTTP.
 - [ ] Web και CLI χρησιμοποιούν τη σωστή pre-prod database/config χωρίς να εμφανίζονται credentials.
 - [ ] Οι migrations ολοκληρώθηκαν και τα versions/checksums ελέγχθηκαν.
 - [ ] Οι διαδρομές `includes`, `vendor`, `bin`, `migrations`, Composer metadata και `create_user.php` αποκλείονται με πραγματικό HTTP check.
