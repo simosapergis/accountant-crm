@@ -27,6 +27,21 @@ final class W01EnvironmentTest extends TestCase
         self::assertStringContainsString('name="username"', $response['body']);
     }
 
+    /** OPS-06, AT-48: discourage indexing on public and protected CRM responses. */
+    public function testCrmResponsesCarryNoIndexDirective(): void
+    {
+        foreach (['/login.php', '/tasks.php', '/exports/export_tasks_excel.php'] as $path) {
+            $response = $this->get($path);
+
+            self::assertContains($response['status'], [200, 302], $path . ' should be a normal page or auth redirect.');
+            self::assertStringContainsString(
+                'noindex',
+                strtolower($response['headers']['x-robots-tag'] ?? ''),
+                $path . ' must tell crawlers not to index CRM responses.'
+            );
+        }
+    }
+
     public function testEveryPhpEntrypointRequiresAuthenticationOrIsInternal(): void
     {
         $root = CRM_TEST_APP_ROOT;

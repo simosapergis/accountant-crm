@@ -15,6 +15,16 @@ body {
     color: #111;
 }
 
+body header :focus,
+body header :focus-visible,
+body form :focus,
+body form :focus-visible,
+body .page-container :focus,
+body .page-container :focus-visible {
+    outline: 3px solid #005fcc;
+    outline-offset: 2px;
+}
+
 /* ----------------------------------------------------
    HEADER – ΜΕΝΟΥ ΣΤΑ ΑΡΙΣΤΕΡΑ (ΟΡΙΖΟΝΤΙΟ BAR)
 ---------------------------------------------------- */

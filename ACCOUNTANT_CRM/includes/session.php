@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/session_lifecycle.php';
 
+if (PHP_SAPI !== 'cli') {
+    header('X-Robots-Tag: noindex, nofollow');
+}
+
 function crm_base_path(): string
 {
     $configured = trim((string) (getenv('APP_BASE_PATH') ?: '/'));

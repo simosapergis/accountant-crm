@@ -194,6 +194,161 @@ async function runCheck(name, check) {
       assert.ok(await page.locator('.recurring-table').getByText('W01 Mobile Recurring Filing', { exact: true }).isVisible());
       await context.close();
     }));
+    checks.push(await runCheck('AT-49 forms, catalogs, task cards, and recurrence settings fit the requested viewport matrix and keyboard focus remains visible', async () => {
+      const widths = [320, 375, 390, 768, 1024, 1280, 1440];
+      const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 320, height: 844 } });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-admin');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Admin-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+
+      await page.goto(`${baseUrl}/recurring_tasks.php`);
+      const recurrenceSettingsHref = await page.locator('.recurring-mobile-card a').first().getAttribute('href');
+      assert.ok(recurrenceSettingsHref, 'the recurring fixture should expose its settings action');
+      const routes = [
+        { path: 'tasks.php', selector: '.mobile-cards', mobile: true },
+        { path: 'task_form.php?id=910001', selector: 'input[name="title"]' },
+        { path: 'payment_methods.php', selector: '.catalog-mobile-list', mobile: true },
+        { path: 'payment_method_form.php', selector: '#catalog-name' },
+        { path: 'task_titles.php', selector: '.catalog-mobile-list', mobile: true },
+        { path: 'task_title_form.php', selector: '#catalog-name' },
+        { path: 'recurring_tasks.php', selector: '.recurring-mobile-list', mobile: true },
+        { path: recurrenceSettingsHref, selector: 'input[name="day_of_month"]' },
+      ];
+
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const route of routes) {
+          const response = await page.goto(`${baseUrl}/${route.path}`);
+          assert.equal(response.status(), 200, `${route.path} should load at ${width}px`);
+          assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `${route.path} overflows at ${width}px`);
+
+          if (route.mobile !== undefined) {
+            const shouldShowMobile = width <= 768;
+            assert.equal(await page.locator(route.selector).isVisible(), shouldShowMobile, `${route.selector} breakpoint mismatch at ${width}px`);
+            if (route.path === 'tasks.php') {
+              assert.equal(await page.locator('.desktop-table').isVisible(), !shouldShowMobile);
+            } else if (route.path === 'recurring_tasks.php') {
+              assert.equal(await page.locator('.recurring-table-wrapper').isVisible(), !shouldShowMobile);
+            } else {
+              assert.equal(await page.locator('.catalog-table-wrapper').isVisible(), !shouldShowMobile);
+            }
+          } else {
+            assert.ok(await page.locator(route.selector).isVisible(), `${route.selector} should be visible at ${width}px`);
+          }
+
+          if (width === 320) {
+            await page.keyboard.press('Tab');
+            const focusIsVisible = await page.evaluate(() => {
+              const node = document.activeElement;
+              const rect = node.getBoundingClientRect();
+              const style = getComputedStyle(node);
+              return node !== document.body && style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < window.innerWidth;
+            });
+            assert.equal(focusIsVisible, true, `${route.path} should keep keyboard focus visible at 320px`);
+          }
+        }
+      }
+      await context.close();
+    }));
+    checks.push(await runCheck('AT-49 keyboard traversal reaches visible controls with a focus indicator and finds no clipped visible text at every requested width', async () => {
+      const widths = [320, 375, 390, 768, 1024, 1280, 1440];
+      const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 320, height: 844 } });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-admin');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Admin-Password-2026');
+      const navigation = page.waitForNavigation();
+      await page.locator('button').click();
+      await navigation;
+
+      await page.goto(`${baseUrl}/recurring_tasks.php`);
+      const recurrenceSettingsHref = await page.locator('.recurring-mobile-card a').first().getAttribute('href');
+      assert.ok(recurrenceSettingsHref, 'the recurring fixture should expose its settings action');
+      const routes = [
+        'tasks.php',
+        'task_form.php?id=910001',
+        'payment_methods.php',
+        'payment_method_form.php',
+        'task_titles.php',
+        'task_title_form.php',
+        'recurring_tasks.php',
+        recurrenceSettingsHref,
+      ];
+      const focusableSelector = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const route of routes) {
+          const response = await page.goto(`${baseUrl}/${route}`);
+          assert.equal(response.status(), 200, `${route} should load at ${width}px`);
+          await page.bringToFront();
+          await page.evaluate(() => window.scrollTo(0, 0));
+          const visibleCount = await page.locator(focusableSelector).evaluateAll((nodes) => nodes.filter((node) => {
+            const style = getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+          }).length);
+          assert.ok(visibleCount > 0, `${route} should expose keyboard controls at ${width}px`);
+
+          const reachedControls = new Set();
+          for (let step = 0; step < visibleCount * 3 && reachedControls.size < visibleCount; step += 1) {
+            await page.keyboard.press('Tab');
+            await page.evaluate(() => {
+              const node = document.activeElement;
+              const rect = node.getBoundingClientRect();
+              if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) {
+                const maximumScroll = document.documentElement.scrollHeight - window.innerHeight;
+                const targetScroll = Math.min(maximumScroll, Math.max(0, window.scrollY + rect.top - 40));
+                window.scrollTo(0, targetScroll);
+              }
+            });
+            await page.waitForFunction(() => {
+              const rect = document.activeElement.getBoundingClientRect();
+              return rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth;
+            });
+            const state = await page.evaluate(() => {
+              const node = document.activeElement;
+              const rect = node.getBoundingClientRect();
+              const style = getComputedStyle(node);
+              const focusables = [...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+              return {
+                tag: node.tagName,
+                text: (node.innerText || node.getAttribute('aria-label') || node.getAttribute('name') || '').trim().slice(0, 80),
+                index: focusables.indexOf(node),
+                focused: node.matches(':focus'),
+                rect: { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width, height: rect.height },
+                scroll: { x: window.scrollX, y: window.scrollY },
+                visible: node !== document.body && style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < window.innerWidth && rect.bottom > 0 && rect.top < window.innerHeight,
+                focusIndicator: style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0 || style.boxShadow !== 'none',
+                outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+                focusVisible: node.matches(':focus-visible'),
+              };
+            });
+            if (!state.focused) continue;
+            reachedControls.add(state.index);
+            assert.equal(state.visible, true, `${route} at ${width}px has offscreen keyboard focus on ${state.tag} ${state.text}; rect=${JSON.stringify(state.rect)} scroll=${JSON.stringify(state.scroll)}`);
+            assert.equal(state.focusIndicator, true, `${route} at ${width}px has no visible keyboard focus indicator at step ${step} on ${state.tag} ${state.text}; outline=${state.outline}; :focus-visible=${state.focusVisible}`);
+          }
+          assert.equal(reachedControls.size, visibleCount, `${route} at ${width}px reached ${reachedControls.size} of ${visibleCount} visible focusable controls by keyboard`);
+
+          const clipped = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((node) => {
+            if (!node.textContent.trim() || ['SCRIPT', 'STYLE', 'SVG', 'PATH', 'INPUT', 'TEXTAREA', 'SELECT', 'OPTION'].includes(node.tagName)) return false;
+            const style = getComputedStyle(node);
+            const rect = node.getBoundingClientRect();
+            const visible = style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+            const clipsX = ['hidden', 'clip'].includes(style.overflowX) && node.scrollWidth > node.clientWidth + 1;
+            const clipsY = ['hidden', 'clip'].includes(style.overflowY) && node.scrollHeight > node.clientHeight + 1;
+            return visible && (clipsX || clipsY);
+          }).map((node) => ({ tag: node.tagName, className: String(node.className).slice(0, 80), text: node.textContent.trim().replace(/\\s+/g, ' ').slice(0, 80) })).slice(0, 8));
+          assert.deepEqual(clipped, [], `${route} at ${width}px clips visible text: ${JSON.stringify(clipped)}`);
+        }
+      }
+      await context.close();
+    }));
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
     await page.goto(`${baseUrl}/login.php`);

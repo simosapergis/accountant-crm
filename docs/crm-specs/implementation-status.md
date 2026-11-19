@@ -13,6 +13,20 @@ Earlier checkpoint notes that said the role/CSRF route matrices, broad SQL/outpu
 The user confirmed human acceptance of the recurring-task empty state and compact navigation/header for this exact commit.
 The [G01 evaluation](evidence/g01-evaluation.md) now records `PASS` for the local corrected baseline; no production or hosting checks were performed.
 
+### W09 acceptance execution - 19 November 2026
+
+Started W09 against HEAD `a2e805e2581542652ff7a007f9f980ad1f3c00c3` plus the current local changes; the code/evidence tree has not been committed.
+The complete AT disposition and command results are in [W09 acceptance evidence](evidence/w09-acceptance.md).
+Added the specified `X-Robots-Tag: noindex, nofollow` response header after observing the AT-48 HTTP regression fail on `/login.php`.
+Added explicit AT-26 mobile payment snapshot assertions and an AT-32 authenticated generated-task independence regression.
+AT-49 now passes locally across task list/form, both catalog lists/forms, recurring list and recurrence settings at 320, 375, 390, 768, 1024, 1280 and 1440 pixels.
+Browser checks cover overflow, responsive breakpoints, every visible focusable control, visible focus indicators and clipped visible text.
+The keyboard audit found and fixed missing focus indicators on task form fields when Bootstrap is loaded after the global stylesheet.
+Final guarded full suite passed with 165 tests / 1,056 assertions; the extended browser suite passed 12 checks; all 80 PHP files passed syntax checks; Node syntax, Composer platform, Composer audit and `git diff --check` passed.
+The new fictional admin completed the local AT-52 walkthrough through `/crm/`, opening both catalogs and creating a recurrence rule from a fictional task.
+A guarded December 2026 scheduler dry-run reported one due occurrence and wrote no occurrence row; the exact temporary rule/version were removed from the isolated DB.
+W09 remains `IN_PROGRESS`: AT-43, AT-44, AT-45, AT-48, AT-50 and AT-51 have partial or unrun work as itemized in the evidence.
+
 ### Recurring-task mobile cards - 18 November 2026
 
 At the user's request, the recurring-task list now renders cards only at widths up to 768 pixels and retains its desktop table.
@@ -316,13 +330,13 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
 | W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
 | W07 | IMPLEMENTED_LOCAL | CLI scheduler, transactions, batch catch-up, dry-run, idempotency and concurrent MariaDB processes are covered locally. Actual Plesk Run Now and production-like timezone configuration remain open. |
-| W09 | NOT_STARTED | Προϋπόθεση ολοκλήρωση προηγούμενων πακέτων. |
+| W09 | IN_PROGRESS | Full guarded tests and 12 browser checks pass; local AT-49 and AT-52 are complete. Acceptance gaps AT-43–45, AT-48, AT-50 and AT-51 remain. See [W09 evidence](evidence/w09-acceptance.md). |
 | W10 | NOT_STARTED | Προϋποθέσεις W09 PASS, preflight και ανάθεση deployment. |
 
 ## Ακριβές επόμενο βήμα
 
-Proceed to W09: execute the full `acceptance.md` matrix, document each result and classify findings.
-Keep production hosting, actual scheduler and backup/restore checks for W10 deployment preflight.
+Complete independent QA for AT-50 after reviewing the local AT-49 evidence.
+Keep AT-43/44/45 hosting-related checks, the public-site and cache-policy portions of AT-48, and AT-51 backup/restore for W10 in an authorized non-production deployment environment.
 
 ## Τελευταίο βήμα TDD
 
