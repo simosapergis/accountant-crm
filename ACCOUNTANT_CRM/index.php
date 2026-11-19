@@ -40,10 +40,12 @@ require 'includes/header.php';
         <div class="card-value"><?= (int)$stats['inprogress_tasks'] ?></div>
     </div>
 
-    <div class="card card-yellow">
+    <a class="card card-yellow dashboard-pending-link"
+       href="clients.php?balance=positive&amp;sort=balance"
+       aria-label="Προβολή πελατών με θετικό υπόλοιπο από την αναμονή εξόφλησης">
         <h3>Αναμονή εξόφλησης</h3>
         <div class="card-value"><?= (int)$stats['pending_tasks'] ?></div>
-    </div>
+    </a>
 </div>
 
 <div class="cards-row">

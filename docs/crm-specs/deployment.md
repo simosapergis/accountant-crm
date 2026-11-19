@@ -12,9 +12,8 @@
 - Το repository βρίσκεται στο branch `codex/crm-remaining-tasks`. Το commit αλλάζει με κάθε νέα έκδοση· καταγράφεται ξανά κατά τη δημιουργία κάθε release.
 - Το ιστορικό G01 PASS αφορά μόνο το καταγεγραμμένο παλιότερο commit και δεν αποτελεί έγκριση του τρέχοντος merged κώδικα.
   Το W09 παραμένει `IN_PROGRESS`, όπως καταγράφεται στο `implementation-status.md`.
-  Οποιαδήποτε δοκιμαστική εγκατάσταση απαιτεί κατάλληλο εξουσιοδοτημένο περιβάλλον, περιορισμένη πρόσβαση και πλασματικά δεδομένα.
-  Δεν έχει επιβεβαιωθεί τέτοιο περιβάλλον και δεν υπάρχει έγκριση παραγωγικής λειτουργίας.
-- Δεν έχει γίνει σύνδεση, αλλαγή ρυθμίσεων, εγκατάσταση, εισαγωγή βάσης ή deployment στο Plesk από αυτή την εργασία.
+  Η περιορισμένη δοκιμή Plesk στο `/crm/` ολοκληρώθηκε στις 19 Νοεμβρίου 2026 με νέα, ξεχωριστή pre-production βάση. Τα ευρήματα και τα όριά τους καταγράφονται στο `implementation-status.md`.
+  Δεν έχει εγκριθεί παραγωγική λειτουργία και η δοκιμή δεν αποτελεί production sign-off.
 
 ## Γνωστά στοιχεία hosting
 
@@ -171,7 +170,7 @@ tar -tzf "accountant-crm-${release_sha}.tar.gz" | head -40
 
 ### 6. Δημιούργησε και επαλήθευσε το ιδιωτικό αρχείο ρυθμίσεων
 
-Το production config είναι ξεχωριστό αρχείο PHP, σε ιδιωτικό κατάλογο έξω από το document root, το `/crm/` και το repository. Μην το βάλεις στο WordPress `wp-config.php`, σε `.env` κάτω από το public tree, ή σε φάκελο που σερβίρεται από HTTP. Η ακριβής διαδρομή δεν έχει οριστεί εδώ: πρώτα επιβεβαίωσε το document root, διαθέσιμο ιδιωτικό χώρο και ποιος λογαριασμός τρέχει το web PHP και το Plesk CLI.
+Το production config είναι ξεχωριστό αρχείο PHP, σε ιδιωτικό κατάλογο έξω από το document root, το `/crm/` και το repository. Μην το βάλεις στο WordPress `wp-config.php`, σε `.env` κάτω από το public tree, ή σε φάκελο που σερβίρεται από HTTP. Για την τρέχουσα δοκιμή, ο χρήστης το τοποθέτησε σε ιδιωτικό sibling φάκελο έξω από το document root, σύμφωνα με την προεπιλεγμένη διαδρομή του loader. Η απόλυτη διαδρομή και τα runtime UID/GID δεν καταγράφηκαν.
 
 Το αρχείο επιστρέφει τις παρακάτω ρυθμίσεις ως PHP array και δεν κάνει `echo`, `print_r`, `var_dump` ή logging τιμών:
 
@@ -200,7 +199,7 @@ openssl rand -hex 32
 
 Αντέγραψε την τιμή απευθείας στο ιδιωτικό αρχείο χωρίς να τη στείλεις στη συνομιλία ή να τη βάλεις σε Git, URL, δημόσιο PHP source ή command arguments. Χρησιμοποίησε μόνο τα credentials της ξεχωριστής pre-prod βάσης CRM· μην αντιγράψεις credentials του WordPress.
 
-Ο κοινός loader `includes/config.php` χρησιμοποιείται από DB, session, security settings και CLI scheduler.
+Ο κοινός loader `includes/config.php` χρησιμοποιείται από DB, session, security settings και CLI scheduler. Στη δοκιμή Plesk της 19ης Νοεμβρίου, το web login και το CLI migration ολοκληρώθηκαν επιτυχώς με το private config· ο loader αποδέχθηκε τη θέση και τα permissions.
 Η προτεραιότητα επιλογής είναι PHP ini `crm.config_file`, environment `CRM_CONFIG_FILE`, και έπειτα το συμβατικό εξωτερικό `<parent του app parent>/private/accountant-crm.php`.
 Στη συνήθη εγκατάσταση `<document-root>/crm` η προεπιλογή αντιστοιχεί σε `<parent του document-root>/private/accountant-crm.php`.
 Το συγκεκριμένο production path δεν έχει ακόμη επιβεβαιωθεί.
@@ -224,7 +223,9 @@ crm.config_file = "/confirmed/private/accountant-crm.php"
 Το υπάρχον `.env.example` αφορά μόνο το τοπικό Docker setup και δεν φορτώνεται αυτόματα.
 Αυτή η τοπική υποστήριξη δεν υποκαθιστά το πραγματικό pre-prod AT-56.
 
-Πριν ενεργοποιήσεις login ή scheduler, επιβεβαίωσε ότι (α) η διαδρομή βρίσκεται έξω από το public document root και το repository, (β) δεν υπάρχει HTTP URL που επιστρέφει το αρχείο ή το περιεχόμενό του, (γ) web και CLI μπορούν να το διαβάσουν, (δ) και τα δύο runtimes χρησιμοποιούν την ίδια pre-prod βάση και HMAC key χωρίς να εμφανίζουν μυστικά, και (ε) αποτυχία φόρτωσης δίνει ασφαλές γενικό σφάλμα χωρίς credentials, key ή filesystem path. Μην αφήσεις δημόσιο diagnostic script· οι έλεγχοι γίνονται με CLI ή σε προσωρινό προστατευμένο έλεγχο που αφαιρείται αμέσως.
+Για την τρέχουσα δοκιμή, τοποθέτηση έξω από document root/repository, owner-only permissions και ανάγνωση από web/CLI επιβεβαιώθηκαν από τον loader και την επιτυχή σύνδεση/login και migration. Το CLI migration και το web login χρησιμοποίησαν την ίδια νέα pre-production βάση και HMAC ρύθμιση. Δεν υπάρχει URL προς το config επειδή βρίσκεται έξω από το document root. Τα εσωτερικά URLs που ελέγχθηκαν επέστρεψαν `403`. Η διαδρομή του φυσικού αρχείου δεν δοκιμάζεται με URL που χαρτογραφείται σε άλλο αρχείο μέσα στο document root.
+
+Πριν από παραγωγική χρήση, επιβεβαίωσε επιπλέον ότι αποτυχία φόρτωσης δίνει ασφαλές γενικό σφάλμα χωρίς credentials, key ή filesystem path. Μην αφήσεις δημόσιο diagnostic script· οι έλεγχοι γίνονται με CLI ή σε προσωρινό προστατευμένο έλεγχο που αφαιρείται αμέσως.
 
 Συμπερίλαβε το ιδιωτικό αρχείο στη διαδικασία backup/restore μόνο σε κρυπτογραφημένο αποθηκευτικό χώρο με ελεγχόμενη πρόσβαση. Έλεγξε ότι τα backups δεν σερβίρονται από το site, δεν μπαίνουν σε Git και ότι η επαναφορά αποκαθιστά τα περιορισμένα filesystem permissions. Φύλαξε το κλειδί κρυπτογράφησης backup ξεχωριστά από το backup. Μην αντιγράψεις το config σε email, ticket ή μη κρυπτογραφημένο backup.
 
@@ -362,15 +363,17 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/create_user.php
 - [ ] Επιβεβαιώθηκε το ακριβές commit και το checksum του release archive.
 - [ ] Ενεργό URL είναι `https://elmico.gr/crm/` και το δημόσιο static site συνεχίζει να λειτουργεί.
 - [ ] PHP 8.3 web/CLI, MariaDB και Composer platform requirements επαληθεύτηκαν στο hosting.
-- [ ] Το CRM config βρίσκεται έξω από document root/repository, το διαβάζουν μόνο οι αναγκαίοι web/CLI λογαριασμοί, και δεν επιστρέφεται μέσω HTTP.
-- [ ] Web και CLI χρησιμοποιούν τη σωστή pre-prod database/config χωρίς να εμφανίζονται credentials.
-- [ ] Οι migrations ολοκληρώθηκαν και τα versions/checksums ελέγχθηκαν.
-- [ ] Οι διαδρομές `includes`, `vendor`, `bin`, `migrations`, Composer metadata και `create_user.php` αποκλείονται με πραγματικό HTTP check.
+- [x] Το CRM config βρίσκεται έξω από document root/repository, τα owner-only permissions έγιναν αποδεκτά από τον loader, και web/CLI το διαβάζουν. Το config είναι εκτός document root· εσωτερικά paths που δοκιμάστηκαν δεν εκθέτουν περιεχόμενο.
+- [x] Web και CLI χρησιμοποίησαν το ίδιο private config και συνδέθηκαν στη νέα pre-prod βάση. Ο CLI loader επικύρωσε το HMAC key και το web login το χρησιμοποίησε επιτυχώς, χωρίς εμφάνιση credentials.
+- [x] Οι migrations ολοκληρώθηκαν: `20261118_001_catalogs`, `20261118_002_recurring_tasks`, `20261118_003_security_events`, `20261119_001_users_utf8mb4`.
+- [x] Πραγματικά HTTP checks επέστρεψαν `403` για `includes/db.php`, `vendor/autoload.php`, `bin/migrate.php`, `bin/run-recurring-tasks.php`, migration PHP, Composer metadata και `create_user.php`.
+- [ ] Ελέγχθηκαν migration checksums στον `schema_migrations`.
 - [ ] Login, roles, CSRF, βασικές CRM ροές, imports/exports και ελληνικά δεδομένα δοκιμάστηκαν με fictional fixtures.
 - [ ] Recurrence dry-run, πραγματικό run, επαναληπτικό run και Plesk **Run Now** επιβεβαίωσαν idempotency.
 - [ ] Security cleanup task εκτελέστηκε και έχει αναφορά σφάλματος.
 - [ ] Έγινε backup της βάσης/αρχείων/config και δοκιμή restore σε απομονωμένο προορισμό.
-- [ ] Αφαιρέθηκαν προσωρινά diagnostic scripts και δεν υπάρχουν δοκιμαστικοί λογαριασμοί με κοινά/γνωστά passwords.
+- [x] Ο χρήστης επιβεβαίωσε ότι αφαιρέθηκαν τα προσωρινά diagnostic scripts και Scheduled Tasks.
+- [ ] Επιβεβαιώθηκε ότι δεν υπάρχουν δοκιμαστικοί λογαριασμοί με κοινά/γνωστά passwords.
 - [ ] Καταγράφηκαν ημερομηνία, commit, PHP/MariaDB versions, αποτελέσματα, logs και εκκρεμότητες.
 
 Η pre-prod ολοκλήρωση δεν ισοδυναμεί με παραγωγικό sign-off. Η παραγωγή προϋποθέτει τα G01/W09 acceptance checks, ανεξάρτητη QA και επιτυχημένο hosting restore.

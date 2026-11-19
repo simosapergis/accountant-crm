@@ -64,6 +64,25 @@ async function runCheck(name, check) {
       assert.equal(page.url(), `${baseUrl}/login.php`, 'logout should make protected pages unavailable');
       await context.close();
     }));
+    checks.push(await runCheck('AT-57 dashboard pending-settlement card opens clients with positive balances', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      await Promise.all([page.waitForNavigation(), page.locator('button').click()]);
+
+      const pendingCard = page.locator('.dashboard-pending-link');
+      assert.equal(await pendingCard.count(), 1, 'the pending-settlement card should be actionable');
+      await pendingCard.click();
+
+      assert.equal(page.url(), `${baseUrl}/clients.php?balance=positive&sort=balance`);
+      assert.equal(await page.locator('select[name="balance"]').inputValue(), 'positive');
+      assert.equal(await page.locator('select[name="sort"]').inputValue(), 'balance');
+      assert.equal(await page.locator('.desktop-table tbody tr').filter({ hasText: 'W01 Fixture Client' }).count(), 1);
+      assert.equal(await page.locator('.desktop-table tbody tr').filter({ hasText: 'W02 XSS' }).count(), 0);
+      await context.close();
+    }));
     checks.push(await runCheck('client autocomplete renders hostile names as text', async () => {
       const context = await browser.newContext({ ignoreHTTPSErrors: true });
       const page = await context.newPage();

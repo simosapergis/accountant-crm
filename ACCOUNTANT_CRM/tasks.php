@@ -10,6 +10,8 @@ $pageTitle = "Εργασίες";
 
 /* ---------------- ΦΙΛΤΡΑ ---------------- */
 $searchInput = $_GET['search'] ?? '';
+$titleInput = $_GET['task_title'] ?? '';
+$paymentMethodInput = $_GET['payment_method'] ?? '';
 $statusInput = $_GET['status'] ?? '';
 $clientInput = $_GET['client'] ?? '';
 $partnerInput = $_GET['partner'] ?? '';
@@ -17,6 +19,20 @@ $dateRangeInput = $_GET['date_range_type'] ?? '';
 $dateFromInput = $_GET['date_from'] ?? '';
 $dateToInput = $_GET['date_to'] ?? '';
 $search = is_string($searchInput) ? $searchInput : '';
+$task_title = is_string($titleInput) ? $titleInput : '';
+$payment_method = is_string($paymentMethodInput) ? $paymentMethodInput : '';
+$paymentMethodLabelFilter = null;
+$paymentMethodWithoutFilter = false;
+$paymentMethodFilterInvalid = false;
+if ($payment_method === 'none:') {
+    $paymentMethodWithoutFilter = true;
+} elseif (preg_match('/^label:([a-f0-9]+)$/Di', $payment_method, $paymentMethodMatches)
+    && strlen($paymentMethodMatches[1]) % 2 === 0) {
+    $paymentMethodLabelFilter = hex2bin($paymentMethodMatches[1]);
+    $paymentMethodFilterInvalid = $paymentMethodLabelFilter === false;
+} elseif ($payment_method !== '') {
+    $paymentMethodFilterInvalid = true;
+}
 $status = is_string($statusInput) ? $statusInput : '';
 $client_id = is_string($clientInput) ? $clientInput : '';
 $partner_id = is_string($partnerInput) ? $partnerInput : '';
@@ -30,6 +46,21 @@ $params = [];
 if ($search != "") {
     $conditions[] = 't.title LIKE ?';
     $params[] = '%' . $search . '%';
+}
+
+if ($task_title !== '') {
+    $conditions[] = 't.title = ?';
+    $params[] = $task_title;
+}
+
+if ($paymentMethodWithoutFilter) {
+    $conditions[] = '(t.payment_method_label IS NULL OR TRIM(t.payment_method_label) = ?)';
+    $params[] = '';
+} elseif ($paymentMethodLabelFilter !== null && $paymentMethodLabelFilter !== false) {
+    $conditions[] = 't.payment_method_label = ?';
+    $params[] = $paymentMethodLabelFilter;
+} elseif ($paymentMethodFilterInvalid) {
+    $conditions[] = '1 = 0';
 }
 
 if ($status != "") {
@@ -106,6 +137,8 @@ while ($row = $result->fetch_assoc()) {
 
 $clientsRes  = $mysqli->query("SELECT id,name FROM clients ORDER BY name");
 $partnersRes = $mysqli->query("SELECT id,fullname FROM partners ORDER BY fullname");
+$taskTitlesRes = $mysqli->query("SELECT DISTINCT title FROM tasks WHERE title IS NOT NULL AND title <> '' ORDER BY title");
+$paymentMethodsRes = $mysqli->query("SELECT DISTINCT payment_method_label FROM tasks WHERE payment_method_label IS NOT NULL AND TRIM(payment_method_label) <> '' ORDER BY payment_method_label");
 
 require "includes/header.php";
 ?>
@@ -240,6 +273,28 @@ require "includes/header.php";
 
             <input type="text" name="search" placeholder="Αναζήτηση..."
                    value="<?= htmlspecialchars($search) ?>">
+
+            <select name="task_title" aria-label="Φίλτρο τίτλου εργασίας">
+                <option value="">Τίτλος εργασίας</option>
+                <?php while ($titleOption = $taskTitlesRes->fetch_assoc()): ?>
+                    <?php $optionTitle = (string)$titleOption['title']; ?>
+                    <option value="<?= htmlspecialchars($optionTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= $task_title === $optionTitle ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($optionTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+
+            <select name="payment_method" aria-label="Φίλτρο μέσου πληρωμής">
+                <option value="">Μέσο πληρωμής</option>
+                <option value="none:" <?= $paymentMethodWithoutFilter ? 'selected' : '' ?>>Χωρίς μέσο</option>
+                <?php while ($methodOption = $paymentMethodsRes->fetch_assoc()): ?>
+                    <?php $optionMethod = (string)$methodOption['payment_method_label']; ?>
+                    <?php $encodedMethod = 'label:' . bin2hex($optionMethod); ?>
+                    <option value="<?= htmlspecialchars($encodedMethod, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= $payment_method === $encodedMethod ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($optionMethod, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
 
             <select name="status">
                 <option value="">Κατάσταση</option>

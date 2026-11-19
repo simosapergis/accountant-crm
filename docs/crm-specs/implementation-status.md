@@ -1,16 +1,41 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### DASH-01/DASH-02: dashboard shortcut and task list filters - 19 November 2026
+
+Updated the specification package to version 1.7 with DASH-01/AT-57 for the «Αναμονή εξόφλησης» card and DASH-02/AT-58 for exact task title/payment-method filtering.
+The dashboard card now links to the existing positive-client-balance filter, ordered by balance. The existing dark balance card background is lighter (`#6c757d`) with explicit white text and visible keyboard focus.
+The task list now filters by exact stored `tasks.title` and payment label snapshots; dropdown options come from existing task rows, preserve historical labels, and include a «Χωρίς μέσο» option. All conditions are prepared and combine with existing filters.
+TDD RED: `testTaskListFiltersByStoredTitleAndPaymentMethodSnapshots` failed before the filter implementation because the unfiltered response still contained the nonmatching task. A dashboard browser check also found the pending card was not actionable before the link was added.
+GREEN: focused PHPUnit class `W05TaskPaymentsTest` passed **11 tests / 105 assertions** in the isolated `crm-w01-dashboard` Compose project, including combined snapshot filters, missing-method filtering, and dashboard card destination/positive client filtering. PHP 8.3 syntax checks passed for `tasks.php` and `W05TaskPaymentsTest.php`.
+The full guarded suite earlier in this turn completed 210 tests with 2 unrelated failures because `pdftotext` is absent (`W08ExportsTest` and `W08PdfTest`). The final Playwright suite was not completed; its pre-change run showed an unrelated existing AT-49 focus-indicator failure at 320px. AT-57 has HTTP integration coverage; browser E2E rerun remains NOT_RUN on the final image.
+The local `accountant-crm-app-1` container had stale environment and omitted `APP_ENV`; recreating only that app container restored its Compose `development` environment. Local login returned HTTP 200 with no configuration error; the database container was not recreated.
+W03/W09 and the historical G01 result are unaffected. No Plesk files or production database were changed.
+Next: complete a final browser run for AT-57/58 when the permitted browser runner is available; review the combined local diff, including the earlier documentation edits.
+
+### Plesk pre-production check: private config and HTTP access - 19 November 2026
+
+Ο χρήστης ολοκλήρωσε περιορισμένη δοκιμή σε pre-production CRM εγκατάσταση με ξεχωριστή, νέα βάση δεδομένων. Δεν καταγράφηκαν credentials, HMAC key ή προσωπικά δεδομένα.
+Το private PHP config τοποθετήθηκε σε sibling ιδιωτικό φάκελο έξω από το document root. Ο χρήστης ρύθμισε owner-only permissions· ο κοινός loader το διάβασε επιτυχώς και αποδέχθηκε path/permissions τόσο από web όσο και από CLI.
+Η επιτυχής εφαρμογή των `20261118_001_catalogs`, `20261118_002_recurring_tasks`, `20261118_003_security_events` και `20261119_001_users_utf8mb4` αποδεικνύει ότι το CLI συνδέθηκε στη νέα pre-production βάση. Το web login λειτούργησε μετά από ανανέωση του browser session σε ιδιωτικό παράθυρο, επιβεβαιώνοντας τη web διαδρομή config/DB/HMAC.
+Πραγματικά HTTP requests επέστρεψαν `403` για `.htaccess`, `composer.json`, `composer.lock`, `vendor/autoload.php`, `includes/db.php`, `bin/migrate.php`, `bin/run-recurring-tasks.php`, migration PHP και `create_user.php`. Το `assets/style.css` και το `login.php` επέστρεψαν `200`.
+Το υποσύνολο του AT-56 για θέση εκτός document root/repository, αποδεκτά permissions, ανάγνωση web/CLI, κοινή pre-production βάση/HMAC ρύθμιση και HTTP αποκλεισμό των δοκιμασμένων εσωτερικών διαδρομών καταγράφεται `PASS`. Το CLI migration χρησιμοποίησε το ίδιο private config και συνδέθηκε στη νέα βάση· ο loader επικύρωσε και το HMAC key. Η επιτυχής web σύνδεση επιβεβαίωσε ότι το web runtime φόρτωσε την ίδια ρύθμιση και χρησιμοποίησε το HMAC. Δεν υπάρχει δημόσιο URL προς το config επειδή βρίσκεται εκτός document root· δεν έγινε αίτημα που να στοχεύει απευθείας το φυσικό αρχείο.
+Το συνολικό AT-56 παραμένει `PARTIAL`: δεν έχουν δοκιμαστεί encrypted backup/restore και πλήρης αποτυχία φόρτωσης με ελλιπές config. Οι ακριβείς απόλυτες διαδρομές και οι runtime UID/GID δεν καταγράφηκαν. Δεν προκύπτει από αυτό το checkpoint παραγωγικό sign-off ή νέο G01/W09 PASS.
+Το `/crm/create_user.php` επέστρεψε `403`. Το `403` επιβεβαιώθηκε από τον χρήστη.
+Ο χρήστης επιβεβαίωσε ότι τα προσωρινά probes και Scheduled Tasks αφαιρέθηκαν.
+W03 παραμένει `IN_PROGRESS` για τα υπόλοιπα hosting acceptance checks και W09 παραμένει `IN_PROGRESS`.
+Next: συνέχισε με τα εκκρεμή backup/restore και pre-production checks.
+
 ### W03/W09 continuation at config-loader HEAD - 19 November 2026
 
 Verified branch `codex/crm-remaining-tasks` at `bf71c7119b5ea351069d955286dc8fe0ac7d8de8`; it matches `origin/codex/crm-remaining-tasks` and the worktree was clean before this documentation update.
 The private config-loader evidence below corresponds to this exact HEAD; its local fictional-config PHPUnit, browser, lint, Compose YAML and Node results are recorded in the preceding W03 checkpoint and [W09 evidence](evidence/w09-acceptance.md).
 Rechecked `tasks.md`, `acceptance.md`, the config-loader design and deployment runbook before evaluating the next hosting-dependent step.
-No authorized pre-production hosting target or access mechanism is available or documented in this workspace.
-The production-looking `elmico.gr` host in the runbook is not treated as authorization to probe or alter hosting, so AT-56 hosting checks were not run.
-No hosting, production, deployment or backup operation was performed, and no production or personal data was used.
-AT-56 remains PARTIAL: real web/CLI runtime identities, private-file placement and permissions, HTTP denial, shared pre-production DB/HMAC behavior, and encrypted backup/restore still need an explicitly authorized pre-production environment.
+At the time this local checkpoint was recorded, no authorized pre-production hosting target or access mechanism was available in the workspace, so hosting checks had not been run.
+The user subsequently authorized and performed the limited Plesk pre-production checks recorded in the entry above; those results supersede the hosting status below but do not change this local evidence.
+No production deployment or backup operation was performed, and no production or personal data was used.
+AT-56 remains PARTIAL: private config placement/permissions, web/CLI loading of the same pre-production DB/HMAC config, and tested HTTP denials now have pre-production evidence; encrypted backup/restore, fail-closed behavior on invalid hosting config, and runtime identity details remain open.
 The prior local full suite result is 210 tests / 1,282 assertions PASS, followed by 13 browser checks PASS; the required order is PHPUnit first, then seed the `W01 Mobile Recurring Filing` fixture before browser execution.
-These local results do not close AT-43/44/45/48/50/51, do not establish new G01 or W09 PASS, and do not verify AT-56 hosting behavior.
+These local results do not close AT-43/44/45/48/50/51, do not establish new G01 or W09 PASS, and do not establish full AT-56 completion.
 W03 and W09 remain `IN_PROGRESS`; the historical G01 PASS remains scoped to its recorded older commit.
 Next: continue only independent local evidence work that does not depend on hosting; obtain an authorized non-production target before attempting AT-56 or other hosting-dependent criteria.
 
