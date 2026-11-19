@@ -205,8 +205,12 @@ final class W05CatalogsTest extends TestCase
         self::assertSame(302, $edited['status']);
         self::assertSame('W05 Quarterly Return', $this->db->query('SELECT title FROM tasks WHERE id=910021')->fetch_row()[0]);
         $taskEdit = $this->request('/task_form.php?id=910021', 'GET', [], $admin['cookie']);
-        self::assertStringContainsString('value="W05 Quarterly Return"', $taskEdit['body']);
-        self::assertStringContainsString('value="W05 Annual Return"', $taskEdit['body']);
+        $dom = new DOMDocument();
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $taskEdit['body']);
+        $xpath = new DOMXPath($dom);
+        self::assertSame('W05 Quarterly Return', $xpath->evaluate('string(//input[@name="custom_title"]/@value)'));
+        self::assertSame('custom', $xpath->evaluate('string(//select[@name="title_selection"]/option[@selected]/@value)'));
+        self::assertSame('W05 Annual Return', trim($xpath->evaluate('string(//select[@name="title_selection"]/option[@value="template:' . $id . '"])')));
         $deactivateForm = $this->request('/task_title_form.php?id=' . $id, 'GET', [], $admin['cookie']);
         $deactivated = $this->request('/task_title_form.php', 'POST', [
             'id' => (string)$id, 'name' => 'W05 Annual Return', 'save_catalog' => '1', '_csrf_token' => $this->csrfToken($deactivateForm['body']),

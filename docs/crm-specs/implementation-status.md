@@ -1,5 +1,25 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### W09 post-pull verification - 19 November 2026
+
+Committed the preserved W09 diff as `9c912e5`, pulled remote `152021f`, and completed merge `d8ab822` while retaining both sides of the progress-document conflict.
+Remote additions include users utf8mb4/AT-55, client picker CLT-01/AT-54, test Compose changes and deployment documentation.
+Created and verified the new isolated native target `crm_test_w09_20261119`; the older fixture database was not cleaned or modified.
+The merged W06 passed 21 tests / 158 assertions with the required test HMAC configuration.
+Fixed two independently reviewed harness issues: missing shared test HMAC in Compose and W03 granting the wrong account host on native MariaDB.
+W03 now verifies the actual authenticated application account and server identity before creating/removing its temporary schema.
+Updated the remaining obsolete W05 catalog assertion and strengthened the title snapshot regression to submit the rendered custom input.
+Final guarded PHPUnit passed **167 tests / 1095 assertions** on PHP 8.3.36 / MariaDB 10.11.19.
+Browser regression passed **13 checks**, including client-picker loading/name filtering/clearing/keyboard selection and the seven-width AT-49 matrices.
+All 81 non-vendor PHP files passed syntax checking; subsequently edited PHP tests, Node syntax, both Composer platform checks and whitespace checks also passed.
+Exact commands, observed failures and final independent read-only SET findings are recorded in [W09 evidence](evidence/w09-acceptance.md).
+The SET confirmed the reported source issues were corrected and identified no further material finding within its limited review scope; final human acceptance remains open.
+AT-55 is PASS locally; AT-54 is PARTIAL pending AFM and actual long-list checks.
+Linux Compose was not run on macOS, so the pulled report of 87 failures still requires a Linux rerun and is not certified resolved.
+W09 remains `IN_PROGRESS`; the old G01 PASS applies only to its historical commit and is not a new sign-off for this merged tree.
+AT-43/44/45/48/51 hosting checks and AT-50 final human inspection remain open without an authorized non-production hosting environment.
+No hosting, production, deployment or backup changes were made.
+
 ### W09 independent review and snapshot regression - 19 November 2026
 
 A separate SET reviewer completed the initial independent read-only AT-50 review of `88efb87` and found that historical green runs did not certify the merged title-selection UI.
@@ -359,16 +379,17 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
 | W08 | DONE_LOCAL | AT-05/18/47 local checks pass; see [W08 evidence](evidence/w08-closeout.md). |
-| G01 | PASS_LOCAL | Exact commit `bc1406c064e1fa8829dee74da5aa86409c6f3793`; see [G01 evaluation](evidence/g01-evaluation.md). This is not production sign-off. |
+| G01 | HISTORICAL_PASS_LOCAL | Exact commit `bc1406c064e1fa8829dee74da5aa86409c6f3793`; see [G01 evaluation](evidence/g01-evaluation.md). This is not a current merged-tree or production sign-off. |
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
 | W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
 | W07 | IMPLEMENTED_LOCAL | CLI scheduler, transactions, batch catch-up, dry-run, idempotency and concurrent MariaDB processes are covered locally. Actual Plesk Run Now and production-like timezone configuration remain open. |
-| W09 | IN_PROGRESS | Full guarded tests and 12 browser checks pass; local AT-49 and AT-52 are complete. Acceptance gaps AT-43–45, AT-48, AT-50 and AT-51 remain. See [W09 evidence](evidence/w09-acceptance.md). |
+| W09 | IN_PROGRESS | Merged-tree native PHPUnit 167/1095 and 13 browser checks pass; AT-54 is partial and Linux Compose rerun remains open. Hosting and final human acceptance gaps remain. See [W09 evidence](evidence/w09-acceptance.md). |
 | W10 | NOT_STARTED | Προϋποθέσεις W09 PASS, preflight και ανάθεση deployment. |
 
 ## Ακριβές επόμενο βήμα
 
-Rerun W06 on a fresh guarded test database, then obtain final independent QA and any required human visual acceptance for the resulting tree.
+Complete AT-54 AFM/actual long-list checks, obtain a Linux Compose rerun of the corrected harness, and obtain final human inspection of the merged tree.
+The fresh guarded W06/full-suite reruns and final independent source QA are complete; no new G01/W09 PASS is granted.
 Keep AT-43/44/45 hosting-related checks, the public-site and cache-policy portions of AT-48, and AT-51 backup/restore for W10 in an authorized non-production deployment environment.
 
 ## Τελευταίο βήμα TDD

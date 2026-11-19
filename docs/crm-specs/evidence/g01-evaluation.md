@@ -1,5 +1,8 @@
 # G01 baseline evaluation
 
+Current-tree limitation, 19 November 2026: the PASS below belongs only to historical commit `bc1406c064e1fa8829dee74da5aa86409c6f3793`.
+Post-pull W09 verification is recorded in [W09 evidence](w09-acceptance.md); its native green runs do not grant a new G01/W09 PASS, resolve the unverified Linux failures or close outstanding hosting/human acceptance criteria.
+
 ## Exact-commit re-evaluation - 18 November 2026
 
 Reviewed code: `bc1406c064e1fa8829dee74da5aa86409c6f3793` on `codex/crm-remaining-tasks`.

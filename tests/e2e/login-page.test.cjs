@@ -81,6 +81,43 @@ async function runCheck(name, check) {
       assert.equal(await page.evaluate(() => window.crmXss), undefined);
       await context.close();
     }));
+    checks.push(await runCheck('AT-54 client list loads, filters, clears and selects with keyboard without exposing unauthenticated data', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      const denied = await context.request.get(`${baseUrl}/ajax/search_clients.php?all=1`, { maxRedirects: 0 });
+      assert.equal(denied.status(), 302);
+      assert.equal((await denied.text()).includes('W01 Fixture Client'), false);
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      await Promise.all([page.waitForNavigation(), page.locator('button').click()]);
+      await page.goto(`${baseUrl}/task_form.php`);
+      const response = page.waitForResponse(r => r.url().endsWith('/ajax/search_clients.php?all=1'));
+      await page.locator('#client_list_button').click();
+      const clients = await (await response).json();
+      assert.ok(clients.length >= 2, 'fictional clients must be present');
+      await page.waitForFunction(count => document.querySelectorAll('#client_results .client-item').length === count, clients.length);
+      assert.equal(await page.locator('#client_results img').count(), 0);
+      assert.equal(await page.evaluate(() => window.crmXss), undefined);
+      const scrollStyle = await page.locator('#client_results').evaluate(el => ({ overflow: getComputedStyle(el).overflowY, maxHeight: getComputedStyle(el).maxHeight }));
+      assert.match(scrollStyle.overflow, /auto|scroll/);
+      assert.notEqual(scrollStyle.maxHeight, 'none');
+      for (const query of ['W01 Fixture Client', ...clients.filter(c => c.afm).slice(0, 1).map(c => c.afm)]) {
+        await page.locator('#client_search').fill(query);
+        const matches = clients.filter(c => `${c.name} ${c.afm || ''}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+        assert.equal(await page.locator('#client_results .client-item').count(), matches.length);
+      }
+      await page.locator('#client_search').fill('');
+      assert.equal(await page.locator('#client_results .client-item').count(), clients.length);
+      await page.locator('#client_search').fill('W01 Fixture Client');
+      const option = page.locator('#client_results .client-item').filter({ hasText: 'W01 Fixture Client' });
+      await option.focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('#client_search').inputValue(), 'W01 Fixture Client');
+      assert.equal(await page.locator('#client_id').inputValue(), '910001');
+      assert.equal(await page.locator('#client_results').isVisible(), false);
+      await context.close();
+    }));
     checks.push(await runCheck('navigation fits desktop and keeps account controls available at compact widths', async () => {
       const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();

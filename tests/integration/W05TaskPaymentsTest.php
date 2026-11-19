@@ -81,15 +81,19 @@ final class W05TaskPaymentsTest extends TestCase
         self::assertSame(200, $form['status']);
         $dom = new DOMDocument();
         @$dom->loadHTML('<?xml encoding="UTF-8">' . $form['body']);
-        $selected = (new DOMXPath($dom))->query('//select[@name="title_selection"]/option[@selected]');
+        $xpath = new DOMXPath($dom);
+        $selected = $xpath->query('//select[@name="title_selection"]/option[@selected]');
         self::assertSame(1, $selected->length);
         $selection = $selected->item(0)->getAttribute('value');
+        $customTitle = $xpath->query('//input[@name="custom_title"]')->item(0);
+        self::assertNotNull($customTitle);
+        self::assertFalse($customTitle->hasAttribute('disabled'));
 
         $renamed = $this->db->prepare("UPDATE task_title_templates SET name='W05 Renamed title',normalized_name='w05 renamed title' WHERE id=?");
         $renamed->bind_param('i', $templateId);
         $renamed->execute();
         $saved = $this->request('/task_form.php?id=910020', 'POST', $this->taskPayload($this->csrfToken($form['body']), [
-            'title_selection' => $selection, 'fee' => '30.00',
+            'title_selection' => $selection, 'custom_title' => $customTitle->getAttribute('value'), 'fee' => '30.00',
         ]), $session['cookie']);
         self::assertSame(302, $saved['status']);
         self::assertSame(['title' => $name, 'fee' => '30.00'], $this->db->query('SELECT title,fee FROM tasks WHERE id=910020')->fetch_assoc());

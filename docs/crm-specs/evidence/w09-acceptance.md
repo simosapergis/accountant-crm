@@ -1,5 +1,70 @@
 # W09 acceptance execution
 
+## Post-pull isolated verification - 19 November 2026
+
+The preserved W09 work was committed as `9c912e5` before pulling, as requested.
+The pull fetched `433eacf` and merge `152021f`; local merge `d8ab822` preserved both progress records after resolving the sole conflict in `implementation-status.md`.
+Remote changes added the users utf8mb4 migration, CLT-01/AT-54 client picker, AT-55 migration acceptance, Compose portability changes and a revised deployment runbook.
+The results in this section supersede historical execution claims for the affected merged behavior.
+
+A new disposable database `crm_test_w09_20261119` was created on the existing test-owned native MariaDB server, with a new non-root account `crm_test_w091119` restricted to that database.
+Before creation, the administrative connection identified the local socket `/tmp/accountant-crm-preview-20261118/mysql.sock`, data directory `/tmp/accountant-crm-preview-20261118/data/`, hostname `MM25M0JH20T` and MariaDB `10.11.19`.
+The import verified the exact database and zero existing tables before loading the schema.
+Every subsequent setup/test command ran through `/tmp/accountant-crm-w09-20261119/run.sh`, which sets the explicit test target, reads private temporary credentials/HMAC key and executes `php tests/bin/assert-test-db.php` before the requested command.
+The PHP server served the current repository at `http://127.0.0.1:18119/crm/` using the same test configuration and `tests/support/native-router.php`.
+The older `crm_test_w09_20261118` database and its unknown fixture rows were left untouched.
+
+Observed failures and corrections:
+
+- The first fresh W06 run had 21 tests / 105 assertions and 9 login failures because the new temporary runner omitted `CRM_SECURITY_HMAC_KEY`.
+  The server log confirmed the missing-key exception before authentication; supplying the same private test key to server and runner restored the HTTP flows.
+- Independent source review confirmed that Compose also omitted this mandatory key in both services.
+  `compose.w01.yaml` now supplies the same explicitly fictional test-only key to app and runner; this is not production configuration.
+- Native W03 RED: 3 tests / 12 assertions, one grant error because the merged test hardcoded the account host `%`.
+  W03 now discovers the authenticated non-root account with `CURRENT_USER()`, grants that existing account access to its own random temporary schema, and compares hostname/port/socket/data directory with the guarded server before CREATE and again before DROP.
+  `CRM_TEST_ADMIN_HOST` falls back to `DB_HOST`; native instructions now describe the required administrator and shared HMAC configuration.
+- The first full run had 167 tests / 1,088 assertions with one obsolete title-catalog assertion expecting the renamed title in an input value.
+  The assertion now checks the saved custom input, selected custom mode and renamed template option through DOM queries.
+  An intermediate rerun exposed option indentation whitespace; trimming the displayed option text corrected that test expectation without changing application behavior.
+- The snapshot race regression now submits `custom_title` read from the actual GET input and verifies that the input is enabled.
+
+Exact final commands and results:
+
+```sh
+sh /tmp/accountant-crm-w09-20261119/run.sh php tests/vendor/bin/phpunit -c tests/phpunit.xml tests/integration/W06RecurringTasksTest.php
+# PASS: 21 tests / 158 assertions.
+sh /tmp/accountant-crm-w09-20261119/run.sh env CRM_TEST_ADMIN_HOST=localhost CRM_TEST_ADMIN_USER=root CRM_TEST_ADMIN_PASSWORD= php tests/vendor/bin/phpunit -c tests/phpunit.xml --no-progress
+# PASS: 167 tests / 1095 assertions, including W03, W02, W05, W06, scheduler and DST checks.
+sh /tmp/accountant-crm-w09-20261119/run.sh env CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' npm --prefix tests/e2e --cache /tmp/crm-w01-native-npm-cache test
+# PASS: 13 checks, including the new AT-54 exercised flow and AT-49 viewport/keyboard matrices.
+composer check-platform-reqs --working-dir=ACCOUNTANT_CRM --no-dev
+composer check-platform-reqs --working-dir=tests
+# Both PASS on PHP 8.3.36.
+node --check tests/e2e/login-page.test.cjs
+git -c core.whitespace=cr-at-eol diff --check
+# Both PASS.
+```
+
+PHP syntax checks passed for all 81 application/test PHP files excluding vendor directories; the three subsequently edited PHP tests were linted again successfully.
+All four migrations applied successfully to the new target.
+The documented W01 fixtures were restored before browser execution; the mobile recurrence fixture was seeded for browser checks and only that positively identified rule/version was removed before the final full PHPUnit run.
+No unknown database rows were cleaned up.
+The database and temporary runner remain available for follow-up; the mobile recurrence display fixture must be seeded again before another complete browser run.
+
+The independent SET reviewer performed read-only source/evidence QA of the snapshot fix and, after the pull, of the changed harness/tests.
+It identified the HMAC omission, native grant issue and insufficient server identity check, and confirmed the final source corrections.
+It found no further material issue or high/critical finding in that limited scope.
+The reviewer did not execute the tests; execution results above were observed by the implementing agent.
+This is not a complete security audit or human visual acceptance of the final tree.
+
+AT-54 is PARTIAL: the browser exercised authenticated all-client loading, name filtering, clearing, keyboard selection, text-safe hostile names and unauthenticated denial.
+It checked bounded scrolling styles; the available fictional clients did not establish AFM filtering or actual long-list scrolling/performance.
+AT-55 passes locally through the merged W03 migration regression in the final full suite.
+Compose YAML was parsed successfully with Ruby YAML and the shared fictional key length/equality was verified.
+Linux Compose execution is NOT_RUN on this macOS session; the remote report of 87 failures is retained as an unresolved Linux verification item, not declared fixed by native results.
+AT-43/44/45/48/51 hosting work and final AT-50 human inspection remain open.
+W09 remains `IN_PROGRESS`; no new G01 or W09 PASS is granted.
+
 ## Independent QA follow-up - 19 November 2026
 
 Reviewed application baseline: `88efb87`, followed by the uncommitted snapshot fix and test updates in this session.
@@ -80,7 +145,7 @@ The W01 mobile recurrence fixture was seeded after recurrence PHPUnit runs for b
 The first full PHPUnit attempt stopped in `W03MigrationTest` because `CRM_TEST_ADMIN_USER=root` was not set for its separate migration fixture.
 The full run passed after applying the documented test-only setting; the database guard continued to verify the non-root W09 application connection.
 
-## AT-01 to AT-53 disposition
+## Acceptance disposition (including merged AT-54/55)
 
 | AT | W09 disposition and evidence |
 |---|---|
@@ -104,7 +169,7 @@ The full run passed after applying the documented test-only setting; the databas
 | AT-18 | PASS locally — formula-leading output tests and LibreOffice opening/conversion of exported files. |
 | AT-19 | PASS locally — catalog create, duplicate/blank rejection, deactivate/reactivate and retained associations. |
 | AT-20 | PASS locally — inactive selection rejection and preserved legacy payment snapshots. |
-| AT-21 | PASS locally — editable title suggestions and 255-character validation. |
+| AT-21 | PASS locally — catalog dropdown/custom title selection and 255-character validation. |
 | AT-22 | PASS locally — catalog rename preserves existing task/rule title snapshots. |
 | AT-23 | PASS locally — positive collection requires an active method and persists server label. |
 | AT-24 | PASS locally — zero collection clears method ID/label with user feedback. |
@@ -126,21 +191,25 @@ The full run passed after applying the documented test-only setting; the databas
 | AT-40 | PASS locally — immediate stop retains eligible past due work and excludes future due dates. |
 | AT-41 | PASS locally — restart creates a linked rule and does not catch up stopped months. |
 | AT-42 | PASS locally — stale `row_version` is rejected. |
-| AT-43 | PARTIAL — local Athens date/CLI/dry-run behavior passes; this run exercised a December 2026 due rule and confirmed `created=1` in dry-run output with no occurrence written. DST-boundary and real Plesk Run Now/second run were not performed. |
+| AT-43 | PARTIAL — local Athens date/CLI/dry-run behavior passes; this run exercised a December 2026 due rule and confirmed `created=1` in dry-run output with no occurrence written. DST unit boundaries now pass for both Athens clock changes and local midnight; scheduler/calendar agreement at those boundaries and real Plesk Run Now/second run remain unverified. |
 | AT-44 | NOT RUN — actual static document-root coexistence and independent site deployment are hosting checks. |
 | AT-45 | PARTIAL — synthetic legacy-row migration preservation and idempotency pass; no real legacy database copy or WordPress-isolation check was used. |
 | AT-46 | PASS locally — migration idempotency and failed-DDL recording/activation behavior. |
 | AT-47 | PASS locally — PHP 8.3.36 platform, imports, eight export routes, Greek PDF and duplicate-session checks. |
 | AT-48 | PARTIAL — CRM HTTP responses now carry `X-Robots-Tag: noindex, nofollow`; public static menu/sitemap was not inspected. |
 | AT-49 | PASS locally — all seven requested widths cover task list/form, payment and title catalog lists/forms, recurring list and recurrence settings; every visible focusable control is traversed, checked for visible focus and on-screen placement, and visible text is scanned for hidden/clip overflow. |
-| AT-50 | PARTIAL — human acceptance of the listed layouts is recorded; final independent W09 QA cannot PASS while AT-43–45, AT-48 and AT-51 remain incomplete. |
+| AT-50 | PARTIAL — earlier human layout acceptance is historical; independent source QA of this follow-up found no remaining material finding in scope, but final human inspection of the merged tree and AT-43/44/45/48/51 evidence remain outstanding. |
 | AT-51 | NOT RUN — real backup and restore require a separate deployment environment and are reserved for W10. |
 | AT-52 | PASS locally — newly created fictional admin `w09-onboarding-admin` logged into `/crm/`, opened the payment-method and task-title catalogs, then created a December 2026 recurrence rule for fictional task 910001 through the recurrence form. Scheduler dry-run reported one due occurrence without persisting it; the exact temporary rule/version were removed from the isolated test DB afterward. Password was not recorded in evidence. |
 | AT-53 | PASS locally — source-task deletion preserves the rule, and client deletion with recurrence history is denied clearly. |
+
+| AT-54 | PARTIAL - exercised browser client-picker flow passes; AFM and actual long-list scrolling remain unverified. |
+| AT-55 | PASS locally - W03 verifies fresh utf8mb4, legacy account/hash preservation, Greek account text and migration idempotency in the final full suite. |
 
 ## Remaining work and next step
 
 W09 remains `IN_PROGRESS`; do not record W09 PASS while partial/not-run criteria above remain.
 AT-49 and AT-52 are complete for local acceptance.
-AT-43 DST/Plesk checks, AT-44 static-site coexistence, AT-45 real legacy/WordPress isolation, AT-48 public static-site sitemap/menu and cache policy, and AT-51 backup/restore require the relevant non-production deployment environment or W10 execution.
-AT-50 remains partial pending independent QA and any required human layout acceptance.
+AT-43 scheduler/calendar boundary and Plesk checks, AT-44 static-site coexistence, AT-45 real legacy/WordPress isolation, AT-48 public static-site sitemap/menu and cache policy, and AT-51 backup/restore require the relevant non-production deployment environment or W10 execution.
+AT-50 remains partial pending required human inspection and complete acceptance evidence.
+Complete AT-54 AFM/long-list coverage locally, and rerun the corrected Compose harness on an authorized Linux environment before resolving the remote failure report.

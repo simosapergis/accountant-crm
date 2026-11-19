@@ -27,7 +27,15 @@ export DB_HOST=127.0.0.1 DB_NAME=crm_test_accountant_crm DB_USER=crm_test_user
 export DB_PASSWORD='(read from your local secret store)'
 export CRM_TEST_DB_NAME=crm_test_accountant_crm CRM_APP_ROOT="$PWD/ACCOUNTANT_CRM"
 export APP_BASE_PATH=/crm APP_ENV=test CRM_BASE_URL=http://127.0.0.1:18080/crm
+export CRM_SECURITY_HMAC_KEY='w01-fictional-test-only-hmac-key-2026'
+export CRM_TEST_ADMIN_HOST=127.0.0.1 CRM_TEST_ADMIN_USER=root
+export CRM_TEST_ADMIN_PASSWORD='(read from your local test-only secret store)'
 ```
+
+The HTTP server and test runner must share the same test-only HMAC key; without it login POST fails before checking credentials.
+The W03 migration fixture uses the test administrator only to create and remove its own random `crm_test_w03_*` database on the verified server.
+It grants the existing application account returned by `CURRENT_USER()` access to that temporary database, supporting both native `@localhost` and Compose `@%` accounts.
+For a native socket connection set both `DB_HOST` and `CRM_TEST_ADMIN_HOST` to `localhost` and configure the test-only PHP socket ini for all child processes.
 
 Start PHP with the application served under `/crm/`, the test database environment, and the test-only ini directory that configures the MariaDB socket for child processes. For HTTP integration tests use `tests/support/native-router.php` as the PHP built-in server router; it blocks internal paths as the Compose Apache configuration does. Bind only to loopback. For Secure-cookie browser checks, use a temporary HTTPS loopback proxy or a local Apache HTTPS vhost.
 

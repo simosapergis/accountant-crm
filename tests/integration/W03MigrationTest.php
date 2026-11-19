@@ -10,12 +10,27 @@ final class W03MigrationTest extends TestCase
     public function testLegacyRecordsAndSchemaSurviveMigrationAndSecondRunIsEmpty(): void
     {
         self::assertTrue(CRM_TEST_DB_SAFE);
-        $admin = new mysqli((string)getenv('CRM_TEST_ADMIN_HOST'), (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
+        self::assertSame(CRM_TEST_DATABASE, getenv('DB_NAME'));
+        $target = new mysqli((string)getenv('DB_HOST'), (string)getenv('DB_USER'), (string)getenv('DB_PASSWORD'), CRM_TEST_DATABASE);
+        self::assertSame(CRM_TEST_DATABASE, $target->query('SELECT DATABASE()')->fetch_row()[0]);
+        $account = (string)$target->query('SELECT CURRENT_USER()')->fetch_row()[0];
+        $accountSeparator = strrpos($account, '@');
+        self::assertNotFalse($accountSeparator);
+        $accountUser = substr($account, 0, $accountSeparator);
+        $accountHost = substr($account, $accountSeparator + 1);
+        self::assertSame((string)getenv('DB_USER'), $accountUser);
+        self::assertNotSame('root', $accountUser);
+        $serverIdentityQuery = 'SELECT @@hostname, @@port, @@socket, @@datadir';
+        $targetServer = $target->query($serverIdentityQuery)->fetch_assoc();
+        $target->close();
         self::assertSame('root', (string)getenv('CRM_TEST_ADMIN_USER'));
+        $adminHost = (string)(getenv('CRM_TEST_ADMIN_HOST') ?: getenv('DB_HOST'));
+        $admin = new mysqli($adminHost, (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
+        self::assertSame($targetServer, $admin->query($serverIdentityQuery)->fetch_assoc());
         $database = 'crm_test_w03_' . bin2hex(random_bytes(6));
         $admin->query("CREATE DATABASE `$database` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
         $testUser = (string)getenv('DB_USER');
-        $admin->query("GRANT ALL PRIVILEGES ON `$database`.* TO '" . $admin->real_escape_string($testUser) . "'@'%'");
+        $admin->query("GRANT ALL PRIVILEGES ON `$database`.* TO '" . $admin->real_escape_string($accountUser) . "'@'" . $admin->real_escape_string($accountHost) . "'");
         $admin->close();
         $db = new mysqli((string)getenv('DB_HOST'), $testUser, (string)getenv('DB_PASSWORD'), $database);
         self::assertSame($database, $db->query('SELECT DATABASE()')->fetch_row()[0]);
@@ -81,7 +96,8 @@ final class W03MigrationTest extends TestCase
         self::assertNotEmpty(array_diff(array_keys($afterSchema['foreign_keys']), array_keys($beforeSchema['foreign_keys'])));
         self::assertSame([], array_diff($beforeSchema['tables'], $afterSchema['tables']));
         $db->close();
-        $admin = new mysqli((string)getenv('CRM_TEST_ADMIN_HOST'), (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
+        $admin = new mysqli($adminHost, (string)getenv('CRM_TEST_ADMIN_USER'), (string)getenv('CRM_TEST_ADMIN_PASSWORD'));
+        self::assertSame($targetServer, $admin->query($serverIdentityQuery)->fetch_assoc());
         $admin->query("DROP DATABASE `$database`");
         $admin->close();
     }

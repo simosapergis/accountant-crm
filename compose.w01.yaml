@@ -10,6 +10,7 @@ services:
     environment:
       APP_BASE_PATH: /crm
       APP_ENV: test
+      CRM_SECURITY_HMAC_KEY: w01-fictional-test-only-hmac-key-2026
       DB_HOST: test-db
       DB_NAME: crm_w01_test
       DB_USER: crm_w01_user
@@ -52,6 +53,7 @@ services:
     environment:
       APP_BASE_PATH: /crm
       APP_ENV: test
+      CRM_SECURITY_HMAC_KEY: w01-fictional-test-only-hmac-key-2026
       DB_HOST: test-db
       DB_NAME: crm_w01_test
       DB_USER: crm_w01_user
