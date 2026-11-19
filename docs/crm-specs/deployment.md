@@ -1,154 +1,352 @@
-# ElMiCo CRM - Εγκατάσταση και λειτουργία στο Otenet
+# ElMiCo CRM - Δοκιμαστική εγκατάσταση στο Otenet/Plesk
 
-Το παρόν είναι runbook προς εκτέλεση και όχι επιβεβαίωση ότι η εγκατάσταση έχει γίνει.
-Τα στοιχεία hosting προέρχονται από τις οθόνες και τις επιβεβαιώσεις του χρήστη στη συζήτηση.
-Κανένα password ή token δεν πρέπει να προστεθεί στο αρχείο.
+Το παρόν είναι runbook για περιορισμένη δοκιμαστική εγκατάσταση στο υπάρχον hosting. Δεν αποτελεί επιβεβαίωση ότι η εγκατάσταση ή η παραγωγική έγκριση έχουν ολοκληρωθεί.
 
-**Γνωστά στοιχεία**
+Η εγκατάσταση γίνεται στο ίδιο domain με το static site, στη διεύθυνση `https://elmico.gr/crm/`. Δεν χρησιμοποιείται subdomain και δεν εγκαθίσταται Docker στο Otenet/Plesk. Η PHP και η MariaDB του hosting εκτελούν την εφαρμογή.
 
-| Στοιχείο | Κατάσταση |
+Μην καταγράψεις σε αυτό το αρχείο passwords, tokens, database credentials ή το `CRM_SECURITY_HMAC_KEY`.
+
+## Κατάσταση και όρια
+
+- Ο χρήστης επιβεβαίωσε ότι το αρχικό τοπικό βήμα δοκιμής έχει ολοκληρωθεί. Δεν επαναλαμβάνεται ως μέρος της εγκατάστασης στο Plesk. Η τοπική δοκιμή δεν επιβεβαιώνει τη λειτουργία στο hosting.
+- Το repository βρίσκεται στο branch `codex/crm-remaining-tasks`. Το commit αλλάζει με κάθε νέα έκδοση· καταγράφεται ξανά κατά τη δημιουργία κάθε release.
+- Το G01 παραμένει `NOT_EVALUATED` στο `implementation-status.md`. Η δοκιμαστική εγκατάσταση μπορεί να χρησιμοποιηθεί μόνο με περιορισμένη πρόσβαση και πλασματικά δεδομένα. Δεν είναι έγκριση παραγωγικής λειτουργίας.
+- Δεν έχει γίνει σύνδεση, αλλαγή ρυθμίσεων, εγκατάσταση, εισαγωγή βάσης ή deployment στο Plesk από αυτή την εργασία.
+
+## Γνωστά στοιχεία hosting
+
+| Στοιχείο | Καταγεγραμμένη πληροφορία |
 |---|---|
-| Provider / panel | Otenet με Plesk, εμφανιζόμενο panel `w6113.controlpanel.ote.gr`. |
+| Provider / panel | Otenet με Plesk, panel `w6113.controlpanel.ote.gr`. |
 | Domain | `elmico.gr`. |
-| Ενεργό document root | `Home/elmico.gr`, επιβεβαιωμένο από Hosting Settings. |
-| Άλλο `httpdocs` | Ξεχωριστός διπλανός φάκελος και όχι υποφάκελος του ενεργού root. |
-| URL CRM | `https://elmico.gr/crm/`. |
-| PHP | 8.3.36, CGI/FastCGI για το web, Linux 64-bit. |
-| Ρυθμίσεις PHP | `memory_limit=128M`, `upload_max_filesize=2M`, `post_max_size=8M`, `max_execution_time=300` Local και Master. |
-| Επιβεβαιωμένα extensions | MySQLi με mysqlnd 8.3.36, GD και Zip 1.22.3 με libzip 1.11.4. |
-| Λοιπά extensions | Ο χρήστης επιβεβαίωσε ενεργά τα υπόλοιπα ζητούμενα extensions και θα επαναληφθεί έλεγχος από Composer platform requirements. |
-| Εργαλεία | Εμφανίζονται PHP Composer, Git, Scheduled Tasks και Logs. |
-| Βάση | Υπάρχει παλιά MariaDB WordPress και ανοίγει φόρμα δημιουργίας νέας βάσης και χρήστη. |
-| HTTPS | Ενεργό Let’s Encrypt και ανακατεύθυνση HTTP σε HTTPS. |
-| Backups | Εμφανίζονται επιτυχημένα καθημερινά scheduled backups με περιγραφή «All configuration and content except email messages». |
-| Docker / subdomain | Δεν απαιτούνται για αυτή την εγκατάσταση. |
+| Ενεργό document root | Εμφανίζεται ως `Home/elmico.gr` στο Hosting Settings. Επιβεβαίωσε το πραγματικό απόλυτο filesystem path πριν από οποιαδήποτε μεταφορά. |
+| Ξεχωριστός φάκελος | Το `httpdocs` είναι διπλανός φάκελος, όχι ο ενεργός document root. Μην τον θεωρήσεις ενεργό root. |
+| CRM URL | `https://elmico.gr/crm/`. |
+| PHP | Έχει καταγραφεί PHP 8.3.36, CGI/FastCGI, Linux 64-bit. Επιβεβαίωσέ το ξανά για το συγκεκριμένο domain και CLI. |
+| PHP όρια | Έχουν καταγραφεί `memory_limit=128M`, `upload_max_filesize=2M`, `post_max_size=8M`, `max_execution_time=300`. Επανέλεγξέ τα στο domain και στο CLI. |
+| Extensions | Έχουν επιβεβαιωθεί MySQLi/mysqlnd, GD και Zip. Τα υπόλοιπα απαιτούν τελικό platform check. |
+| Εργαλεία Plesk | Έχουν εμφανιστεί PHP Composer, Git, Scheduled Tasks και Logs. Η ορατότητα εργαλείου δεν αποδεικνύει πρόσβαση ή λειτουργία. |
+| Βάσεις | Υπάρχει ξεχωριστή παλιά βάση WordPress. Το CRM παίρνει δική του βάση και database user. |
+| HTTPS | Έχουν καταγραφεί ενεργό Let’s Encrypt και ανακατεύθυνση HTTP σε HTTPS. Επαλήθευσέ τα στο `/crm/`. |
+| Backups | Έχουν εμφανιστεί καθημερινά scheduled backups. Δεν έχει επιβεβαιωθεί ακόμη ότι περιλαμβάνουν τη νέα βάση ούτε ότι έχει δοκιμαστεί restore. |
+| Deployment runtime | Native PHP και MariaDB του Otenet/Plesk. Δεν χρησιμοποιείται Docker στον server. |
 
-Η ύπαρξη των εργαλείων στο panel δεν αποδεικνύει ότι η εφαρμογή έχει πρόσβαση σε κάθε δυνατότητα.
-Η έκδοση MariaDB, το πραγματικό CLI, τα δικαιώματα αρχείων και η ανάκτηση backup παραμένουν προς δοκιμή.
+Η ίδια-origin διεύθυνση `/crm/` είναι επιλεγμένη αρχιτεκτονική. Το cookie περιορίζεται στο path `/crm/`, αλλά το CRM και το static site παραμένουν στην ίδια browser origin. Μην προσθέτεις μη ελεγμένα scripts στο static site που θα μπορούσαν να επηρεάσουν αυτή την origin.
 
-**Preflight πριν από εγκατάσταση**
+**Αποτέλεσμα αρχικού ελέγχου MariaDB από τον χρήστη:** MariaDB `10.11.5-MariaDB`, InnoDB `DEFAULT`, και `utf8mb4`/`utf8mb4_general_ci` διαθέσιμα. Τα server defaults εμφανίστηκαν ως `latin1`/`latin1_swedish_ci`. Αυτό δεν εμποδίζει την εφαρμογή να χρησιμοποιεί `utf8mb4`, εφόσον τα tables το ορίζουν ρητά. Το αρχικό `accountant_crm.sql` πλέον ορίζει και τον πίνακα `users` ως `utf8mb4`, ενώ η migration `20261119_001_users_utf8mb4` μετατρέπει παλιό `users` table σε `utf8mb4` διατηρώντας τα δεδομένα. Η αλλαγή θα θεωρηθεί έτοιμη για pre-prod αφού περάσουν τα migration regression tests· η βάση προτείνεται να δημιουργείται με default `utf8mb4_general_ci` όπου το Plesk το επιτρέπει.
 
-- [ ] Επιβεβαίωση πραγματικού filesystem path του `Home/elmico.gr`, χωρίς υπόθεση ότι είναι γενικό `httpdocs`.
-- [ ] Επιβεβαίωση διαθέσιμου δίσκου για dependencies, νέα βάση και backup πριν από migration.
-- [ ] Καταγραφή server MariaDB version και συμβατότητας InnoDB, foreign keys και `utf8mb4`.
-- [ ] Έλεγχος πρόσβασης δημιουργίας ξεχωριστής βάσης και χρήστη μόνο για αυτήν.
-- [ ] Έλεγχος `mysqli`, mysqlnd, `ctype`, `dom`, `fileinfo`, `gd`, `iconv`, `libxml`, `mbstring`, `simplexml`, `xml`, `xmlreader`, `xmlwriter`, `zip`, `zlib` και sessions στο τελικό PHP περιβάλλον.
-- [ ] Επιτυχία `composer check-platform-reqs --no-dev` στο τελικό deployment περιβάλλον ή ισοδύναμος πραγματικός έλεγχος εκεί.
-- [ ] Επιβεβαίωση ότι CLI και web PHP διαβάζουν την ίδια ιδιωτική ρύθμιση βάσης και τα απαιτούμενα extensions.
-- [ ] Δοκιμή Plesk «Run a PHP script» με ασφαλές ιδιωτικό δοκιμαστικό script και καταγραφή πραγματικού `PHP_SAPI`.
-- [ ] Επιβεβαίωση ότι το script μπορεί να εκτελείται εκτός document root μέσα στα επιτρεπόμενα filesystem όρια.
-- [ ] Επιβεβαίωση ζώνης ώρας Scheduled Tasks και χειροκίνητη δοκιμή Run Now.
-- [ ] Επιβεβαίωση ιδιωτικής τοποθέτησης config, vendor, CLI και logs χωρίς HTTP πρόσβαση.
-- [ ] Επιβεβαίωση τρόπου αρχικής δημιουργίας admin χωρίς δημόσιο installer ή plaintext password σε command arguments.
-- [ ] Επιβεβαίωση εύρους scheduled backup, retention, διαθέσιμου χώρου και τοποθεσίας αντιγράφων.
+## Σημαντικά τεχνικά προαπαιτούμενα
 
-Επικοινωνία με Otenet απαιτείται μόνο αν αποτύχει συγκεκριμένος έλεγχος που δεν μπορεί να ρυθμιστεί από τη συνδρομή.
-Τότε το αίτημα περιγράφει την ακριβή ανάγκη, όπως CLI PHP για ιδιωτικό scheduled script ή πρόσβαση σε ιδιωτικό φάκελο, χωρίς γενικό αίτημα για Docker ή αναβάθμιση hosting.
+Πριν γίνει το app διαθέσιμο μέσω HTTP, πρέπει να επιβεβαιωθούν τα παρακάτω:
 
-**Παραμετροποίηση και πακέτο release**
+1. Η PHP του web handler και η PHP CLI είναι 8.3 και διαθέτουν τις απαιτούμενες επεκτάσεις.
+2. Η MariaDB είναι συμβατή με InnoDB, foreign keys, `utf8mb4` και τα migrations του app.
+3. Το Plesk παρέχει τις `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `APP_BASE_PATH` και `CRM_SECURITY_HMAC_KEY` τόσο στο web PHP όσο και στα CLI scheduled tasks. Το Plesk PHP Settings από μόνο του δεν αποδεικνύει ότι περνά αυθαίρετες environment variables στον CGI/FastCGI handler.
+4. Το app σήμερα διαβάζει τις ρυθμίσεις βάσης με `getenv()` από `ACCOUNTANT_CRM/includes/db.php`. Δεν φορτώνει αυτόματα `.env` ή ιδιωτικό PHP config. Αν το hosting δεν παρέχει με ασφαλή τρόπο κοινές ρυθμίσεις web/CLI, σταμάτησε πριν από το deployment και πρόσθεσε/έλεγξε loader για ιδιωτικό config.
+5. Το app σήμερα φορτώνει Composer dependencies από `ACCOUNTANT_CRM/vendor/autoload.php`. Το `vendor/`, τα `bin/`, `migrations/`, `includes/` και τα Composer metadata βρίσκονται κάτω από το app tree. Το `.htaccess` περιέχει απαγορεύσεις, αλλά πρέπει να αποδειχθεί με HTTP requests ότι ισχύουν και στο πραγματικό Plesk web stack. Αν αρχεία είναι προσβάσιμα, σταμάτησε και ρύθμισε απαγορεύσεις Apache/nginx ή μετακίνησε dependencies/CLI έξω από το public root με αντίστοιχη υποστήριξη από τον κώδικα.
+6. Το Plesk Scheduled Task μπορεί να εκτελέσει τα CLI scripts με σωστή PHP, filesystem permissions και τις ίδιες database/key ρυθμίσεις.
+7. Το logging δεν αποκαλύπτει σφάλματα, paths, SQL ή credentials στον browser και τα αρχεία καταγραφής βρίσκονται εκτός public root.
 
-Ο release φάκελος προκύπτει από συγκεκριμένο commit και περιλαμβάνει μόνο τα απαιτούμενα αρχεία εφαρμογής και production dependencies.
-Δεν γίνεται upload ολόκληρου repository, `.git`, tests, SQL dump, docs, backups ή τοπικού `.env` μέσα στο δημόσιο `/crm/`.
-Τα config και dependencies τοποθετούνται ιδιωτικά και οι δημόσιες PHP σελίδες τα φορτώνουν από γνωστό server-side path.
-Οι ρυθμίσεις περιλαμβάνουν `APP_BASE_PATH=/crm`, `APP_TIMEZONE=Europe/Athens`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` και τα τεχνικά όρια ασφαλείας.
-Η ίδια πηγή ρύθμισης διαβάζεται από web και CLI, επειδή το περιβάλλον PHP-FPM/CGI δεν εγγυάται ίδια environment variables με τον scheduler.
-Αν χρησιμοποιηθεί ιδιωτικό PHP config αντί για environment injection, δεν ανήκει στο repository και έχει περιορισμένα δικαιώματα ανάγνωσης για τον κατάλληλο hosting χρήστη.
+Στο Plesk, το nginx μπορεί να σερβίρει ορισμένα αιτήματα χωρίς να εφαρμόζεται το `.htaccess`. Έλεγξε το **Websites & Domains → Apache & nginx Settings** και επιβεβαίωσε την πραγματική συμπεριφορά με HTTP requests. [Plesk: Apache και nginx](https://docs.plesk.com/en-US/obsidian/administrator-guide/website-management/websites-and-domains/hosting-settings/web-server-settings/apache-and-nginx-settings.72320/)
 
-Τα production errors δεν εμφανίζουν stack traces, SQL ή paths στον browser.
-Τα PHP και application errors καταγράφονται σε ιδιωτικό χώρο.
-Η απαγόρευση directory listing και η μη πρόσβαση ιδιωτικών αρχείων ελέγχονται με πραγματικά HTTP requests, χωρίς να θεωρείται επαρκής η απλή ύπαρξη `.htaccess`.
+Αν κάποια δυνατότητα είναι κλειδωμένη από το hosting plan, επικοινώνησε με Otenet με συγκεκριμένο αίτημα: έκδοση PHP CLI, κοινές ιδιωτικές web/CLI ρυθμίσεις, προστασία paths ή δικαιώματα ιδιωτικού φακέλου. Μην ζητήσεις Docker ή αλλαγή hosting χωρίς συγκεκριμένη τεχνική ανάγκη.
 
-**Βάση και αρχικοί λογαριασμοί**
+## Σειρά ενεργειών
 
-1. Δημιούργησε νέα βάση CRM και χρήστη με δικαιώματα μόνο σε αυτήν.
-2. Επιβεβαίωσε ότι η βάση είναι κενή πριν χρησιμοποιήσεις αρχικό schema που περιέχει `DROP TABLE`.
-3. Εφάρμοσε την εγκεκριμένη αλληλουχία migrations και επαλήθευσε πίνακα εκδόσεων, foreign keys και ελληνικά κείμενα.
-4. Εκτέλεσε το migration CLI πριν αλλάξεις το ενεργό release. Συνέχισε μόνο αν ολοκληρωθεί με exit code 0 και οι αναμενόμενες εκδόσεις εμφανίζονται στον `schema_migrations` με τα σωστά checksums. Σε οποιοδήποτε σφάλμα κράτησε το τρέχον release ενεργό, σταμάτησε την ενεργοποίηση, κατέγραψε το σφάλμα και έλεγξε το μερικώς εφαρμοσμένο DDL πριν από νέα προσπάθεια.
-5. Δημιούργησε προσωπικό admin και ξεχωριστούς λογαριασμούς λογιστών με ασφαλή διαδικασία.
-6. Παράδωσε credentials μέσω ασφαλούς διαύλου ή password manager, χωρίς καταγραφή τους στα specs ή στο Git.
+### 1. Επιβεβαίωσε το Plesk περιβάλλον
 
-Η προτιμώμενη δημιουργία λογαριασμών χρησιμοποιεί το CLI με κρυφή εισαγωγή password.
-Αν δεν υπάρχει διαδραστικό SSH, επιτρέπεται παραγωγή ασφαλούς hash τοπικά και προσωρινή ιδιωτική CLI διαδικασία εισαγωγής μέσω Plesk Scheduled Task.
-Αυτή η εναλλακτική διαβάζει μόνο ιδιωτικό αρχείο με hash και τα απαιτούμενα στοιχεία χρήστη, δεν δέχεται plaintext password σε URL ή command arguments και αφαιρείται μετά την εκτέλεση.
-Δεν μετατρέπεται το υπάρχον `create_user.php` σε δημόσιο web installer.
+1. Άνοιξε το Hosting Settings του `elmico.gr` και επιβεβαίωσε το ενεργό document root και τον handler PHP.
+2. Κατέγραψε το πραγματικό απόλυτο filesystem path που αντιστοιχεί στο `Home/elmico.gr`. Μη χρησιμοποιήσεις ως υπόθεση το `/httpdocs`.
+3. Επιβεβαίωσε PHP web version, MariaDB version, διαθέσιμο χώρο και δικαιώματα hosting user από Plesk. Η SSH πρόσβαση έχει αναφερθεί ως `Forbidden`, οπότε μην βασιστείς σε `php --version` από SSH.
+4. Το web PHP έχει ελεγχθεί από Plesk PHP Info ως `CGI/FastCGI`, PHP `8.3.36 r13`. Η λίστα που έστειλε ο χρήστης περιλαμβάνει `mysqli`, `mysqlnd`, `gd`, `zip` και όλες τις απαιτούμενες extensions που απαριθμούνται παρακάτω. Αυτό επιβεβαιώνει μόνο το web PHP.
+5. Για το CLI PHP, ακολούθησε την υποενότητα **Έλεγχος CLI PHP χωρίς SSH** παρακάτω και επίλεξε `8.3.36 r13` στο προσωρινό Plesk task.
+6. Μετά την εγκατάσταση των production dependencies μέσω Plesk Composer, εκτέλεσε `composer check-platform-reqs --no-dev` αν η Plesk UI ή η Otenet παρέχει ασφαλή Composer CLI εκτέλεση στο `/crm/`. Αν το UI προσφέρει μόνο **Install Dependencies**, κράτησε το επιτυχές αποτέλεσμα και τα logs ως platform check ισοδύναμο· αν αποτύχει, μην συνεχίσεις. Μην μαντέψεις διαδρομή Composer ούτε μην περάσεις credentials σε command arguments.
+7. Επιβεβαίωσε ότι web PHP και CLI βλέπουν την ίδια ιδιωτική βάση/κλειδί ρυθμίσεων, χωρίς να τυπώσεις τις τιμές σε output ή logs.
+8. Επιβεβαίωσε Plesk timezone. Τα scheduled tasks εκτελούνται στη ζώνη ώρας server εξ ορισμού και σε Linux μπορεί να λειτουργούν σε chrooted filesystem. [Plesk: Scheduled Tasks](https://docs.plesk.com/en-US/obsidian/customer-guide/scheduling-tasks.65207/)
 
-**Πρώτη εγκατάσταση και ενεργοποίηση**
+Μην αλλάξεις τα καταγεγραμμένα PHP limits χωρίς λόγο. Δοκίμασε imports με τα όρια του hosting και αύξησε τα μόνο αν τεκμηριωμένα απαιτείται, με συμφωνημένες τιμές `upload_max_filesize` και `post_max_size`.
 
-1. Ετοίμασε release και ολοκλήρωσε τοπική QA με πλασματικά δεδομένα.
-2. Πάρε επαληθευμένο backup των υφιστάμενων αρχείων που θα επηρεαστούν και οποιασδήποτε ήδη υπάρχουσας βάσης CRM.
-3. Εγκατέστησε το CRM με περιορισμένη πρόσβαση μέχρι να ολοκληρωθούν οι έλεγχοι.
-4. Εφάρμοσε migrations στη νέα βάση και ρύθμισε ιδιωτικό config.
-5. Έλεγξε login, logout, ρόλους, πελάτες, εργασίες, τίτλους, μέσα είσπραξης, imports και exports στο πραγματικό `/crm/`.
-6. Εκτέλεσε scheduler σε dry run και μετά σε ελεγχόμενο πλασματικό κανόνα με επιλέξιμη περίοδο, χωρίς μη ασφαλή δημόσιο test endpoint.
-7. Εκτέλεσε ξανά και επιβεβαίωσε ότι δεν υπάρχει διπλή καταχώριση.
-8. Καθάρισε μόνο τα αναγνωρισμένα δοκιμαστικά δεδομένα πριν από πραγματική χρήση, με ελεγχόμενη σειρά foreign keys.
-9. Ενεργοποίησε καθημερινό task στις 03:15 `Europe/Athens` και επαλήθευσε την επόμενη αυτόματη εκτέλεση.
-10. Επιβεβαίωσε το πρώτο backup που περιλαμβάνει τη νέα βάση και εκτέλεσε δοκιμαστική επαναφορά πριν θεωρηθεί ολοκληρωμένη η παράδοση.
+#### Έλεγχος CLI PHP χωρίς SSH
 
-Η επιλογή 03:15 είναι τεχνική αρχική ρύθμιση και μπορεί να μετακινηθεί αν συγκρούεται με backup ή περιορισμούς του παρόχου.
-Ο υπολογισμός due date παραμένει σωστός ανεξάρτητα από την ώρα εκτέλεσης μέσα στην ίδια τοπική ημέρα.
+Εκτέλεσε αυτόν τον έλεγχο αφού ανέβουν τα app files στο `/crm/`, ώστε το προσωρινό script να μπορεί να φυλαχθεί στο προστατευμένο `bin/` directory:
 
-**Μη καταστροφικά migrations και rollback**
+1. Έλεγξε πρώτα ότι `https://elmico.gr/crm/bin/migrate.php` και `https://elmico.gr/crm/bin/run-recurring-tasks.php` επιστρέφουν `403` ή `404`. Αν οποιοδήποτε είναι προσβάσιμο, μην αποθηκεύσεις προσωρινό script στο `bin/`· ζήτησε από Otenet ιδιωτικό path για Plesk PHP tasks.
+2. Στο Plesk File Manager δημιούργησε προσωρινό αρχείο `/crm/bin/cli-extension-check.php` με το παρακάτω περιεχόμενο. Δεν περιλαμβάνει database credentials ή άλλο secret:
 
-Τα migrations δεν εκτελούνται αυτόματα σε κάθε web request.
-Καταγράφονται έκδοση και checksum και επανεκτέλεση ολοκληρωμένης έκδοσης δεν μεταβάλλει ξανά το schema.
-Δεν θεωρείται ότι το `START TRANSACTION` αναιρεί κάθε DDL αλλαγή στη MariaDB.
-Η εγκατάσταση χρησιμοποιεί συντηρητική σειρά προσθήκης πεδίων/πινάκων και ενεργοποιεί τον νέο κώδικα μόνο μετά την επιβεβαίωση schema.
+   ```php
+   <?php
+   $required = [
+       'ctype', 'dom', 'fileinfo', 'gd', 'iconv', 'libxml', 'mbstring',
+       'mysqli', 'mysqlnd', 'session', 'SimpleXML', 'xml', 'xmlreader',
+       'xmlwriter', 'zip', 'zlib',
+   ];
+   $missing = [];
+   echo 'PHP_VERSION=' . PHP_VERSION . PHP_EOL;
+   echo 'PHP_SAPI=' . PHP_SAPI . PHP_EOL;
+   foreach ($required as $extension) {
+       $loaded = extension_loaded($extension);
+       echo $extension . '=' . ($loaded ? 'OK' : 'MISSING') . PHP_EOL;
+       if (!$loaded) {
+           $missing[] = $extension;
+       }
+   }
+   exit($missing === [] ? 0 : 1);
+   ```
 
-Σε αποτυχία rollout:
+3. Έλεγξε ξανά ότι `https://elmico.gr/crm/bin/cli-extension-check.php` δεν επιστρέφει `200` ή περιεχόμενο. Μην εκτελέσεις το script από browser.
+4. Άνοιξε **Websites & Domains → Scheduled Tasks → Add Task**. Επίλεξε **Run a PHP script**, βρες το `crm/bin/cli-extension-check.php` από το file picker και επίλεξε PHP `8.3.36 r13`.
+5. Για τον προσωρινό έλεγχο επίλεξε ειδοποίηση με το task output σε email που ελέγχεις. Εκτέλεσε **Run Now** μία φορά και έλεγξε ότι αναφέρει `PHP_VERSION=8.3.36`, `PHP_SAPI=cli` και `OK` σε κάθε extension. Αν το output δείξει άλλη PHP έκδοση/SAPI ή missing extension, σταμάτησε και επικοινώνησε με Otenet.
+6. Διέγραψε το προσωρινό task και το `cli-extension-check.php` από File Manager αμέσως μετά τον έλεγχο. Μην αφήσεις διαγνωστικό script στο server.
 
-1. Απενεργοποίησε τον scheduler και τις μεταβολές του CRM, διατηρώντας διαθέσιμο το static site.
-2. Διατήρησε ασφαλές αντίγραφο της τρέχουσας κατάστασης και των σφαλμάτων πριν από αποκατάσταση.
-3. Επανέφερε προηγούμενο κώδικα μόνο αν είναι συμβατός με το παρόν schema.
-4. Αν χρειάζεται επαναφορά βάσης, χρησιμοποίησε το επαληθευμένο ζεύγος κώδικα/backup και αποτίμησε τις μεταγενέστερες εγγραφές πριν αντικατασταθούν.
-5. Εκτέλεσε login, ποσά, καταλόγους και scheduler dry run πριν επανενεργοποιήσεις εγγραφές και αυτοματισμό.
+Αν το Plesk δεν εμφανίζει script output ή δεν μπορεί να εκτελέσει το αρχείο, ζήτησε από Otenet να τρέξει το check μέσω PHP 8.3.36 r13 CLI και να σου επιστρέψει μόνο PHP version, SAPI και το αποτέλεσμα των extensions. Μην ενεργοποιήσεις SSH χωρίς να επιβεβαιωθεί πρώτα η πολιτική hosting.
 
-Δεν γίνεται σιωπηρή επαναφορά παλιού database dump πάνω σε νεότερα πραγματικά δεδομένα.
+### 2. Έλεγξε και προστάτεψε τον υπάρχοντα ιστότοπο
 
-**Backup και δοκιμή επαναφοράς**
+1. Επιβεβαίωσε ότι η θέση `/crm/` δεν περιέχει ήδη αρχεία που χρειάζονται. Αν περιέχει, πάρε αντίγραφο πριν την αντικατάσταση και μην το καθαρίσεις.
+2. Πάρε αντίγραφο των αρχείων που θα αλλάξουν. Δεν χρειάζεται και δεν πρέπει να αλλάξει το document root του `elmico.gr` για αυτή τη δοκιμή.
+3. Βεβαιώσου ότι το deployment του static site δεν κάνει καθολικό καθαρισμό του document root και διατηρεί `/crm/`, `.well-known` και τις ρυθμίσεις hosting.
+4. Μην τροποποιήσεις ή διαγράψεις τον διπλανό φάκελο `httpdocs`, τη βάση WordPress ή τους φακέλους `.wp-cli`, `.wp-toolkit`, `wordpress-backups`, `logs`.
+5. Αν το Plesk παρέχει IP restriction ή άλλη προσωρινή προστασία, ενεργοποίησέ την για το CRM όσο εκτελούνται οι δοκιμές. Η προστασία του CRM δεν πρέπει να κρύβει ή να αλλάζει το δημόσιο static site.
 
-Η καθημερινή πολιτική του Plesk πρέπει να επιβεβαιωθεί ότι καλύπτει τη νέα βάση, τα απαραίτητα αρχεία και την ιδιωτική ρύθμιση.
-Ελέγχεται η πραγματική περίοδος διατήρησης και αν τα αντίγραφα υπάρχουν και εκτός του ίδιου server.
-Η δοκιμή επαναφοράς γίνεται σε ξεχωριστή βάση και θέση με απενεργοποιημένο scheduler.
-Επαληθεύονται σύνδεση, πλήθος βασικών εγγραφών, επιλεγμένα οικονομικά σύνολα, snapshots και ιστορικές εκδόσεις κανόνων.
-Ο scheduler της επαναφερμένης δοκιμαστικής εγκατάστασης δεν πρέπει να συνδέεται με την παραγωγική βάση.
-Η καθημερινή λήψη δεν εγγυάται μηδενική απώλεια αλλαγών από το τελευταίο επιτυχές backup.
+### 3. Δημιούργησε ξεχωριστή pre-prod βάση
 
-**Συμβίωση με το static site**
+1. Στο Plesk δημιούργησε νέα, κενή βάση με σαφές όνομα, π.χ. `crm_preprod`.
+2. Δημιούργησε νέο database user με δικαιώματα μόνο στη `crm_preprod`.
+3. Επιβεβαίωσε το πραγματικό database hostname. Μην υποθέσεις ότι είναι `localhost`.
+4. Άνοιξε phpMyAdmin από τη βάση `crm_preprod` και επιβεβαίωσε ότι είναι κενή.
+5. Εισήγαγε το root `accountant_crm.sql` μόνο σε αυτή την κενή βάση. Το SQL περιέχει `DROP TABLE IF EXISTS` και δεν πρέπει να χρησιμοποιηθεί σε βάση που περιέχει δεδομένα.
+6. Επιβεβαίωσε ότι δημιουργήθηκαν οι αρχικοί πίνακες. Το SQL είναι αρχικό schema και δεν περιλαμβάνει λογαριασμό CRM.
 
-Κάθε deployment του Astro αντιγράφει μόνο τα δικά του παραγόμενα αρχεία και δεν καθαρίζει ανεξέλεγκτα ολόκληρο το document root.
-Προστατεύονται ρητά ο φάκελος `/crm/`, το `.well-known` και οι απαραίτητες ρυθμίσεις του hosting.
-Δεν απαιτείται προσθήκη κενού `/crm/` στο Astro source ή στο `public/`.
-Το static site δεν εισάγει το PHP app στον δικό του build και δεν αναλαμβάνει migrations της βάσης CRM.
-Η παλιά βάση WordPress και τα υπάρχοντα backups της δεν διαγράφονται ως μέρος αυτού του deployment.
-Οι φάκελοι λογαριασμού `.wp-cli`, `.wp-toolkit`, `wordpress-backups`, `logs` και το ξεχωριστό `httpdocs` δεν καθαρίζονται αυθαίρετα.
+Μην εισαγάγεις πραγματικά δεδομένα πελατών. Μην επιλέξεις ή επαναχρησιμοποιήσεις τη WordPress βάση.
 
-**Post-deploy και παράδοση**
+### 4. Φτιάξε release από συγκεκριμένο commit
 
-- [ ] HTTPS, ανακατευθύνσεις και πραγματικό cookie έχουν επαληθευτεί.
-- [ ] Άμεση πρόσβαση χωρίς login και παράκαμψη ρόλων αποτυγχάνουν.
-- [ ] Δημόσιο site και CRM λειτουργούν μετά από δοκιμή ανεξάρτητου deployment.
-- [ ] Ελληνικά ονόματα, PDF, Excel και χρηματικά ποσά έχουν ελεγχθεί.
-- [ ] Κατάλογοι, snapshot ονομασιών και legacy είσπραξη έχουν ελεγχθεί.
-- [ ] Δημιουργία κανόνα, αλλαγή αμοιβής και διακοπή έχουν ελεγχθεί.
-- [ ] Πραγματικό Scheduled Task έχει επιτυχή καταγραφή και μηχανισμό ανάδειξης αποτυχίας στο Plesk.
-- [ ] Το επόμενο backup περιέχει τη νέα βάση και η επαναφορά έχει δοκιμαστεί.
-- [ ] Δεν υπάρχουν δοκιμαστικοί χρήστες με γνωστούς κωδικούς ή δημόσια διαγνωστικά αρχεία όπως `phpinfo()`.
-- [ ] Παραδόθηκαν οδηγίες για χρήστες, καταλόγους, επαναλήψεις, scheduler, logs, backup και rollback.
+Πριν από την εξαγωγή, βεβαιώσου ότι τα αρχεία που θα παραδοθούν είναι committed και το working tree είναι καθαρό:
 
-Η τελική αναφορά καταγράφει πραγματικό release commit, ημερομηνία εγκατάστασης, αποτελέσματα ελέγχων και τυχόν χαμηλότερης σοβαρότητας εκκρεμότητες.
-Η συντήρηση παρακολουθεί επιτυχία scheduler και backup, ενημερώσεις ασφαλείας και λήξη HTTPS χωρίς να προσθέτει νέες υπηρεσίες χωρίς ανάγκη.
+```bash
+git status --short
+git rev-parse HEAD
+```
 
-**W04 security configuration**
+Από Linux μπορεί να εξαχθεί μόνο το tracked `ACCOUNTANT_CRM/` χωρίς Docker. Τα production dependencies εγκαθίστανται αργότερα στο Plesk:
 
-Before activating this release, apply `20261118_003_security_events` with the migration CLI.
-Set `CRM_SECURITY_HMAC_KEY` to a private random value of at least 32 characters in the shared web/CLI environment.
-Keep the key stable across processes and outside the public root and repository.
-Login refuses to proceed if this configuration is absent or invalid.
-The defaults are `CRM_LOGIN_IDENTITY_LIMIT=5`, `CRM_LOGIN_SOURCE_LIMIT=30`, `CRM_LOGIN_WINDOW_SECONDS=900` and `CRM_LOGIN_COOLDOWN_SECONDS=900`.
-Each setting accepts a positive integer.
-The source is the server's `REMOTE_ADDR`; forwarded headers do not override it.
-Security events and counters live in private MariaDB tables and contain HMAC identifiers rather than plaintext usernames or addresses.
-Schedule `php bin/prune-security-events.php` daily using the same database configuration.
-`CRM_SECURITY_RETENTION_DAYS` defaults to 30; cleanup removes expired events and stale unlocked counters.
-On rollback, retain the additive tables and review compatibility before changing code; do not restore an old dump over newer records.
+```bash
+release_sha="$(git rev-parse --short HEAD)"
+git archive --format=tar HEAD:ACCOUNTANT_CRM | gzip > "accountant-crm-${release_sha}.tar.gz"
+sha256sum "accountant-crm-${release_sha}.tar.gz"
+tar -tzf "accountant-crm-${release_sha}.tar.gz" | head -40
+```
+
+Έλεγξε το περιεχόμενο του archive πριν το upload. Περιλαμβάνει τις PHP σελίδες, `assets/`, `includes/`, `bin/`, `migrations/`, `.htaccess`, `composer.json` και `composer.lock`. Δεν περιλαμβάνει `.git`, tests, `vendor/`, `.env`, backups, SQL dump ή docs.
+
+Κατέγραψε σε ασφαλές deployment σημείωμα το commit ID, το όνομα archive και το SHA-256. Μην καταγράψεις secrets.
+
+### 5. Ανέβασε το app στο `/crm/`
+
+1. Δημιούργησε τον φάκελο `/crm/` κάτω από το επιβεβαιωμένο document root του `elmico.gr`, αν δεν υπάρχει.
+2. Ανέβασε το `accountant-crm-<commit>.tar.gz` με Plesk File Manager ή SFTP.
+3. Αποσυμπίεσέ το έτσι ώστε το `index.php` και το `login.php` να βρίσκονται στο `<document-root>/crm/` και όχι σε nested διαδρομή όπως `/crm/ACCOUNTANT_CRM/`.
+4. Μην αποσυμπιέσεις το archive πάνω από το document root. Μην αντικαταστήσεις το parent `.htaccess` ή αρχεία του static site.
+5. Ρύθμισε read permissions για τον PHP hosting user. Μη χρησιμοποιήσεις `777`.
+6. Εγκατάστησε dependencies από την Plesk UI:
+   - Άνοιξε **Websites & Domains → Applications → Scan** για να εντοπιστεί το `composer.json` κάτω από `/crm/`.
+   - Άνοιξε την εφαρμογή από **Applications → Manage My Applications**.
+   - Επίλεξε **Install Dependencies** και περίμενε επιτυχή ολοκλήρωση. Το Plesk τεκμηριώνει αυτή τη ροή για project που έχει `composer.json`/`composer.lock`. [Plesk: Composer dependencies](https://docs.plesk.com/en-US/obsidian/reseller-guide/website-management/websites-and-domains/web-applications.68973/)
+   - Έλεγξε το αποτέλεσμα/log για platform errors και επιβεβαίωσε ότι το Composer χρησιμοποίησε PHP 8.3.36 r13. Μην επιλέξεις **Update Dependencies**: η εγκατάσταση πρέπει να ακολουθεί το committed `composer.lock`.
+   - Αν η Plesk UI προσφέρει ασφαλή Composer command execution, τρέξε στο project root `/crm/`:
+
+     ```bash
+     composer check-platform-reqs --no-dev
+     ```
+
+   Το Plesk Composer **Install Dependencies** εκτελεί Composer install και ελέγχει platform requirements κατά την εγκατάσταση. Αν η UI δεν προσφέρει αυθαίρετες Composer εντολές, κράτησε το επιτυχές install output ως ισοδύναμο platform check. Για την ακριβή `check-platform-reqs` εντολή χωρίς SSH, ζήτησε από Otenet να την εκτελέσει σε normal (όχι chrooted) Composer environment με PHP 8.3.36 r13.
+
+   Μην ανεβάσεις `vendor/` από διαφορετικό PHP platform χωρίς platform check.
+
+Το app αναμένει το `vendor/autoload.php` κάτω από το `/crm/`. Επομένως το `vendor/` βρίσκεται φυσικά κάτω από το public tree και πρέπει να αποκλειστεί από HTTP με πραγματικούς κανόνες του ενεργού Apache/nginx setup. Αν το hosting δεν μπορεί να το εγγυηθεί, σταμάτησε πριν από το login και προχώρησε σε αλλαγή κώδικα/διάταξης ώστε τα dependencies να φορτώνονται από ιδιωτικό path.
+
+### 6. Ρύθμισε ιδιωτικά τις παραμέτρους
+
+Το app απαιτεί τις παρακάτω ρυθμίσεις από το περιβάλλον PHP:
+
+```text
+APP_BASE_PATH=/crm
+APP_TIMEZONE=Europe/Athens
+DB_HOST=<database hostname του Plesk>
+DB_NAME=crm_preprod
+DB_USER=<pre-prod database user>
+DB_PASSWORD=<secret>
+CRM_SECURITY_HMAC_KEY=<ιδιωτικό τυχαίο κλειδί, τουλάχιστον 32 χαρακτήρες>
+```
+
+Για να παραχθεί τυχαίο κλειδί μπορείς να εκτελέσεις τοπικά:
+
+```bash
+openssl rand -hex 32
+```
+
+Αποθήκευσε την τιμή σε password manager ή στον εγκεκριμένο ιδιωτικό μηχανισμό του Plesk. Μην τη στείλεις στη συνομιλία, μην την προσθέσεις σε Git, URL, PHP source ή command arguments.
+
+Ρύθμισε την ίδια πηγή τιμών για web PHP και Plesk CLI tasks. Το υπάρχον `.env.example` αφορά το τοπικό Docker setup· το app δεν φορτώνει `.env` αυτόματα. Αν το Plesk δεν δίνει αξιόπιστα κοινές environment variables στον τρέχοντα CGI/FastCGI handler και στα tasks, σταμάτησε. Χρειάζεται loader ιδιωτικού config ή άλλος επιβεβαιωμένος μηχανισμός hosting πριν ενεργοποιηθεί η εφαρμογή.
+
+Στο PHP configuration του domain:
+
+- `display_errors=Off`
+- `log_errors=On`
+- `error_log` σε ιδιωτικό path έξω από το document root, με permissions μόνο για τον hosting user.
+
+Το scheduler υπολογίζει recurrence dates σε `Europe/Athens`. Η διαμόρφωση Plesk task πρέπει επίσης να έχει επιβεβαιωμένη ζώνη ώρας. Τα credentials δεν εμφανίζονται σε output ή logs.
+
+### 7. Εφάρμοσε migrations και δημιούργησε λογαριασμό
+
+1. Πριν από το migration, επιβεβαίωσε ότι το web και το CLI config δείχνουν στη `crm_preprod`.
+2. Εκτέλεσε migration runner από CLI και όχι με browser:
+
+   ```bash
+   php /<absolute-document-root>/crm/bin/migrate.php
+   ```
+
+   Χρησιμοποίησε την επιβεβαιωμένη PHP 8.3 CLI αν το `php` δείχνει άλλη έκδοση.
+
+3. Συνέχισε μόνο με exit code `0`. Έλεγξε στον `schema_migrations` τις αναμενόμενες εκδόσεις/checksums και δειγματοληπτικά τα νέα tables, columns, indexes και foreign keys.
+4. Σε αποτυχία, κράτησε τα logs, μην ενεργοποιήσεις το app και μην επαναλάβεις τη migration πριν ελεγχθεί η μερικώς εφαρμοσμένη DDL. Τα MariaDB DDL statements δεν αναιρούνται όλα από transaction rollback.
+5. Με interactive SSH terminal, δημιούργησε admin από CLI:
+
+   ```bash
+   php /<absolute-document-root>/crm/create_user.php
+   ```
+
+   Το script ζητά username, όνομα, ρόλο και κωδικό με κρυφή εισαγωγή. Μην το ανοίξεις ως web page.
+6. Αν δεν υπάρχει διαδραστικό terminal, μην αλλάξεις το `create_user.php` σε web installer. Χρησιμοποίησε μόνο προσωρινή, ιδιωτική CLI διαδικασία που έχει ελεγχθεί, διαβάζει hash από ιδιωτικό αρχείο και αφαιρείται αμέσως μετά.
+7. Παράδωσε credentials μέσω password manager ή άλλου ασφαλούς διαύλου.
+
+### 8. Έλεγξε πρόσβαση HTTP πριν από χρήση
+
+Πριν επιτρέψεις login, έλεγξε με browser και πραγματικά HTTP requests το `https://elmico.gr/crm/`.
+
+Οι δημόσιες διαδρομές πρέπει να είναι μόνο οι απαιτούμενες PHP σελίδες και assets. Τα ακόλουθα δεν πρέπει να επιστρέφουν περιεχόμενο (`403` ή `404` είναι αναμενόμενα):
+
+- `/crm/includes/db.php`
+- `/crm/vendor/autoload.php`
+- `/crm/bin/migrate.php`
+- `/crm/bin/run-recurring-tasks.php`
+- `/crm/migrations/20261118_001_catalogs.php`
+- `/crm/composer.json`
+- `/crm/composer.lock`
+- `/crm/create_user.php`
+
+Παράδειγμα ελέγχου χωρίς εμφάνιση response body:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/includes/db.php
+curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/vendor/autoload.php
+curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/bin/migrate.php
+curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/composer.lock
+curl -sS -o /dev/null -w '%{http_code}\n' https://elmico.gr/crm/create_user.php
+```
+
+Αν κάποια απαγορευμένη διαδρομή επιστρέψει `200`, περιεχόμενο αρχείου, PHP source ή directory listing, σταμάτησε και ρύθμισε το Plesk web stack πριν συνεχίσεις. Η ύπαρξη `.htaccess` μόνη της δεν είναι απόδειξη προστασίας.
+
+Έλεγξε επίσης:
+
+- Το HTTP ανακατευθύνεται στο HTTPS και το πιστοποιητικό είναι έγκυρο.
+- Το login εμφανίζεται χωρίς PHP warnings/deprecations ή SQL/path details.
+- Μη συνδεδεμένος χρήστης δεν βλέπει CRM δεδομένα και οι έλεγχοι ρόλων λειτουργούν.
+- Τα session cookies έχουν `Secure`, `HttpOnly`, `SameSite=Lax` και path `/crm/`.
+- Το static site εξακολουθεί να λειτουργεί και deployment του δεν σβήνει ή αντικαθιστά το `/crm/`.
+
+### 9. Έλεγξε βασικές λειτουργίες με πλασματικά δεδομένα
+
+Κράτησε την πρόσβαση περιορισμένη κατά τη διάρκεια των δοκιμών. Χρησιμοποίησε μόνο ψεύτικα ονόματα/ΑΦΜ και δοκιμαστικούς λογαριασμούς.
+
+1. Login/logout, αλλαγή session ID, session expiry και πρόσβαση χωρίς login.
+2. Admin και user permissions, CSRF προστασία και άρνηση μη εξουσιοδοτημένων αλλαγών.
+3. Πελάτες, συνεργάτες, ενεργοί επαγγελματίες, εργασίες, ημερολόγιο και MyDiary.
+4. Κατάλογοι τίτλων και μέσων είσπραξης, snapshot παλιάς εργασίας και εμφάνιση στις σχετικές λίστες.
+5. Import με έγκυρο και άκυρο αρχείο, χωρίς μερική αποθήκευση σε αποτυχία.
+6. Excel/PDF exports, ελληνικά κείμενα, ποσά και φίλτρα.
+7. Δημιουργία recurring rule, σύντομος μήνας, catch-up, αλλαγή όρων, manual stop/restart.
+8. Επιβεβαίωση ότι δεν εισάγονται/κληρονομούνται παλιές εισπράξεις σε generated tasks.
+9. Links, redirects, CSS, imports, exports και cookies λειτουργούν κάτω από `/crm/`.
+
+Μην καθαρίσεις τα δοκιμαστικά records αυτόματα. Πριν από οποιαδήποτε διαγραφή, κράτησε backup, εντόπισε ακριβώς τα fictional test records και έλεγξε foreign key relationships.
+
+### 10. Ρύθμισε και επαλήθευσε Plesk Scheduled Tasks
+
+Το recurring scheduler παραμένει ανενεργό μέχρι να περάσουν τα παραπάνω checks και να επιβεβαιωθεί η CLI σύνδεση στην pre-prod βάση.
+
+1. Επιβεβαίωσε την ακριβή PHP 8.3 CLI executable και την πρόσβαση στο app path. Σε Linux Plesk Scheduled Tasks μπορεί να τρέχουν σε chroot· χρησιμοποίησε paths που λειτουργούν από το task context.
+2. Επιβεβαίωσε ότι το task παίρνει την ίδια `DB_*` και `CRM_SECURITY_HMAC_KEY` ρύθμιση με το web app. Μην τοποθετείς secrets στη γραμμή εντολής.
+3. Βεβαιώσου ότι το migration runner έχει ήδη περάσει επιτυχώς. Το recurring script καλεί επίσης migration runner, οπότε κάθε task χρειάζεται δικαιώματα schema migration· επιβεβαίωσε αυτά τα δικαιώματα και μην αλλάξεις DB grants χωρίς απόφαση.
+4. Εκτέλεσε dry-run από CLI:
+
+   ```bash
+   php /<absolute-document-root>/crm/bin/run-recurring-tasks.php --dry-run
+   ```
+
+5. Δημιούργησε μέσω UI έναν αναγνωρίσιμο fictional κανόνα με επιλέξιμη περίοδο. Κάνε ελεγχόμενο πραγματικό run, επιβεβαίωσε μία εργασία και ξανατρέξε το script για να αποδείξεις idempotency.
+6. Στο Plesk πρόσθεσε task με **Run a PHP script** ή **Run a command**, καθημερινά στις `03:15 Europe/Athens`, μετά την επιβεβαίωση της timezone του server. Χρησιμοποίησε το πλήρες path του `bin/run-recurring-tasks.php` και το PHP 8.3 CLI.
+7. Πάτησε **Run Now**, έλεγξε αποτέλεσμα/exit status και ρύθμισε ειδοποίηση αποτυχίας.
+8. Πρόσθεσε ξεχωριστό καθημερινό task για cleanup:
+
+   ```bash
+   php /<absolute-document-root>/crm/bin/prune-security-events.php
+   ```
+
+9. Επιβεβαίωσε την επόμενη αυτόματη εκτέλεση από τα Plesk logs. Στην pre-prod εγκατάσταση διατήρησε τα δεδομένα fictional scheduler test μέχρι να ολοκληρωθεί το αποδεικτικό idempotency.
+
+Το `--dry-run` δεν δημιουργεί recurring task records, αλλά το script εκκινεί migration runner. Πέρασε migrations ρητά πριν από το dry-run ώστε το schema να είναι ήδη ενημερωμένο.
+
+### 11. Backup, δοκιμή επαναφοράς και rollback
+
+1. Επιβεβαίωσε στο Plesk ότι το backup περιλαμβάνει το `/crm/`, τη νέα βάση `crm_preprod` και την ιδιωτική ρύθμιση. Κατέγραψε retention, διαθέσιμο χώρο και αν το backup υπάρχει και εκτός του ίδιου server.
+2. Πάρε backup αφού έχουν ολοκληρωθεί migrations και βασικές δοκιμές.
+3. Κάνε test restore σε ξεχωριστή προσωρινή βάση και θέση αρχείων. Κράτησε απενεργοποιημένα όλα τα scheduler tasks της restored copy.
+4. Επαλήθευσε σύνδεση, λογαριασμούς, πλήθος βασικών εγγραφών, επιλεγμένα ποσά, payment snapshots και recurrence versions.
+5. Βεβαιώσου ότι η restored copy δεν μπορεί να συνδεθεί στην αρχική pre-prod ή σε οποιαδήποτε production βάση.
+6. Σε αποτυχία release, απενεργοποίησε πρώτα recurring και cleanup tasks και περιόρισε τις μεταβολές χρηστών. Διατήρησε αντίγραφα αρχείων/βάσης και logs πριν από rollback.
+7. Επανέφερε προηγούμενο κώδικα μόνο αφού ελεγχθεί η συμβατότητά του με το υπάρχον schema. Μην επαναφέρεις παλιό dump πάνω σε νεότερες εγγραφές χωρίς αξιολόγηση και έγκριση.
+8. Μετά το rollback, επαλήθευσε HTTPS, login, βασικές εγγραφές και dry-run πριν επανενεργοποιήσεις tasks.
+
+Η καθημερινή λήψη backup δεν εγγυάται μηδενική απώλεια αλλαγών από την τελευταία επιτυχημένη λήψη.
+
+## Συμβίωση με το static site
+
+- Το CRM εγκαθίσταται μόνο στο child path `/crm/` του ενεργού `Home/elmico.gr` document root.
+- Το static site συνεχίζει να δημοσιεύεται στο υπάρχον root. Κάθε static deployment πρέπει να αντιγράφει μόνο τα δικά του build artifacts και να διατηρεί `/crm/`, `.well-known` και τις ρυθμίσεις του hosting.
+- Δεν προστίθεται άδειο `/crm/` στο Astro source/`public/`, δεν γίνεται import του PHP app στο Astro build και το static build/deploy δεν εκτελεί migrations.
+- Parent `.htaccess`, Plesk nginx directives, root redirects, permissions, DNS, HTTPS και cache rules εξετάζονται πριν αλλάξουν. Οι αλλαγές στο CRM δεν πρέπει να ανακατευθύνουν ή να αποκλείουν το δημόσιο site.
+- Η παλιά WordPress βάση και τα υπάρχοντα backups της δεν τροποποιούνται ως μέρος αυτού του deployment.
+
+## Κριτήρια ολοκλήρωσης pre-prod
+
+- [ ] Επιβεβαιώθηκε το ακριβές commit και το checksum του release archive.
+- [ ] Ενεργό URL είναι `https://elmico.gr/crm/` και το δημόσιο static site συνεχίζει να λειτουργεί.
+- [ ] PHP 8.3 web/CLI, MariaDB και Composer platform requirements επαληθεύτηκαν στο hosting.
+- [ ] Web και CLI χρησιμοποιούν τη σωστή pre-prod database/config χωρίς να εμφανίζονται credentials.
+- [ ] Οι migrations ολοκληρώθηκαν και τα versions/checksums ελέγχθηκαν.
+- [ ] Οι διαδρομές `includes`, `vendor`, `bin`, `migrations`, Composer metadata και `create_user.php` αποκλείονται με πραγματικό HTTP check.
+- [ ] Login, roles, CSRF, βασικές CRM ροές, imports/exports και ελληνικά δεδομένα δοκιμάστηκαν με fictional fixtures.
+- [ ] Recurrence dry-run, πραγματικό run, επαναληπτικό run και Plesk **Run Now** επιβεβαίωσαν idempotency.
+- [ ] Security cleanup task εκτελέστηκε και έχει αναφορά σφάλματος.
+- [ ] Έγινε backup της βάσης/αρχείων/config και δοκιμή restore σε απομονωμένο προορισμό.
+- [ ] Αφαιρέθηκαν προσωρινά diagnostic scripts και δεν υπάρχουν δοκιμαστικοί λογαριασμοί με κοινά/γνωστά passwords.
+- [ ] Καταγράφηκαν ημερομηνία, commit, PHP/MariaDB versions, αποτελέσματα, logs και εκκρεμότητες.
+
+Η pre-prod ολοκλήρωση δεν ισοδυναμεί με παραγωγικό sign-off. Η παραγωγή προϋποθέτει τα G01/W09 acceptance checks, ανεξάρτητη QA και επιτυχημένο hosting restore.
+
+## Ρυθμίσεις ασφαλείας W04
+
+Πριν ενεργοποιηθεί login, πρέπει να έχει εφαρμοστεί η migration `20261118_003_security_events` μέσω CLI και να υπάρχει σταθερό ιδιωτικό `CRM_SECURITY_HMAC_KEY` τουλάχιστον 32 χαρακτήρων, κοινό για web και CLI. Αν λείπει ή δεν είναι έγκυρο, το login αποτυγχάνει.
+
+Προεπιλογές περιορισμού σύνδεσης:
+
+- `CRM_LOGIN_IDENTITY_LIMIT=5`
+- `CRM_LOGIN_SOURCE_LIMIT=30`
+- `CRM_LOGIN_WINDOW_SECONDS=900`
+- `CRM_LOGIN_COOLDOWN_SECONDS=900`
+- `CRM_SECURITY_RETENTION_DAYS=30`
+
+Οι αριθμητικές ρυθμίσεις, αν οριστούν, πρέπει να είναι θετικοί ακέραιοι. Η προέλευση υπολογίζεται από `REMOTE_ADDR`· forwarded headers δεν θεωρούνται έμπιστα χωρίς τεκμηριωμένη proxy λίστα. Security events και counters βρίσκονται στη MariaDB και χρησιμοποιούν HMAC identifiers, όχι plaintext username/IP.
+
+Σε rollback κράτησε τους additive security tables και έλεγξε συμβατότητα πριν από αλλαγή κώδικα. Μην επαναφέρεις παλιό dump πάνω σε νεότερες εγγραφές.

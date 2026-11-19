@@ -5,8 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile.w01
     ports:
-      - "127.0.0.1:18080:80"
-      - "127.0.0.1:18443:443"
+      - "127.0.0.1:${CRM_W01_HTTP_PORT:-18080}:80"
+      - "127.0.0.1:${CRM_W01_HTTPS_PORT:-18443}:443"
     environment:
       APP_BASE_PATH: /crm
       APP_ENV: test
@@ -32,6 +32,7 @@ services:
       MARIADB_USER: crm_w01_user
       MARIADB_PASSWORD: crm_w01_only_password
       MARIADB_ROOT_PASSWORD: crm_w01_root_only_password
+      MARIADB_ROOT_HOST: "%"
     volumes:
       - test_db_data:/var/lib/mysql
       - ./accountant_crm.sql:/docker-entrypoint-initdb.d/001-accountant_crm.sql:ro
@@ -55,7 +56,12 @@ services:
       DB_NAME: crm_w01_test
       DB_USER: crm_w01_user
       DB_PASSWORD: crm_w01_only_password
+      CRM_APP_ROOT: /var/www/html/crm
       CRM_BASE_URL: http://app/crm
+      CRM_TEST_DB_NAME: crm_w01_test
+      CRM_TEST_ADMIN_HOST: test-db
+      CRM_TEST_ADMIN_USER: root
+      CRM_TEST_ADMIN_PASSWORD: crm_w01_root_only_password
     depends_on:
       app:
         condition: service_healthy

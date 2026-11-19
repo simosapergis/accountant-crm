@@ -1,5 +1,13 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### `users` σε utf8mb4 και upgrade migration - 19 Νοεμβρίου 2026
+
+Το αρχικό `accountant_crm.sql` πλέον δημιουργεί τον πίνακα `users` σε `utf8mb4_general_ci`, όπως και τα υπόλοιπα application tables. Η migration `20261119_001_users_utf8mb4` μετατρέπει legacy `users` columns σε `utf8mb4` και αφήνει το migration runner να καταγράψει/ελέγξει την εφαρμογή της. Το W03 regression καλύπτει legacy ID, username, fullname, role, password hash, ελληνικά username/fullname και δεύτερη εκτέλεση.
+TDD RED: το αρχικό schema assertion απέτυχε με `users.fullname`=`latin1`. Μετά τη διόρθωση, `W03MigrationTest.php` PASS — 3 tests / 27 assertions σε απομονωμένο MariaDB 10.11 Compose database.
+Η πλήρης guarded σουίτα εκτελέστηκε σε Linux Compose, αλλά απέτυχε με 87/163 tests. Τα περισσότερα αποτυχημένα checks αναφέρουν HTTP 200 αντί για αναμενόμενη redirect μετά από login ή “The fictional W01 account should authenticate”. Η συγκεκριμένη σουίτα δεν είναι πράσινη· απαιτείται ξεχωριστή διερεύνηση των W01/W02/W05/W06/W08 fixture/authentication failures. Το focused W03 αποτέλεσμα δεν επηρεάζεται.
+Για να εκτελεστεί το W03 harness στο Compose, το test image περιλαμβάνει πλέον το root `accountant_crm.sql`, οι test admin μεταβλητές περνούν από το Compose και το test project χρησιμοποιεί τοπικά ports `18081/18444` ώστε να συνυπάρχει με άλλα projects. Το test MariaDB root επιτρέπεται από το δίκτυο Compose μόνο στο disposable W01 project.
+Δεν έγινε καμία αλλαγή στο Otenet/Plesk. Το G01 και τα υπόλοιπα εκκρεμή acceptance criteria παραμένουν ως έχουν.
+
 ### Recurring-task mobile cards - 18 November 2026
 
 At the user's request, the recurring-task list now renders cards only at widths up to 768 pixels and retains its desktop table.

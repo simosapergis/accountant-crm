@@ -296,13 +296,25 @@ require "includes/header.php";
 <style>
 /* Dropdown αποτελεσμάτων πελάτη */
 #client_results .client-item {
+    display: block;
+    width: 100%;
     padding: 10px 10px;
     cursor: pointer;
     border-bottom: 1px solid #f1f5f9;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    background: #fff;
+    color: inherit;
     font-size: 14px;
+    text-align: left;
 }
 #client_results .client-item:hover {
     background: #f8fafc;
+}
+#client_results .client-item:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: -2px;
 }
 </style>
 
@@ -311,10 +323,14 @@ require "includes/header.php";
 function addClientToDropdown(id, name) {
     document.getElementById("client_search").value = name;
     document.getElementById("client_id").value = id;
+    if (Array.isArray(clientListCache) && !clientListCache.some(client => String(client.id) === String(id))) {
+        clientListCache.push({ id: Number(id), name: name, afm: "" });
+        clientListCache.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     const box = document.getElementById("client_results");
-    box.style.display = "none";
     box.innerHTML = "";
+    hideResults();
 
     const modal = bootstrap.Modal.getInstance(document.getElementById("addClientModal"));
     if (modal) modal.hide();
@@ -383,11 +399,14 @@ function updateTaskTitleInput() {
         <div class="form-row">
 
             <div class="form-group" style="position:relative;">
-                <label>Πελάτης</label>
+                <label for="client_search">Πελάτης</label>
 
                 <div style="display:flex; gap:8px;">
                     <input type="text"
                            id="client_search"
+                           aria-controls="client_results"
+                           aria-expanded="false"
+                           aria-autocomplete="list"
                            placeholder="Αναζήτηση πελάτη..."
                            autocomplete="off"
                            style="height:48px;"
@@ -399,6 +418,15 @@ function updateTaskTitleInput() {
                            value="<?= (int)($task['client_id'] ?? 0) ?>">
 
                     <button type="button"
+                            id="client_list_button"
+                            class="btn btn-secondary"
+                            aria-label="Άνοιγμα λίστας πελατών"
+                            aria-controls="client_results"
+                            aria-expanded="false"
+                            title="Εμφάνιση όλων των πελατών"
+                            style="height:48px;">🔍</button>
+
+                    <button type="button"
                             class="btn btn-primary"
                             data-bs-toggle="modal"
                             data-bs-target="#addClientModal"
@@ -406,6 +434,8 @@ function updateTaskTitleInput() {
                 </div>
 
                 <div id="client_results"
+                     role="listbox"
+                     aria-label="Λίστα πελατών"
                      style="
                         position:absolute;
                         top:100%;
@@ -598,54 +628,130 @@ function updateTaskTitleInput() {
 
 <script>
 let timer = null;
+let clientListCache = null;
+let clientListRequest = null;
+let showingAllClients = false;
+let allClientsFilter = '';
 
 const input = document.getElementById("client_search");
-const box   = document.getElementById("client_results");
+const box = document.getElementById("client_results");
+const listButton = document.getElementById("client_list_button");
+
+function setClientResultsOpen(isOpen) {
+    box.style.display = isOpen ? "block" : "none";
+    input.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    listButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+}
 
 function hideResults() {
-    box.style.display = "none";
+    showingAllClients = false;
+    setClientResultsOpen(false);
+}
+
+function renderMessage(message, color = "#6b7280") {
+    box.innerHTML = "";
+    const item = document.createElement("div");
+    item.style.cssText = "padding:10px;color:" + color + ";";
+    item.textContent = message;
+    box.appendChild(item);
+    setClientResultsOpen(true);
 }
 
 function renderResults(data) {
     box.innerHTML = "";
 
     if (!Array.isArray(data) || data.length === 0) {
-        box.innerHTML = "<div style='padding:10px;color:#6b7280;'>Δεν βρέθηκαν αποτελέσματα</div>";
-        box.style.display = "block";
+        renderMessage("Δεν βρέθηκαν αποτελέσματα");
         return;
     }
 
     data.forEach(c => {
-        const div = document.createElement("div");
-        div.className = "client-item";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "client-item";
+        button.setAttribute("role", "option");
+        button.setAttribute("aria-selected", "false");
         const name = document.createElement("strong");
         name.textContent = c.name;
-        div.appendChild(name);
+        button.appendChild(name);
 
         if (c.afm) {
-            div.appendChild(document.createElement("br"));
+            button.appendChild(document.createElement("br"));
             const afm = document.createElement("small");
             afm.textContent = c.afm;
-            div.appendChild(afm);
+            button.appendChild(afm);
         }
-        div.onclick = () => {
+        button.addEventListener("click", () => {
             input.value = c.name;
             document.getElementById("client_id").value = c.id;
             hideResults();
-        };
-        box.appendChild(div);
+        });
+        box.appendChild(button);
     });
 
-    box.style.display = "block";
+    setClientResultsOpen(true);
 }
+
+function filterAllClients(query) {
+    if (!Array.isArray(clientListCache)) return;
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const filteredClients = normalizedQuery === ""
+        ? clientListCache
+        : clientListCache.filter(c => `${c.name} ${c.afm || ""}`.toLocaleLowerCase().includes(normalizedQuery));
+    renderResults(filteredClients);
+}
+
+function loadAllClients() {
+    if (clientListRequest) return clientListRequest;
+
+    clientListRequest = fetch("ajax/search_clients.php?all=1")
+        .then(response => {
+            if (!response.ok) throw new Error("Client list request failed");
+            return response.json();
+        })
+        .then(data => {
+            if (!Array.isArray(data)) throw new Error("Invalid client list response");
+            clientListCache = data;
+            return data;
+        })
+        .finally(() => {
+            clientListRequest = null;
+        });
+    return clientListRequest;
+}
+
+listButton.addEventListener("click", () => {
+    if (showingAllClients && box.style.display === "block") {
+        hideResults();
+        return;
+    }
+
+    clearTimeout(timer);
+    showingAllClients = true;
+    allClientsFilter = "";
+    setClientResultsOpen(true);
+    renderMessage("Φόρτωση πελατών...");
+    loadAllClients()
+        .then(() => {
+            if (showingAllClients) filterAllClients(allClientsFilter);
+        })
+        .catch(() => {
+            if (showingAllClients) renderMessage("Σφάλμα φόρτωσης πελατών", "#dc3545");
+        });
+});
 
 input.addEventListener("input", function () {
     const q = this.value.trim();
 
-    // αν αλλάξει το κείμενο, καθάρισε το client_id για να μην μείνει "λάθος" παλιός πελάτης
+    // Αν αλλάξει το κείμενο, καθάρισε το client_id για να μη μείνει λάθος παλιός πελάτης.
     document.getElementById("client_id").value = "";
-
     clearTimeout(timer);
+
+    if (showingAllClients) {
+        allClientsFilter = q;
+        if (Array.isArray(clientListCache)) filterAllClients(q);
+        return;
+    }
 
     if (q.length < 2) {
         hideResults();
@@ -654,18 +760,18 @@ input.addEventListener("input", function () {
 
     timer = setTimeout(() => {
         fetch("ajax/search_clients.php?q=" + encodeURIComponent(q))
-            .then(r => r.json())
+            .then(response => {
+                if (!response.ok) throw new Error("Client search failed");
+                return response.json();
+            })
             .then(renderResults)
-            .catch(() => {
-                box.innerHTML = "<div style='padding:10px;color:#dc3545;'>Σφάλμα αναζήτησης</div>";
-                box.style.display = "block";
-            });
+            .catch(() => renderMessage("Σφάλμα αναζήτησης", "#dc3545"));
     }, 250);
 });
 
-// Κλείσιμο dropdown όταν κάνεις click έξω
+// Κλείσιμο dropdown όταν κάνεις click έξω.
 document.addEventListener("click", function(e) {
-    if (!box.contains(e.target) && e.target !== input) {
+    if (!box.contains(e.target) && e.target !== input && e.target !== listButton) {
         hideResults();
     }
 });
