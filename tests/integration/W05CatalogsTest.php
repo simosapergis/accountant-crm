@@ -94,12 +94,16 @@ final class W05CatalogsTest extends TestCase
 
         self::assertSame(403, $this->request('/payment_methods.php', 'GET', [], $user['cookie'])['status']);
         self::assertSame(403, $this->request('/task_titles.php', 'GET', [], $user['cookie'])['status']);
+        self::assertSame(403, $this->request('/payment_method_form.php', 'GET', [], $user['cookie'])['status']);
+        self::assertSame(403, $this->request('/task_title_form.php', 'GET', [], $user['cookie'])['status']);
         self::assertSame(403, $this->request('/payment_method_form.php', 'POST', [
             'name' => 'W05 Unauthorized Method', 'save_catalog' => '1', '_csrf_token' => $token,
         ], $user['cookie'])['status']);
         self::assertSame(403, $this->request('/task_title_form.php', 'POST', [
             'name' => 'W05 Unauthorized Title', 'save_catalog' => '1', '_csrf_token' => $token,
         ], $user['cookie'])['status']);
+        self::assertSame(0, (int)$this->db->query("SELECT COUNT(*) FROM payment_methods WHERE normalized_name = 'w05 unauthorized method'")->fetch_row()[0]);
+        self::assertSame(0, (int)$this->db->query("SELECT COUNT(*) FROM task_title_templates WHERE normalized_name = 'w05 unauthorized title'")->fetch_row()[0]);
     }
 
     public function testAdminCanCreateAndDeactivatePaymentMethodWithoutDeletingIt(): void

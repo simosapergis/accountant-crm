@@ -129,8 +129,8 @@ function crm_catalog_render_list(string $kind, array $items): void
             <h2><?= htmlspecialchars($config['plural_label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h2>
             <a class="btn btn-primary" href="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>">+ Νέα επιλογή</a>
         </div>
-        <div class="table-wrapper">
-            <table>
+        <div class="table-wrapper catalog-table-wrapper">
+            <table class="catalog-list-table">
                 <thead><tr><th>Ονομασία</th><th>Κατάσταση</th><th>Ενέργειες</th></tr></thead>
                 <tbody>
                 <?php foreach ($items as $item): ?>
@@ -143,6 +143,27 @@ function crm_catalog_render_list(string $kind, array $items): void
                 <?php if ($items === []): ?><tr><td colspan="3">Δεν υπάρχουν επιλογές.</td></tr><?php endif; ?>
                 </tbody>
             </table>
+        </div>
+        <div class="catalog-mobile-list" aria-label="<?= htmlspecialchars($config['plural_label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+            <?php if ($items === []): ?>
+                <p class="catalog-mobile-empty">Δεν υπάρχουν επιλογές ακόμη.</p>
+            <?php else: ?>
+                <?php foreach ($items as $item): ?>
+                    <?php $isActive = (int)$item['is_active'] === 1; ?>
+                    <article class="catalog-mobile-card">
+                        <div class="catalog-mobile-card-top">
+                            <div class="catalog-mobile-name-group">
+                                <span class="catalog-mobile-field-label">Ονομασία</span>
+                                <h3 class="catalog-mobile-card-name"><?= htmlspecialchars((string)$item['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h3>
+                            </div>
+                            <span class="catalog-status-pill <?= $isActive ? 'catalog-status-active' : 'catalog-status-inactive' ?>">
+                                <?= $isActive ? 'Ενεργή' : 'Ανενεργή' ?>
+                            </span>
+                        </div>
+                        <a class="btn btn-secondary" href="<?= htmlspecialchars($config['form_route'], ENT_QUOTES, 'UTF-8') ?>?id=<?= (int)$item['id'] ?>">Επεξεργασία</a>
+                    </article>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
     <?php

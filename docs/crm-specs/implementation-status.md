@@ -1,5 +1,98 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### Recurring-task mobile cards - 18 November 2026
+
+At the user's request, the recurring-task list now renders cards only at widths up to 768 pixels and retains its desktop table.
+Cards include the existing rule details and settings/restart action.
+The regression first failed without mobile markup, then the focused W06 suite passed with 20 tests / 149 assertions and the full isolated PHPUnit suite passed with 163 tests / 1,035 assertions.
+All 9 browser checks passed, including 390/320-pixel card layouts, 1024-pixel desktop table visibility and horizontal overflow checks.
+The browser fixture is seeded only after PHPUnit to preserve the clean recurrence-table precondition.
+The user visually approved the recurring-rule cards on 18 November 2026; the change awaits independent review and G01 remains `NOT_EVALUATED`.
+
+### Mobile catalog card redesign - 18 November 2026
+
+The user rejected the narrow table layout on mobile and requested a card redesign for task titles and payment methods.
+At widths up to 768 pixels, each option now appears as a card with its name, active status and a full-width edit action; empty catalogs display a short empty-state message.
+The desktop table remains in place above the mobile breakpoint.
+The browser regression initially failed because the card list was absent, then passed all 8 checks at 390/320 pixels and 1024 pixels.
+The user visually approved both redesigned catalog pages.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The full guarded PHPUnit suite passed with 162 tests / 1,024 assertions on clean isolated database `crm_test_g01_mobile_catalog_20261118`, including the W05 catalog tests.
+The browser suite passed all 8 checks against the clean test server, including both mobile catalog pages at 390 and 320 pixels and desktop behavior at 1024 pixels.
+Independent review of exact commit `7f640e0596c1e53d18e7fc7e84e287e8d9067f7e` supports the catalog change and found no security or functional regression.
+That review was scoped to the catalog implementation; the full G01 checklist review and any remaining required human layout acceptance are still open.
+G01 remains `NOT_EVALUATED`.
+
+The independent G01 review checked exact HEAD `d7476c500ead6e5802228a229b789eea2e381ca8`, found no open critical/high issue and found the local route/security and existing-flow evidence sufficient.
+It identified AT-50 human inspection of the recurring-task empty state and compact navigation/header as the remaining gate item.
+The user has approved the catalog layouts only; G01 remains `NOT_EVALUATED` until the other key layouts are accepted and the exact-commit PASS is recorded.
+
+### Compact navigation drawer alignment - 18 November 2026
+
+The user reported that the compact navigation list container was wider than the header.
+At 390 pixels, the browser regression reproduced a 20-pixel mismatch: the header spanned x=10..380 and the drawer x=0..390.
+The drawer now uses the header as its positioning container, so its width and horizontal edges match the header.
+The E2E suite passed all 8 checks, including drawer/header alignment at 390 and 1280 pixels, no mobile horizontal overflow, and desktop navigation geometry at 1600 pixels.
+The earlier guarded PHPUnit run passed with 162 tests / 1,024 assertions.
+The final repeat encountered a MariaDB connection refusal during W08 export tests: 162 tests ran with 4 connection errors and 2 downstream failures after the database stopped accepting connections.
+The E2E result and syntax checks passed; the interrupted database run needs a healthy isolated MariaDB repeat for a fresh full-suite result.
+PHP lint, Node syntax validation and CRLF-aware `git diff --check` passed.
+The independent code review is recorded below; G01 remains `NOT_EVALUATED` pending a fresh green full-suite run and the required human layout inspection.
+
+Independent reviewer checked exact code commit `63fc9a7a603c90c54f7c00ac989327b715e7b50d`, confirmed the drawer bounds and E2E coverage, and found no security or functional regression.
+The latest full PHPUnit repeat lost its MariaDB connection in W08 exports, so the earlier 162-test pass is not a fresh green result for this follow-up.
+A fresh full-suite run and human visual acceptance remain open; G01 is still `NOT_EVALUATED`.
+
+### Authenticated desktop header fix - 18 November 2026
+
+The user authorized fixing the separately observed clipping of the signed-in username in the desktop navigation.
+The new browser regression reproduced the issue before the CSS update: at a 1280-pixel viewport, the desktop navigation overflowed instead of switching to the compact menu.
+The header now accounts for its horizontal padding, uses a compact hamburger navigation through 1400 pixels, and allows the desktop account block to wrap without clipping.
+The browser regression verifies no horizontal overflow, account/logout access through the compact menu, and the full desktop account block within a 1600-pixel viewport.
+The E2E suite passed all 8 checks, and the full guarded PHP suite passed with 162 tests / 1,024 assertions.
+Manual browser inspection at 1280 pixels showed the hamburger menu and full account name in its drawer; the 1600-pixel geometry is checked by Playwright.
+Independent review of exact commit `251a35c1251c4307f81afe6b6a9300fd9db5c1e7` found no new critical/high security issue and confirmed the responsive header and recurrence test setup.
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts.
+
+### G01 re-review follow-up - 18 November 2026
+
+The independent review of `51f2100ad85a4166c145a2cb5b989d2ebc87c955` confirmed the empty-state fix and found no new critical/high security issue.
+It flagged that recurrence tests require a clean schema; that precondition is now explicit in the test and `tests/README.md`.
+After this clarification, focused `W06RecurringTasksTest` passes with 19 tests / 138 assertions and the full guarded suite passes with 162 tests / 1,024 assertions.
+The reviewer also noted the authenticated username was clipped in the desktop header; this was subsequently fixed with user authorization as recorded above.
+The final review of that fix is recorded in [W02 route review](evidence/w02-route-review.md).
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts.
+
+### Recurring-task empty-state fix - 18 November 2026
+
+The user authorized fixing the documented blank panel after previously choosing to leave it unchanged.
+Reproduced the empty recurring list in the authenticated browser at `/crm/recurring_tasks.php` with zero rules in the guarded isolated DB.
+Added `W06RecurringTasksTest::testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule`; its pre-fix HTTP run failed because the empty page had no guidance or create action.
+The page now shows an accessible empty-state message explaining that a new task can enable monthly recurrence, plus a `Δημιουργία εργασίας` action leading to the existing task form.
+The non-empty list continues to render rule rows, covered by the existing recurrence HTTP test.
+Focused `W06RecurringTasksTest`: PASS, 19 tests / 138 assertions; full guarded PHPUnit suite: PASS, 162 tests / 1,024 assertions.
+Browser verification confirmed the empty-state layout and that its action opens the new-task form with the recurrence control.
+The desktop screenshot also showed the authenticated username clipped at the right edge of the navigation; this was fixed with user authorization in commit `251a35c`.
+G01 remains `NOT_EVALUATED` pending human inspection of the key layouts; no production or hosting access occurred.
+
+### G01 follow-up review - 18 November 2026
+
+Continued from commit `393ac41` on `codex/crm-remaining-tasks`.
+Extended `W05CatalogsTest::testUserCannotViewOrPostToCatalogManagement` to cover unauthorized GET access to both catalog form routes and to assert rejected catalog writes create no rows.
+Added `W06RecurringTasksTest::testAdminCanEditSharedTaskAndCreateMonthlyRule` to verify ROL-02 for the admin role over real authenticated HTTP.
+The first test attempt was blocked by the absent loopback server; a second attempt exposed the missing test-only HMAC key in the temporary server setup.
+After starting the loopback server on `127.0.0.1:18096` with the verified isolated MariaDB target and a fictional HMAC key, the focused suite passed: `W05CatalogsTest` — 7 tests / 62 assertions.
+The route evidence now maps anonymous, role, CSRF, diary ownership, catalog, recurrence, import/export and deletion regressions to their integration suites.
+Extended source review across application PHP query, output and file access sites found no new concrete security defect; its limits and exact coverage are recorded in [W02 route review](evidence/w02-route-review.md).
+The full suite passed on `crm_test_w08_closeout_20261118` after setting the required test-only environment: 161 tests / 1,014 assertions.
+Representative mobile browser inspection at `/crm/` covered login, dashboard/navigation, task list/form, client list and diary; the hostile client fixture rendered as text.
+The recurring-task empty screen has an unexplained blank rounded panel; recorded as a visible UI issue for review, with no change made.
+Independent read-only review of exact commit `df84d7bd56b1b039be62f73a7861985e9bbc780f` found no new critical or high security issue and confirmed the route count, role regression and test evidence.
+The reviewer did not approve G01 because the recurring-task empty screen still has an unexplained blank panel.
+The user chose to leave the UI unchanged and keep the issue documented.
+G01 remains `NOT_EVALUATED`; the observed issue prevents a gate pass under the independent review criteria.
+No deployment or production access occurred.
+
 ### G01 baseline evaluation - 18 November 2026
 
 G01 was evaluated at `c9652a7` with an independent read-only review and the full isolated native MariaDB suite.

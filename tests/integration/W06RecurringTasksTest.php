@@ -12,6 +12,9 @@ final class W06RecurringTasksTest extends TestCase
     private array $taskIds = [];
     private const CLIENT_ID = 910030;
     private const SOURCE_TASK_ID = 910030;
+    private const ADMIN_ID = 910034;
+    private const ADMIN_USERNAME = 'w06-fictional-admin';
+    private const ADMIN_PASSWORD = 'W06-Fictional-Admin-Password';
 
     protected function setUp(): void
     {
@@ -27,6 +30,18 @@ final class W06RecurringTasksTest extends TestCase
         $task = $this->db->prepare('INSERT INTO tasks (id,task_date,title,client_id,status,fee,collected) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE task_date=VALUES(task_date),title=VALUES(title),client_id=VALUES(client_id),status=VALUES(status),fee=VALUES(fee),collected=VALUES(collected)');
         $task->bind_param('ississs', $taskId, $date, $title, $id, $status, $fee, $collected);
         $task->execute();
+
+        $adminId = self::ADMIN_ID;
+        $adminUsername = self::ADMIN_USERNAME;
+        $adminPassword = password_hash(self::ADMIN_PASSWORD, PASSWORD_DEFAULT);
+        $adminFullname = 'W06 Fictional Administrator';
+        $adminRole = 'admin';
+        $admin = $this->db->prepare(
+            'INSERT INTO users (id,username,password,fullname,role) VALUES (?,?,?,?,?) ' .
+            'ON DUPLICATE KEY UPDATE password=VALUES(password),fullname=VALUES(fullname),role=VALUES(role)'
+        );
+        $admin->bind_param('issss', $adminId, $adminUsername, $adminPassword, $adminFullname, $adminRole);
+        $admin->execute();
     }
 
     protected function tearDown(): void
@@ -41,6 +56,7 @@ final class W06RecurringTasksTest extends TestCase
         $this->db->query("DELETE FROM tasks WHERE client_id=910030 AND title LIKE 'W06 %'");
         $this->db->query('DELETE FROM tasks WHERE id=910030');
         $this->db->query('DELETE FROM clients WHERE id=910030');
+        $this->db->query('DELETE FROM users WHERE id=' . self::ADMIN_ID . ' AND username="' . self::ADMIN_USERNAME . '"');
         $this->db->close();
     }
 
@@ -62,6 +78,38 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame(0, $second['created']);
         self::assertSame(3, $second['skipped']);
         self::assertSame(3, (int)$this->db->query('SELECT COUNT(*) FROM recurrence_occurrences WHERE rule_id=' . $ruleId)->fetch_row()[0]);
+    }
+
+    public function testEmptyRecurringTaskListExplainsHowToCreateTheFirstRule(): void
+    {
+        $ruleCount = (int)$this->db->query('SELECT COUNT(*) FROM recurring_task_rules')->fetch_row()[0];
+        self::assertSame(0, $ruleCount, 'Run recurrence HTTP tests against a clean isolated schema with no pre-existing rules.');
+
+        $session = $this->login();
+        $response = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('Δεν υπάρχουν ακόμη επαναλαμβανόμενες εργασίες</h3>', $response['body']);
+        self::assertStringContainsString('Για να δημιουργήσετε την πρώτη, προσθέστε εργασία και ενεργοποιήστε τη μηνιαία επανάληψη στη φόρμα.', $response['body']);
+        self::assertStringContainsString('href="task_form.php"', $response['body']);
+        self::assertStringContainsString('Δημιουργία εργασίας', $response['body']);
+    }
+
+    public function testRecurringTaskListRendersMobileCardsAndKeepsDesktopTable(): void
+    {
+        $ruleId = $this->insertRule('2026-12-01', 15, '125.50', 910045, 'W06 Mobile Card Filing');
+        $session = $this->login();
+        $response = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('class="recurring-mobile-list"', $response['body']);
+        self::assertStringContainsString('class="recurring-mobile-card"', $response['body']);
+        self::assertStringContainsString('W06 Fictional Recurrence Client', $response['body']);
+        self::assertStringContainsString('W06 Mobile Card Filing', $response['body']);
+        self::assertStringContainsString('125,50', $response['body']);
+        self::assertStringContainsString('href="recurring_task_form.php?id=' . $ruleId . '"', $response['body']);
+        self::assertStringContainsString('<table class="recurring-table">', $response['body']);
+        self::assertStringContainsString('<th>Πελάτης</th>', $response['body']);
     }
 
     public function testDifferentRulesBecomeDueOnTheirOwnDays(): void
@@ -193,6 +241,37 @@ final class W06RecurringTasksTest extends TestCase
 
         self::assertSame(302, $this->request('/recurring_task_form.php?task_id=910030', 'POST', $payload, $session['cookie'])['status']);
         self::assertSame(1, (int)$this->db->query('SELECT COUNT(*) FROM recurring_task_rules WHERE source_task_id=910030 AND state="active"')->fetch_row()[0]);
+        $list = $this->request('/recurring_tasks.php', 'GET', [], $session['cookie']);
+        self::assertStringContainsString('W06 Fictional Recurrence Client', $list['body']);
+        self::assertStringNotContainsString('Δεν υπάρχουν ακόμη επαναλαμβανόμενες εργασίες', $list['body']);
+    }
+
+    public function testAdminCanEditSharedTaskAndCreateMonthlyRule(): void
+    {
+        $session = $this->login(self::ADMIN_USERNAME, self::ADMIN_PASSWORD);
+        $taskForm = $this->request('/task_form.php?id=910030', 'GET', [], $session['cookie']);
+        self::assertSame(200, $taskForm['status']);
+        $taskSaved = $this->request('/task_form.php?id=910030', 'POST', [
+            'id' => '910030', 'task_date' => '2026-11-18', 'title' => 'W06 Admin Edited Shared Task',
+            'client_id' => (string)self::CLIENT_ID, 'partner_id' => '', 'status' => 'Σε εξέλιξη',
+            'fee' => '100.00', 'collected' => '0', 'payment_method_id' => '', 'notes' => 'fictional admin role regression',
+            'save_task' => '1', '_csrf_token' => $this->csrfToken($taskForm['body']),
+        ], $session['cookie']);
+        self::assertSame(302, $taskSaved['status']);
+        self::assertSame('W06 Admin Edited Shared Task', $this->db->query('SELECT title FROM tasks WHERE id=910030')->fetch_row()[0]);
+
+        $ruleForm = $this->request('/recurring_task_form.php?task_id=910030', 'GET', [], $session['cookie']);
+        self::assertSame(200, $ruleForm['status']);
+        $nextMonth = crm_recurrence_month_add(substr(crm_recurrence_today(), 0, 7) . '-01', 1);
+        $ruleSaved = $this->request('/recurring_task_form.php?task_id=910030', 'POST', [
+            'day_of_month' => '15', 'start_month' => substr($nextMonth, 0, 7), 'fee' => '101,25',
+            'save_new_rule' => '1', '_csrf_token' => $this->csrfToken($ruleForm['body']),
+        ], $session['cookie']);
+        self::assertSame(302, $ruleSaved['status']);
+        $rule = $this->db->query('SELECT id,fee FROM recurring_task_rules WHERE source_task_id=910030 AND state="active"')->fetch_assoc();
+        self::assertNotNull($rule);
+        $this->ruleIds[] = (int)$rule['id'];
+        self::assertSame('101.25', $rule['fee']);
     }
 
     public function testNewTaskCanStartMonthlyRecurrenceInTheSameSubmission(): void
@@ -349,11 +428,11 @@ final class W06RecurringTasksTest extends TestCase
         return $id;
     }
 
-    private function login(): array
+    private function login(string $username = 'w01-fake-user', string $password = 'W01-Fictional-Password-2026'): array
     {
         $page = $this->request('/login.php');
         $token = $this->csrfToken($page['body']);
-        $response = $this->request('/login.php', 'POST', ['username' => 'w01-fake-user', 'password' => 'W01-Fictional-Password-2026', '_csrf_token' => $token], $page['cookie']);
+        $response = $this->request('/login.php', 'POST', ['username' => $username, 'password' => $password, '_csrf_token' => $token], $page['cookie']);
         self::assertSame(302, $response['status']);
         return ['cookie' => $response['cookie']];
     }

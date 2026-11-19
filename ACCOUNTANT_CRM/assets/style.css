@@ -87,6 +87,41 @@ body {
     margin-bottom: 20px;
 }
 
+.empty-state {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.10);
+    margin: 18px 0 20px;
+    padding: 32px 24px;
+    text-align: center;
+}
+
+.empty-state h3 {
+    margin: 0 0 10px;
+    font-size: 19px;
+}
+
+.empty-state p {
+    color: #555;
+    line-height: 1.6;
+    margin: 0 auto 20px;
+    max-width: 560px;
+}
+
+.empty-state .btn {
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .empty-state {
+        padding: 24px 18px;
+    }
+
+    .empty-state .btn {
+        width: 100%;
+    }
+}
+
 /* ----------------------------------------------------
    DASHBOARD CARDS (ΠΙΝΑΚΕΣ ΣΥΓΚΕΝΤΡΩΤΙΚΩΝ)
 ---------------------------------------------------- */
@@ -1127,7 +1162,7 @@ textarea {
 ============================================================ */
 @media (max-width: 768px) {
 
-    /* Κρύβουμε τον πίνακα */
+    /* Keep the legacy mobile-card view for pages that provide card markup. */
     table {
         display: none !important;
     }
@@ -1248,4 +1283,84 @@ select[size="1"] {
         -webkit-appearance: auto;
         background-image: none;
     }
+}
+
+.catalog-mobile-list { display: none; }
+
+.catalog-mobile-card {
+    display: grid;
+    gap: 14px;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e5eaf1;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+
+.catalog-mobile-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.catalog-mobile-name-group { flex: 1; min-width: 0; }
+.catalog-mobile-field-label { display: block; margin-bottom: 4px; color: #64748b; font-size: 12px; font-weight: 600; }
+.catalog-mobile-card-name { font-size: 16px; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+
+.catalog-status-pill {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 28px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.catalog-status-active { background: #dcfce7; color: #166534; }
+.catalog-status-inactive { background: #e2e8f0; color: #475569; }
+.catalog-mobile-card .btn { display: flex; align-items: center; justify-content: center; min-height: 44px; }
+.catalog-mobile-empty { padding: 22px 18px; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fff; color: #64748b; text-align: center; line-height: 1.5; }
+
+.recurring-mobile-list { display: none; }
+.recurring-mobile-card {
+    display: grid;
+    gap: 14px;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #e5eaf1;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+}
+.recurring-mobile-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.recurring-mobile-name-group { flex: 1; min-width: 0; }
+.recurring-mobile-field-label { display: block; margin-bottom: 4px; color: #64748b; font-size: 12px; font-weight: 600; }
+.recurring-mobile-client { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.recurring-mobile-title { margin: 0; font-size: 17px; line-height: 1.4; overflow-wrap: anywhere; }
+.recurring-status-pill { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 28px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.recurring-status-active { background: #dcfce7; color: #166534; }
+.recurring-status-stopped { background: #e2e8f0; color: #475569; }
+.recurring-mobile-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.recurring-mobile-details div { min-width: 0; }
+.recurring-mobile-details dt { margin-bottom: 3px; color: #64748b; font-size: 12px; font-weight: 600; }
+.recurring-mobile-details dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.recurring-mobile-card .btn { display: flex; align-items: center; justify-content: center; min-height: 44px; }
+
+@media (max-width: 768px) {
+    .catalog-table-wrapper { display: none; }
+    .catalog-mobile-list { display: grid; gap: 12px; }
+    .recurring-table-wrapper { display: none; }
+    .recurring-mobile-list { display: grid; gap: 12px; }
+}
+
+@media (max-width: 480px) {
+    .catalog-list-heading { align-items: stretch; }
+    .catalog-list-heading h2 { font-size: 22px; }
+    .catalog-list-heading .btn { width: 100%; min-height: 44px; margin-left: 0; justify-content: center; }
 }
