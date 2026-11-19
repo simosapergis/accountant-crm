@@ -1,5 +1,5 @@
 <?php 
-if (!isset($pageTitle)) $pageTitle = "Accountant CRM"; 
+if (!isset($pageTitle)) $pageTitle = "ELMICO CRM";
 ?>
 <!DOCTYPE html>
 <html lang="el">
@@ -176,7 +176,7 @@ if (!isset($pageTitle)) $pageTitle = "Accountant CRM";
 <header>
     <div class="top-menu">
 
-        <div class="menu-logo">Accountant CRM</div>
+        <div class="menu-logo">ELMICO CRM</div>
 
         <!-- DESKTOP MENU -->
         <nav class="menu-links">

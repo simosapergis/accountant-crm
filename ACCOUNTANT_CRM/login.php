@@ -67,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html lang="el">
 <head>
 <meta charset="UTF-8">
-<title>Σύνδεση</title>
+<title>ELMICO CRM — Σύνδεση</title>
 <link rel="stylesheet" href="assets/style.css">
 
 <style>
@@ -117,7 +117,8 @@ button:hover {
 <body>
 
 <div class="login-box">
-    <h2>Σύνδεση</h2>
+    <h2>ELMICO CRM</h2>
+    <p>Σύνδεση</p>
 
     <?php if ($error): ?>
         <div class="error"><?= $error ?></div>

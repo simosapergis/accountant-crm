@@ -60,6 +60,11 @@ if ($id) {
         if (!isset($task['client_name'])) $task['client_name'] = '';
     }
 }
+$titleTemplateResult = $mysqli->query("SELECT id, name FROM task_title_templates WHERE is_active = 1 ORDER BY name");
+$titleTemplateOptions = [];
+while ($titleTemplate = $titleTemplateResult->fetch_assoc()) {
+    $titleTemplateOptions[] = $titleTemplate;
+}
 $originalPaymentMethodId = isset($task['payment_method_id']) ? (int)$task['payment_method_id'] : 0;
 $originalPaymentMethodLabel = (string)($task['payment_method_label'] ?? '');
 $minimumRecurrenceMonth = crm_recurrence_month_add(substr(crm_recurrence_today(), 0, 7) . '-01', 1);
@@ -95,8 +100,35 @@ if ($id && isset($task['id'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
 
     $task_date  = $_POST['task_date'] ?? date('Y-m-d');
-    $titleInput = $_POST['title'] ?? '';
-    $title = is_string($titleInput) ? trim($titleInput) : '';
+    $titleSelectionInput = $_POST['title_selection'] ?? '';
+    $titleSelection = is_string($titleSelectionInput) ? $titleSelectionInput : '';
+    $titleInput = '';
+    $title = '';
+    if ($titleSelection === 'custom') {
+        $customTitleInput = $_POST['custom_title'] ?? '';
+        $titleInput = is_string($customTitleInput) ? $customTitleInput : null;
+        $title = is_string($titleInput) ? trim($titleInput) : '';
+    } elseif ($titleSelection !== '') {
+        if (preg_match('/^template:(\d+)$/D', $titleSelection, $templateMatch) !== 1) {
+            $formError = 'Επιλέξτε έναν έγκυρο τίτλο εργασίας.';
+        } else {
+            $templateId = (int)$templateMatch[1];
+            $templateStmt = $mysqli->prepare('SELECT name, is_active FROM task_title_templates WHERE id = ?');
+            $templateStmt->bind_param('i', $templateId);
+            $templateStmt->execute();
+            $selectedTemplate = $templateStmt->get_result()->fetch_assoc();
+            if ($selectedTemplate === null) {
+                $titleInput = null;
+                $formError = 'Ο επιλεγμένος τίτλος δεν είναι πλέον διαθέσιμος.';
+            } else {
+                $titleInput = (string)$selectedTemplate['name'];
+                $title = trim($titleInput);
+                if ((int)$selectedTemplate['is_active'] !== 1) {
+                    $formError = 'Ο επιλεγμένος τίτλος έχει απενεργοποιηθεί. Επιλέξτε άλλον τίτλο ή χρησιμοποιήστε «Άλλος τίτλος».';
+                }
+            }
+        }
+    }
     $client_id  = (int)($_POST['client_id'] ?? 0);
     $partner_id = ($_POST['partner_id'] ?? '') !== '' ? (int)$_POST['partner_id'] : null;
     $status     = $_POST['status'] ?? 'Σε εξέλιξη';
@@ -247,7 +279,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_task'])) {
    ΛΙΣΤΑ ΣΥΝΕΡΓΑΤΩΝ
 ----------------------------------------------------------- */
 $partners = $mysqli->query("SELECT id, fullname FROM partners ORDER BY fullname");
-$titleTemplates = $mysqli->query("SELECT id, name FROM task_title_templates WHERE is_active = 1 ORDER BY name");
 $paymentMethods = $mysqli->query("SELECT id, name FROM payment_methods WHERE is_active = 1 ORDER BY name");
 $activePaymentMethods = [];
 while ($method = $paymentMethods->fetch_assoc()) {
@@ -288,6 +319,15 @@ function addClientToDropdown(id, name) {
     const modal = bootstrap.Modal.getInstance(document.getElementById("addClientModal"));
     if (modal) modal.hide();
 }
+
+function updateTaskTitleInput() {
+    const selector = document.getElementById("title_selection");
+    const customGroup = document.getElementById("custom_title_group");
+    const customInput = document.getElementById("custom_title");
+    const useCustomTitle = selector.value === "custom";
+    customGroup.hidden = !useCustomTitle;
+    customInput.disabled = !useCustomTitle;
+}
 </script>
 
 <!-- ============================================
@@ -309,15 +349,33 @@ function addClientToDropdown(id, name) {
             </div>
 
             <div class="form-group">
-                <label>Τίτλος</label>
-                <input type="text" name="title" style="height:48px;"
-                       list="task-title-options" maxlength="255"
-                       value="<?= htmlspecialchars((string)$task['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
-                <datalist id="task-title-options">
-                    <?php while ($titleTemplate = $titleTemplates->fetch_assoc()): ?>
-                        <option value="<?= htmlspecialchars((string)$titleTemplate['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
-                    <?php endwhile; ?>
-                </datalist>
+                <label for="title_selection">Τίτλος</label>
+                <?php
+                    $currentTaskTitle = (string)($task['title'] ?? '');
+                    $selectedTitleTemplateId = null;
+                    foreach ($titleTemplateOptions as $titleTemplate) {
+                        if ((string)$titleTemplate['name'] === $currentTaskTitle) {
+                            $selectedTitleTemplateId = (int)$titleTemplate['id'];
+                            break;
+                        }
+                    }
+                    $customTitleSelected = $currentTaskTitle !== '' && $selectedTitleTemplateId === null;
+                ?>
+                <select id="title_selection" name="title_selection" style="height:48px;" onchange="updateTaskTitleInput()">
+                    <option value="" <?= $currentTaskTitle === '' ? 'selected' : '' ?>>— Επιλέξτε τίτλο —</option>
+                    <?php foreach ($titleTemplateOptions as $titleTemplate): ?>
+                        <option value="template:<?= (int)$titleTemplate['id'] ?>" <?= $selectedTitleTemplateId === (int)$titleTemplate['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars((string)$titleTemplate['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <option value="custom" <?= $customTitleSelected ? 'selected' : '' ?>>Άλλος τίτλος…</option>
+                </select>
+                <div id="custom_title_group" <?= $customTitleSelected ? '' : 'hidden' ?>>
+                    <label for="custom_title">Ελεύθερος τίτλος</label>
+                    <input type="text" id="custom_title" name="custom_title" maxlength="255"
+                           value="<?= $customTitleSelected ? htmlspecialchars($currentTaskTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '' ?>"
+                           <?= $customTitleSelected ? '' : 'disabled' ?> style="height:48px;">
+                </div>
             </div>
         </div>
 
