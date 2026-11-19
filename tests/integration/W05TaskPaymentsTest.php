@@ -153,6 +153,7 @@ final class W05TaskPaymentsTest extends TestCase
         $this->db->query("UPDATE tasks SET collected='5.00',payment_method_id=910020,payment_method_label='W05 Card',partner_id=910001 WHERE id=910020");
         $session = $this->login();
         $list = $this->request('/tasks.php', 'GET', [], $session['cookie']);
+        $form = $this->request('/task_form.php?id=910020', 'GET', [], $session['cookie']);
         $excel = $this->request('/exports/export_tasks_excel.php', 'GET', [], $session['cookie']);
         $pdf = $this->request('/exports/export_tasks_pdf.php', 'GET', [], $session['cookie']);
         $partner = $this->request('/analysis_partners.php?id=910001', 'GET', [], $session['cookie']);
@@ -160,10 +161,15 @@ final class W05TaskPaymentsTest extends TestCase
         $partnerExcel = $this->request('/exports/export_analysis_partners_excel.php?partner_id=910001', 'GET', [], $session['cookie']);
         $partnerPdf = $this->request('/exports/export_analysis_partners_pdf.php?partner_id=910001', 'GET', [], $session['cookie']);
 
-        foreach ([$list, $excel, $pdf, $partner, $partnerTasks, $partnerExcel, $partnerPdf] as $response) {
+        foreach ([$list, $form, $excel, $pdf, $partner, $partnerTasks, $partnerExcel, $partnerPdf] as $response) {
             self::assertSame(200, $response['status']);
             self::assertStringContainsString('W05 Card', $response['body']);
         }
+        self::assertStringContainsString('<span><strong>Μέσο είσπραξης:</strong> W05 Card</span>', $list['body'], 'The task mobile card must render the stored payment-method snapshot.');
+        $stored = $this->db->query('SELECT COUNT(*) AS task_count, SUM(fee) AS fees, SUM(collected) AS collections FROM tasks WHERE id=910020')->fetch_assoc();
+        self::assertSame('1', (string)$stored['task_count']);
+        self::assertSame('25.00', (string)$stored['fees']);
+        self::assertSame('5.00', (string)$stored['collections']);
     }
 
     private function putTask(string $title, string $fee, string $collected, ?int $methodId, ?string $label): void

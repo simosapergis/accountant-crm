@@ -212,6 +212,41 @@ final class W06RecurringTasksTest extends TestCase
         self::assertSame(1, crm_recurrence_run($this->db, new DateTimeImmutable('2027-04-30', new DateTimeZone('Europe/Athens')))['created']);
     }
 
+    public function testEditingOneGeneratedTaskDoesNotChangeItsRecurrenceRuleOrFutureTasks(): void
+    {
+        $ruleId = $this->insertRule('2027-03-01', 15, '100.00');
+        self::assertSame(1, crm_recurrence_run($this->db, new DateTimeImmutable('2027-03-31', new DateTimeZone('Europe/Athens')))['created']);
+        $generatedTaskId = (int)$this->db->query('SELECT task_id FROM recurrence_occurrences WHERE rule_id=' . $ruleId . ' AND period_month="2027-03-01"')->fetch_row()[0];
+
+        $session = $this->login();
+        $form = $this->request('/task_form.php?id=' . $generatedTaskId, 'GET', [], $session['cookie']);
+        self::assertSame(200, $form['status']);
+        $updated = $this->request('/task_form.php?id=' . $generatedTaskId, 'POST', [
+            'id' => (string)$generatedTaskId,
+            'task_date' => '2027-03-15',
+            'title' => 'W06 Edited One Generated Task',
+            'client_id' => (string)self::CLIENT_ID,
+            'partner_id' => '',
+            'status' => 'Ολοκληρωμένη',
+            'fee' => '80.00',
+            'collected' => '0.00',
+            'payment_method_id' => '',
+            'notes' => 'Fictional single-task edit',
+            'save_task' => '1',
+            '_csrf_token' => $this->csrfToken($form['body']),
+        ], $session['cookie']);
+
+        self::assertSame(302, $updated['status']);
+        $editedTask = $this->db->query('SELECT title,fee,status FROM tasks WHERE id=' . $generatedTaskId)->fetch_assoc();
+        self::assertSame(['title' => 'W06 Edited One Generated Task', 'fee' => '80.00', 'status' => 'Ολοκληρωμένη'], $editedTask);
+        $rule = $this->db->query('SELECT day_of_month,fee,row_version FROM recurring_task_rules WHERE id=' . $ruleId)->fetch_assoc();
+        self::assertSame(['day_of_month' => '15', 'fee' => '100.00', 'row_version' => '1'], $rule);
+
+        self::assertSame(1, crm_recurrence_run($this->db, new DateTimeImmutable('2027-04-30', new DateTimeZone('Europe/Athens')))['created']);
+        $future = $this->db->query('SELECT t.title,t.fee FROM recurrence_occurrences o JOIN tasks t ON t.id=o.task_id WHERE o.rule_id=' . $ruleId . ' AND o.period_month="2027-04-01"')->fetch_assoc();
+        self::assertSame(['title' => 'W06 Monthly Filing', 'fee' => '100.00'], $future);
+    }
+
     public function testDeletingSourceTaskDoesNotDeleteRuleOrItsFutureWork(): void
     {
         $ruleId = $this->insertRule('2027-03-01', 20, '80.00');

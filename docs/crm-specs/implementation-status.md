@@ -8,6 +8,33 @@ TDD RED: το αρχικό schema assertion απέτυχε με `users.fullname`
 Για να εκτελεστεί το W03 harness στο Compose, το test image περιλαμβάνει πλέον το root `accountant_crm.sql`, οι test admin μεταβλητές περνούν από το Compose και το test project χρησιμοποιεί τοπικά ports `18081/18444` ώστε να συνυπάρχει με άλλα projects. Το test MariaDB root επιτρέπεται από το δίκτυο Compose μόνο στο disposable W01 project.
 Δεν έγινε καμία αλλαγή στο Otenet/Plesk. Το G01 και τα υπόλοιπα εκκρεμή acceptance criteria παραμένουν ως έχουν.
 
+### G01 exact-commit re-evaluation - 18 November 2026
+
+Current branch `codex/crm-remaining-tasks` has `HEAD` at `bc1406c064e1fa8829dee74da5aa86409c6f3793`, matching `origin/codex/crm-remaining-tasks`; the worktree was clean before this review, and only the three review-evidence documents are now modified.
+The commit adds responsive recurrence cards and a post-PHPUnit layout fixture.
+Read-only review found the mobile and desktop markup preserves the existing escaping, fixed status classes and integer rule IDs.
+The fixture verifies the isolated test database and refuses the root database account, uses prepared statements, creates fictional data only, and is idempotent; it does not delete data.
+The commit's focused W06, full guarded PHPUnit and 9 browser-check results are recorded below and in [G01 evaluation evidence](evidence/g01-evaluation.md).
+
+The G01 checklist in `tasks.md` was reconciled against the later W02 closeout, route review and W08 closeout.
+Earlier checkpoint notes that said the role/CSRF route matrices, broad SQL/output review, CLI account flow, Dompdf and spreadsheet opening were still outstanding are superseded by those later evidence records.
+The user confirmed human acceptance of the recurring-task empty state and compact navigation/header for this exact commit.
+The [G01 evaluation](evidence/g01-evaluation.md) now records `PASS` for the local corrected baseline; no production or hosting checks were performed.
+
+### W09 acceptance execution - 19 November 2026
+
+Started W09 against HEAD `a2e805e2581542652ff7a007f9f980ad1f3c00c3` plus the current local changes; the code/evidence tree has not been committed.
+The complete AT disposition and command results are in [W09 acceptance evidence](evidence/w09-acceptance.md).
+Added the specified `X-Robots-Tag: noindex, nofollow` response header after observing the AT-48 HTTP regression fail on `/login.php`.
+Added explicit AT-26 mobile payment snapshot assertions and an AT-32 authenticated generated-task independence regression.
+AT-49 now passes locally across task list/form, both catalog lists/forms, recurring list and recurrence settings at 320, 375, 390, 768, 1024, 1280 and 1440 pixels.
+Browser checks cover overflow, responsive breakpoints, every visible focusable control, visible focus indicators and clipped visible text.
+The keyboard audit found and fixed missing focus indicators on task form fields when Bootstrap is loaded after the global stylesheet.
+Final guarded full suite passed with 165 tests / 1,056 assertions; the extended browser suite passed 12 checks; all 80 PHP files passed syntax checks; Node syntax, Composer platform, Composer audit and `git diff --check` passed.
+The new fictional admin completed the local AT-52 walkthrough through `/crm/`, opening both catalogs and creating a recurrence rule from a fictional task.
+A guarded December 2026 scheduler dry-run reported one due occurrence and wrote no occurrence row; the exact temporary rule/version were removed from the isolated DB.
+W09 remains `IN_PROGRESS`: AT-43, AT-44, AT-45, AT-48, AT-50 and AT-51 have partial or unrun work as itemized in the evidence.
+
 ### Recurring-task mobile cards - 18 November 2026
 
 At the user's request, the recurring-task list now renders cards only at widths up to 768 pixels and retains its desktop table.
@@ -15,7 +42,7 @@ Cards include the existing rule details and settings/restart action.
 The regression first failed without mobile markup, then the focused W06 suite passed with 20 tests / 149 assertions and the full isolated PHPUnit suite passed with 163 tests / 1,035 assertions.
 All 9 browser checks passed, including 390/320-pixel card layouts, 1024-pixel desktop table visibility and horizontal overflow checks.
 The browser fixture is seeded only after PHPUnit to preserve the clean recurrence-table precondition.
-The user visually approved the recurring-rule cards on 18 November 2026; the change awaits independent review and G01 remains `NOT_EVALUATED`.
+The user visually approved the recurring-rule cards on 18 November 2026; the exact-commit read-only review is recorded above and G01 remains `NOT_EVALUATED` pending other human layout acceptance.
 
 ### Mobile catalog card redesign - 18 November 2026
 
@@ -307,18 +334,17 @@ Browser E2E `CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google C
 | W03 | DONE_LOCAL | AT-45/46 local checks pass for isolated legacy upgrade, schema/data preservation, idempotency and CLI failure handling. Plesk activation and WordPress database isolation remain hosting verification. |
 | W04 | DONE_LOCAL | AT-10/11/12 pass locally; see [W04 evidence](evidence/w04-throttle.md). Private key and cleanup scheduling require deployment configuration. |
 | W08 | DONE_LOCAL | AT-05/18/47 local checks pass; see [W08 evidence](evidence/w08-closeout.md). |
-| G01 | NOT_EVALUATED | Απαιτούνται τα συνολικά checks που ορίζει το `tasks.md`. |
+| G01 | PASS_LOCAL | Exact commit `bc1406c064e1fa8829dee74da5aa86409c6f3793`; see [G01 evaluation](evidence/g01-evaluation.md). This is not production sign-off. |
 | W05 | IMPLEMENTED_LOCAL | Local implementation and focused tests cover AT-19 to AT-28; see [W05 evidence](evidence/w05-catalogs-payments.md). Keyboard/mobile visual review and final sign-off remain open. |
 | W06 | IMPLEMENTED_LOCAL | Rule activation, effective versions, short-month dates, stop/restart, catch-up and stale-version rejection have MariaDB tests; see [recurrence evidence](evidence/w06-w07-recurring.md). |
 | W07 | IMPLEMENTED_LOCAL | CLI scheduler, transactions, batch catch-up, dry-run, idempotency and concurrent MariaDB processes are covered locally. Actual Plesk Run Now and production-like timezone configuration remain open. |
-| W09 | NOT_STARTED | Προϋπόθεση ολοκλήρωση προηγούμενων πακέτων. |
+| W09 | IN_PROGRESS | Full guarded tests and 12 browser checks pass; local AT-49 and AT-52 are complete. Acceptance gaps AT-43–45, AT-48, AT-50 and AT-51 remain. See [W09 evidence](evidence/w09-acceptance.md). |
 | W10 | NOT_STARTED | Προϋποθέσεις W09 PASS, preflight και ανάθεση deployment. |
 
 ## Ακριβές επόμενο βήμα
 
-Complete the HTTP role/CSRF matrices and remaining output/file review criteria listed in [G01 evaluation evidence](evidence/g01-evaluation.md).
-Request another independent G01 review after those checks pass.
-Keep G01 `NOT_EVALUATED` until all gate criteria are independently verified and documented.
+Complete independent QA for AT-50 after reviewing the local AT-49 evidence.
+Keep AT-43/44/45 hosting-related checks, the public-site and cache-policy portions of AT-48, and AT-51 backup/restore for W10 in an authorized non-production deployment environment.
 
 ## Τελευταίο βήμα TDD
 
