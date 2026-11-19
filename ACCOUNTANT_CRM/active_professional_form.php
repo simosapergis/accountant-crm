@@ -7,76 +7,81 @@ require_once "includes/functions.php";
 /* ============================================================
    ΦΟΡΤΩΣΗ ΔΕΔΟΜΕΝΩΝ (ΑΝ ΕΙΝΑΙ EDIT)
 ============================================================ */
-$id = $_GET['id'] ?? null;
+$id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT) ?: null;
 $pro = null;
+$saveError = '';
 
 if ($id) {
-    $stmt = $mysqli->prepare("SELECT * FROM active_professionals WHERE id = ?");
-    $stmt->bind_param("i", $id);
+    $stmt = $mysqli->prepare("SELECT c.id, c.name AS fullname, c.afm, c.category, c.phone, c.email,
+        c.professional_code AS code, c.professional_is_active AS is_active,
+        c.professional_start_date AS start_date, c.professional_end_date AS end_date,
+        c.professional_has_vat AS has_vat, c.professional_vat_type AS vat_type,
+        c.professional_has_payroll AS has_payroll
+        FROM clients c WHERE c.id = ?");
+    $stmt->bind_param('i', $id);
     $stmt->execute();
     $pro = $stmt->get_result()->fetch_assoc();
+    if (!$pro) {
+        http_response_code(404);
+        exit('Not found');
+    }
 }
 
-/* ============================================================
-   ΔΙΑΓΡΑΦΗ
-============================================================ */
-if (isset($_GET['delete'])) {
-    require_post_method();
-}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_professional'])) {
     $deleteId = (int)$_POST['delete_professional'];
-    $stmt = $mysqli->prepare('DELETE FROM active_professionals WHERE id = ?');
+    $stmt = $mysqli->prepare('UPDATE clients SET has_professional_profile = 0, professional_is_active = 0 WHERE id = ? AND has_professional_profile = 1');
     $stmt->bind_param('i', $deleteId);
     $stmt->execute();
-    header("Location: active_professionals.php");
+    header('Location: active_professionals.php');
     exit;
 }
 
-/* ============================================================
-   ΑΠΟΘΗΚΕΥΣΗ (NEW + EDIT)
-============================================================ */
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT) ?: null;
+    $fullname = trim((string)($_POST['fullname'] ?? ''));
+    $afm = trim((string)($_POST['afm'] ?? ''));
+    $category = (string)($_POST['category'] ?? 'Επιχείρηση');
+    $phone = trim((string)($_POST['phone'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
+    $code = trim((string)($_POST['code'] ?? ''));
+    $is_active = isset($_POST['is_active']) ? 1 : 0;
+    $start_date = ($_POST['start_date'] ?? '') ?: null;
+    $end_date = ($_POST['end_date'] ?? '') ?: null;
+    $has_vat = isset($_POST['has_vat']) ? 1 : 0;
+    $vat_type = (string)($_POST['vat_type'] ?? '');
+    $has_payroll = isset($_POST['has_payroll']) ? 1 : 0;
+    $pro = compact('fullname', 'afm', 'category', 'phone', 'email', 'code', 'is_active', 'start_date', 'end_date', 'has_vat', 'vat_type', 'has_payroll');
 
-    $code        = $_POST["code"];
-    $fullname    = $_POST["fullname"];
-    $is_active   = isset($_POST["is_active"]) ? 1 : 0;
-    $start_date  = $_POST["start_date"] ?: null;
-    $end_date    = $_POST["end_date"] ?: null;
-    $has_vat     = isset($_POST["has_vat"]) ? 1 : 0;
-    $vat_type    = $_POST["vat_type"];
-    $has_payroll = isset($_POST["has_payroll"]) ? 1 : 0;
-
-    if ($id) {
-        // UPDATE
-        $stmt = $mysqli->prepare("
-            UPDATE active_professionals
-            SET code=?, fullname=?, is_active=?, start_date=?, end_date=?, 
-                has_vat=?, vat_type=?, has_payroll=?
-            WHERE id=?
-        ");
-        $stmt->bind_param(
-            "ssississi",
-            $code, $fullname, $is_active, $start_date, $end_date,
-            $has_vat, $vat_type, $has_payroll, $id
-        );
-        $stmt->execute();
+    if ($fullname === '' || $code === '' || !in_array($category, ['Ιδιώτης', 'Επιχείρηση', 'Λοιπά'], true)
+        || !in_array($vat_type, ['', 'Μηνιαίο', 'Τριμηνιαίο'], true)
+        || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+        $saveError = 'Συμπληρώστε επωνυμία και κωδικό και ελέγξτε τα στοιχεία.';
     } else {
-        // INSERT
-        $stmt = $mysqli->prepare("
-            INSERT INTO active_professionals
-            (code, fullname, is_active, start_date, end_date, has_vat, vat_type, has_payroll)
-            VALUES (?,?,?,?,?,?,?,?)
-        ");
-        $stmt->bind_param(
-            "ssississ",
-            $code, $fullname, $is_active, $start_date, $end_date,
-            $has_vat, $vat_type, $has_payroll
-        );
-        $stmt->execute();
+        try {
+            if ($id) {
+                $stmt = $mysqli->prepare("UPDATE clients SET name=?, afm=?, category=?, phone=?, email=?,
+                    professional_code=?, professional_is_active=?, professional_start_date=?, professional_end_date=?,
+                    professional_has_vat=?, professional_vat_type=?, professional_has_payroll=?,
+                    has_professional_profile=1 WHERE id=?");
+                $stmt->bind_param('ssssssissisii', $fullname, $afm, $category, $phone, $email,
+                    $code, $is_active, $start_date, $end_date, $has_vat, $vat_type, $has_payroll, $id);
+            } else {
+                $stmt = $mysqli->prepare("INSERT INTO clients
+                    (name, afm, category, phone, email, has_professional_profile, professional_code,
+                     professional_is_active, professional_start_date, professional_end_date,
+                     professional_has_vat, professional_vat_type, professional_has_payroll)
+                    VALUES (?,?,?,?,?,1,?,?,?,?,?,?,?)");
+                $stmt->bind_param('ssssssissisi', $fullname, $afm, $category, $phone, $email,
+                    $code, $is_active, $start_date, $end_date, $has_vat, $vat_type, $has_payroll);
+            }
+            $stmt->execute();
+            header('Location: active_professionals.php');
+            exit;
+        } catch (mysqli_sql_exception $exception) {
+            error_log('Professional profile save failed: ' . $exception->getMessage());
+            $saveError = 'Η αποθήκευση απέτυχε. Ελέγξτε αν ο κωδικός υπάρχει ήδη.';
+        }
     }
-
-    header("Location: active_professionals.php");
-    exit;
 }
 
 require "includes/header.php";
@@ -150,7 +155,7 @@ require "includes/header.php";
 <div class="page-container">
 
     <h2 style="margin-bottom:20px;">
-        <?= $id ? "Επεξεργασία Επαγγελματία" : "Νέος Επαγγελματίας" ?>
+        <?= $id ? "Επεξεργασία Πελάτη / Επαγγελματία" : "Νέος Πελάτης / Επαγγελματίας" ?>
     </h2>
 
     <!-- ============================================================
@@ -197,17 +202,50 @@ require "includes/header.php";
     ============================================================= -->
     <form method="post" class="form-box">
         <?= csrf_field() ?>
+        <input type="hidden" name="id" value="<?= (int)($id ?? 0) ?>">
+        <?php if ($saveError): ?>
+            <div role="alert" style="margin-bottom:16px;padding:12px;border-radius:6px;background:#f8d7da;color:#842029;">
+                <?= htmlspecialchars($saveError, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+            </div>
+        <?php endif; ?>
+
+        <h3>Στοιχεία πελάτη</h3>
 
         <div class="form-row">
-            <label>Κωδικός</label>
-            <input type="text" name="code"
-                   value="<?= htmlspecialchars((string)($pro["code"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
+            <label>Επωνυμία / Ονοματεπώνυμο</label>
+            <input type="text" name="fullname" value="<?= htmlspecialchars((string)($pro['fullname'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
         </div>
 
+        <div class="form-row-half">
+            <div class="form-row">
+                <label>ΑΦΜ</label>
+                <input type="text" name="afm" value="<?= htmlspecialchars((string)($pro['afm'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+            </div>
+            <div class="form-row">
+                <label>Κατηγορία</label>
+                <select name="category">
+                    <?php foreach (['Ιδιώτης', 'Επιχείρηση', 'Λοιπά'] as $categoryOption): ?>
+                        <option value="<?= htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8') ?>" <?= ($pro['category'] ?? 'Επιχείρηση') === $categoryOption ? 'selected' : '' ?>><?= htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row-half">
+            <div class="form-row">
+                <label>Τηλέφωνο</label>
+                <input type="text" name="phone" value="<?= htmlspecialchars((string)($pro['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+            </div>
+            <div class="form-row">
+                <label>Email</label>
+                <input type="email" name="email" value="<?= htmlspecialchars((string)($pro['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+            </div>
+        </div>
+
+        <h3>Στοιχεία επαγγελματία</h3>
         <div class="form-row">
-            <label>Ονοματεπώνυμο</label>
-            <input type="text" name="fullname"
-                   value="<?= htmlspecialchars((string)($pro["fullname"] ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
+            <label>Κωδικός</label>
+            <input type="text" name="code" value="<?= htmlspecialchars((string)($pro['code'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" required>
         </div>
 
         <div class="form-row-half">

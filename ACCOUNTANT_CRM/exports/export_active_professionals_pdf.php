@@ -21,43 +21,46 @@ $search = crm_export_string_filter('search');
 $conditions = [];
 $params = [];
 if ($search !== '') {
-    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
-    $params[] = '%' . $search . '%';
-    $params[] = '%' . $search . '%';
+    $conditions[] = '(c.name LIKE ? OR c.professional_code LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+    for ($i = 0; $i < 5; $i++) $params[] = '%' . $search . '%';
 }
 
 if ($activeOnly === "1") {
-    $conditions[] = 'is_active = 1';
+    $conditions[] = 'c.professional_is_active = 1';
 } elseif ($activeOnly === "0") {
-    $conditions[] = 'is_active = 0';
+    $conditions[] = 'c.professional_is_active = 0';
 }
 
 if ($vatFilter === "yes" || $vatFilter === "1") {
-    $conditions[] = 'has_vat = 1';
+    $conditions[] = 'c.professional_has_vat = 1';
 } elseif ($vatFilter === "no" || $vatFilter === "0") {
-    $conditions[] = 'has_vat = 0';
+    $conditions[] = 'c.professional_has_vat = 0';
 }
 
 if ($vatType !== "") {
-    $conditions[] = 'vat_type = ?';
+    $conditions[] = 'c.professional_vat_type = ?';
     $params[] = $vatType;
 }
 
 if ($payroll === "yes" || $payroll === "1") {
-    $conditions[] = 'has_payroll = 1';
+    $conditions[] = 'c.professional_has_payroll = 1';
 } elseif ($payroll === "no" || $payroll === "0") {
-    $conditions[] = 'has_payroll = 0';
+    $conditions[] = 'c.professional_has_payroll = 0';
 }
+$conditions[] = 'c.has_professional_profile = 1';
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 // -------------------------------------------------------------
 // QUERY
 // -------------------------------------------------------------
 $sql = "
-    SELECT *
-    FROM active_professionals
+    SELECT c.id, c.professional_code AS code, c.name AS fullname, c.afm, c.category, c.phone, c.email,
+           c.professional_is_active AS is_active, c.professional_start_date AS start_date,
+           c.professional_end_date AS end_date, c.professional_has_vat AS has_vat,
+           c.professional_vat_type AS vat_type, c.professional_has_payroll AS has_payroll
+    FROM clients c
     $where
-    ORDER BY code ASC
+    ORDER BY c.professional_code ASC
 ";
 $stmt = $mysqli->prepare($sql);
 $stmt->execute($params);
@@ -107,7 +110,11 @@ $html = '
 <thead>
 <tr>
     <th>Κωδ.</th>
-    <th>Ονοματεπώνυμο</th>
+    <th>Επωνυμία / Ονοματεπώνυμο</th>
+    <th>ΑΦΜ</th>
+    <th>Κατηγορία</th>
+    <th>Τηλέφωνο</th>
+    <th>Email</th>
     <th>Ενεργός</th>
     <th>Έναρξη</th>
     <th>Διακοπή</th>
@@ -126,6 +133,10 @@ while ($row = $res->fetch_assoc()) {
 
     $code = htmlspecialchars((string)($row['code'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $fullname = htmlspecialchars((string)$row['fullname'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $afm = htmlspecialchars((string)($row['afm'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $category = htmlspecialchars((string)($row['category'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $phone = htmlspecialchars((string)($row['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $email = htmlspecialchars((string)($row['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $startDate = htmlspecialchars((string)($row['start_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $endDate = htmlspecialchars((string)($row['end_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $vatTypeOutput = htmlspecialchars((string)($row['vat_type'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -134,6 +145,10 @@ while ($row = $res->fetch_assoc()) {
     <tr>
         <td>{$code}</td>
         <td>{$fullname}</td>
+        <td>{$afm}</td>
+        <td>{$category}</td>
+        <td>{$phone}</td>
+        <td>{$email}</td>
         <td>".($row['is_active'] ? "ΝΑΙ" : "ΟΧΙ")."</td>
         <td>{$startDate}</td>
         <td>{$endDate}</td>

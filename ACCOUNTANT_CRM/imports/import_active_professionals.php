@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/vendor/autoload.php'; // PhpSpreadsheet
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-$pageTitle = "Εισαγωγή Ενεργών Επαγγελματιών";
+$pageTitle = "Εισαγωγή Επαγγελματιών και Πελατών";
 
 $message = "";
 $errors = [];
@@ -90,7 +90,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $sheet = $spreadsheet->getActiveSheet();
                     $rows = $sheet->toArray(null, true, true, true);
 
-                    $requiredHeaders = [
+                    $legacyHeaders = [
                         'A' => 'Κωδικός',
                         'B' => 'Ονοματεπώνυμο',
                         'C' => 'Ενεργός',
@@ -100,6 +100,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         'G' => 'Τύπος ΦΠΑ',
                         'H' => 'Μισθοδοσία',
                     ];
+                    $unifiedHeaders = [
+                        'A' => 'Κωδικός',
+                        'B' => 'Ονοματεπώνυμο',
+                        'C' => 'ΑΦΜ',
+                        'D' => 'Κατηγορία',
+                        'E' => 'Τηλέφωνο',
+                        'F' => 'Email',
+                        'G' => 'Ενεργός',
+                        'H' => 'Ημερομηνία Έναρξης',
+                        'I' => 'Ημερομηνία Διακοπής',
+                        'J' => 'ΦΠΑ',
+                        'K' => 'Τύπος ΦΠΑ',
+                        'L' => 'Μισθοδοσία',
+                    ];
+                    $legacyLayout = trim((string)($rows[1]['C'] ?? '')) === 'Ενεργός';
+                    $requiredHeaders = $legacyLayout ? $legacyHeaders : $unifiedHeaders;
 
                     foreach ($requiredHeaders as $col => $title) {
                         if (trim((string)($rows[1][$col] ?? '')) !== $title) {
@@ -117,7 +133,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 continue;
                             }
 
-                            $check = $mysqli->prepare('SELECT id FROM active_professionals WHERE code = ?');
+                            $check = $mysqli->prepare('SELECT id FROM clients WHERE professional_code = ?');
                             $check->bind_param('s', $code);
                             $check->execute();
                             if ($check->get_result()->num_rows > 0) {
@@ -128,12 +144,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             $pendingRows[] = [
                                 'code' => $code,
                                 'fullname' => $fullname,
-                                'is_active' => strtoupper(trim((string)($rows[$i]['C'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
-                                'start_date' => convertDateExcelToDb(trim((string)($rows[$i]['D'] ?? ''))),
-                                'end_date' => convertDateExcelToDb(trim((string)($rows[$i]['E'] ?? ''))),
-                                'has_vat' => strtoupper(trim((string)($rows[$i]['F'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
-                                'vat_type' => trim((string)($rows[$i]['G'] ?? '')) ?: null,
-                                'has_payroll' => strtoupper(trim((string)($rows[$i]['H'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
+                                'afm' => $legacyLayout ? '' : trim((string)($rows[$i]['C'] ?? '')),
+                                'category' => $legacyLayout ? 'Επιχείρηση' : (trim((string)($rows[$i]['D'] ?? '')) ?: 'Επιχείρηση'),
+                                'phone' => $legacyLayout ? '' : trim((string)($rows[$i]['E'] ?? '')),
+                                'email' => $legacyLayout ? '' : trim((string)($rows[$i]['F'] ?? '')),
+                                'is_active' => strtoupper(trim((string)($rows[$i][$legacyLayout ? 'C' : 'G'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
+                                'start_date' => convertDateExcelToDb(trim((string)($rows[$i][$legacyLayout ? 'D' : 'H'] ?? ''))),
+                                'end_date' => convertDateExcelToDb(trim((string)($rows[$i][$legacyLayout ? 'E' : 'I'] ?? ''))),
+                                'has_vat' => strtoupper(trim((string)($rows[$i][$legacyLayout ? 'F' : 'J'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
+                                'vat_type' => trim((string)($rows[$i][$legacyLayout ? 'G' : 'K'] ?? '')) ?: null,
+                                'has_payroll' => strtoupper(trim((string)($rows[$i][$legacyLayout ? 'H' : 'L'] ?? ''))) === 'ΝΑΙ' ? 1 : 0,
                             ];
                         }
                     }
@@ -142,16 +162,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $mysqli->begin_transaction();
                         try {
                             $stmt = $mysqli->prepare(
-                                'INSERT INTO active_professionals ' .
-                                '(code, fullname, is_active, start_date, end_date, has_vat, vat_type, has_payroll) ' .
-                                'VALUES (?,?,?,?,?,?,?,?)'
+                                'INSERT INTO clients ' .
+                                '(name, afm, category, phone, email, has_professional_profile, professional_code, ' .
+                                'professional_is_active, professional_start_date, professional_end_date, ' .
+                                'professional_has_vat, professional_vat_type, professional_has_payroll) ' .
+                                'VALUES (?,?,?,?,?,1,?,?,?,?,?,?,?)'
                             );
                             foreach ($pendingRows as $row) {
                                 $stmt->bind_param(
-                                    'ssississ',
-                                    $row['code'], $row['fullname'], $row['is_active'],
-                                    $row['start_date'], $row['end_date'], $row['has_vat'],
-                                    $row['vat_type'], $row['has_payroll']
+                                    'ssssssissisi',
+                                    $row['fullname'], $row['afm'], $row['category'], $row['phone'], $row['email'],
+                                    $row['code'], $row['is_active'], $row['start_date'], $row['end_date'],
+                                    $row['has_vat'], $row['vat_type'], $row['has_payroll']
                                 );
                                 $stmt->execute();
                             }
@@ -190,7 +212,8 @@ require dirname(__DIR__) . '/includes/header.php';
 
 <div class="page-container">
 
-    <h2>Εισαγωγή Ενεργών Επαγγελματιών</h2>
+    <h2>Εισαγωγή Επαγγελματιών και Πελατών</h2>
+    <p>Το νέο αρχείο Excel περιλαμβάνει τα στοιχεία πελάτη και επαγγελματία. Υποστηρίζεται επίσης η παλιά διάταξη 8 στηλών.</p>
 
     <?php if ($message): ?>
         <div class="card card-green" style="margin-bottom:15px;">

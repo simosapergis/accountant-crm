@@ -1,5 +1,13 @@
 # ElMiCo CRM - Κατάσταση υλοποίησης
 
+### CLT-02..04: unified clients and active-professional profile - 19 November 2026
+
+The specification package is updated to version 1.8 (CLT-02..04, AT-59..62). The user chose to keep possible duplicate client/professional records separate; no name-based or other automatic identity merge is performed.
+Added migration `20261119_002_unified_clients.php`: extends `clients`, copies legacy professional rows into new client records with their full professional fields, records legacy IDs for resumable copying, and renames the old table to `active_professionals_legacy` as a retained rollback source. Existing client IDs are unchanged, preserving task and recurrence references.
+Active-professional forms, listing, PDF and XLSX now read/write the shared `clients` table. The form includes all client fields and professional fields. Removing a professional profile now deactivates the profile and preserves the client and linked tasks. XLSX import writes unified rows, exports all 12 fields, and retains the legacy 8-column import layout.
+No tests or syntax checks were run, as requested. Feature acceptance AT-59..62 is therefore `NOT_RUN`; deployment/migration has not been executed against any database.
+Next: after explicit authorization and backup, run the migration in an isolated database, then manually inspect the feature and exercise both Excel layouts. Do not run it against production as part of this local implementation.
+
 ### DASH-01/DASH-02: dashboard shortcut and task list filters - 19 November 2026
 
 Updated the specification package to version 1.7 with DASH-01/AT-57 for the «Αναμονή εξόφλησης» card and DASH-02/AT-58 for exact task title/payment-method filtering.

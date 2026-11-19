@@ -24,43 +24,46 @@ $search = crm_export_string_filter('search');
 $conditions = [];
 $params = [];
 if ($search !== '') {
-    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
-    $params[] = '%' . $search . '%';
-    $params[] = '%' . $search . '%';
+    $conditions[] = '(c.name LIKE ? OR c.professional_code LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+    for ($i = 0; $i < 5; $i++) $params[] = '%' . $search . '%';
 }
 
 if ($activeOnly === "1") {
-    $conditions[] = 'is_active = 1';
+    $conditions[] = 'c.professional_is_active = 1';
 } elseif ($activeOnly === "0") {
-    $conditions[] = 'is_active = 0';
+    $conditions[] = 'c.professional_is_active = 0';
 }
 
 if ($vatFilter === "yes" || $vatFilter === "1") {
-    $conditions[] = 'has_vat = 1';
+    $conditions[] = 'c.professional_has_vat = 1';
 } elseif ($vatFilter === "no" || $vatFilter === "0") {
-    $conditions[] = 'has_vat = 0';
+    $conditions[] = 'c.professional_has_vat = 0';
 }
 
 if ($vatType !== "") {
-    $conditions[] = 'vat_type = ?';
+    $conditions[] = 'c.professional_vat_type = ?';
     $params[] = $vatType;
 }
 
 if ($payroll === "yes" || $payroll === "1") {
-    $conditions[] = 'has_payroll = 1';
+    $conditions[] = 'c.professional_has_payroll = 1';
 } elseif ($payroll === "no" || $payroll === "0") {
-    $conditions[] = 'has_payroll = 0';
+    $conditions[] = 'c.professional_has_payroll = 0';
 }
+$conditions[] = 'c.has_professional_profile = 1';
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
 /* -------------------------------------------------------------
    QUERY
 -------------------------------------------------------------- */
 $sql = "
-    SELECT *
-    FROM active_professionals
+    SELECT c.id, c.professional_code AS code, c.name AS fullname, c.afm, c.category, c.phone, c.email,
+           c.professional_is_active AS is_active, c.professional_start_date AS start_date,
+           c.professional_end_date AS end_date, c.professional_has_vat AS has_vat,
+           c.professional_vat_type AS vat_type, c.professional_has_payroll AS has_payroll
+    FROM clients c
     $where
-    ORDER BY code ASC
+    ORDER BY c.professional_code ASC
 ";
 $stmt = $mysqli->prepare($sql);
 $stmt->execute($params);
@@ -79,12 +82,16 @@ $sheet->setTitle("Ενεργοί Επαγγελματίες");
 $headers = [
     "A1" => "Κωδικός",
     "B1" => "Ονοματεπώνυμο",
-    "C1" => "Ενεργός",
-    "D1" => "Ημερομηνία Έναρξης",
-    "E1" => "Ημερομηνία Διακοπής",
-    "F1" => "ΦΠΑ",
-    "G1" => "Τύπος ΦΠΑ",
-    "H1" => "Μισθοδοσία"
+    "C1" => "ΑΦΜ",
+    "D1" => "Κατηγορία",
+    "E1" => "Τηλέφωνο",
+    "F1" => "Email",
+    "G1" => "Ενεργός",
+    "H1" => "Ημερομηνία Έναρξης",
+    "I1" => "Ημερομηνία Διακοπής",
+    "J1" => "ΦΠΑ",
+    "K1" => "Τύπος ΦΠΑ",
+    "L1" => "Μισθοδοσία"
 ];
 
 foreach ($headers as $cell => $title) {
@@ -92,8 +99,8 @@ foreach ($headers as $cell => $title) {
 }
 
 /* Στυλ κεφαλίδων */
-$sheet->getStyle("A1:H1")->getFont()->setBold(true);
-$sheet->getStyle("A1:H1")->getFill()
+$sheet->getStyle("A1:L1")->getFont()->setBold(true);
+$sheet->getStyle("A1:L1")->getFill()
     ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
     ->getStartColor()->setARGB('FFE2E3E5');
 
@@ -106,12 +113,15 @@ while ($row = $result->fetch_assoc()) {
 
     $sheet->setCellValueExplicit("A$rowNum", (string)($row['code'] ?? ''), DataType::TYPE_STRING);
     $sheet->setCellValueExplicit("B$rowNum", (string)$row['fullname'], DataType::TYPE_STRING);
-    $sheet->setCellValue("C$rowNum", $row['is_active'] ? "ΝΑΙ" : "ΟΧΙ");
-    $sheet->setCellValueExplicit("D$rowNum", (string)($row['start_date'] ?? ''), DataType::TYPE_STRING);
-    $sheet->setCellValueExplicit("E$rowNum", (string)($row['end_date'] ?? ''), DataType::TYPE_STRING);
-    $sheet->setCellValue("F$rowNum", $row['has_vat'] ? "ΝΑΙ" : "ΟΧΙ");
-    $sheet->setCellValueExplicit("G$rowNum", (string)($row['vat_type'] ?? ''), DataType::TYPE_STRING);
-    $sheet->setCellValue("H$rowNum", $row['has_payroll'] ? "ΝΑΙ" : "ΟΧΙ");
+    foreach (['C' => 'afm', 'D' => 'category', 'E' => 'phone', 'F' => 'email'] as $col => $field) {
+        $sheet->setCellValueExplicit($col . $rowNum, (string)($row[$field] ?? ''), DataType::TYPE_STRING);
+    }
+    $sheet->setCellValue("G$rowNum", $row['is_active'] ? "ΝΑΙ" : "ΟΧΙ");
+    $sheet->setCellValueExplicit("H$rowNum", (string)($row['start_date'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValueExplicit("I$rowNum", (string)($row['end_date'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValue("J$rowNum", $row['has_vat'] ? "ΝΑΙ" : "ΟΧΙ");
+    $sheet->setCellValueExplicit("K$rowNum", (string)($row['vat_type'] ?? ''), DataType::TYPE_STRING);
+    $sheet->setCellValue("L$rowNum", $row['has_payroll'] ? "ΝΑΙ" : "ΟΧΙ");
 
     $rowNum++;
 }
@@ -119,7 +129,7 @@ while ($row = $result->fetch_assoc()) {
 /* -------------------------------------------------------------
    AUTO SIZE ΣΤΙΣ ΣΤΗΛΕΣ
 -------------------------------------------------------------- */
-foreach (range('A','H') as $col) {
+foreach (range('A','L') as $col) {
     $sheet->getColumnDimension($col)->setAutoSize(true);
 }
 

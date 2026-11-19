@@ -204,6 +204,7 @@ require 'includes/header.php';
                     <td><?= formatMoney($c['balance']) ?></td>
                     <td class="task-actions">
                 <a class="icon-btn blue" href="client_form.php?id=<?= $c['id'] ?>">✏️</a>
+                <a class="icon-btn blue" href="active_professional_form.php?id=<?= (int)$c['id'] ?>" aria-label="Στοιχεία επαγγελματία" title="Στοιχεία επαγγελματία">🏢</a>
                 <a class="icon-btn gray" href="tasks.php?client=<?= $c['id'] ?>">📄</a>
                 <form method="post" action="client_form.php" style="display:inline;">
                     <?= csrf_field() ?>
@@ -255,6 +256,7 @@ require 'includes/header.php';
 
                 <div class="mobile-card-actions">
                     <a href="client_form.php?id=<?= $c['id'] ?>" class="btn btn-secondary">Επεξεργασία</a>
+                    <a href="active_professional_form.php?id=<?= (int)$c['id'] ?>" class="btn btn-secondary">Επαγγελματικό προφίλ</a>
                     <a href="tasks.php?client=<?= $c['id'] ?>" class="btn btn-warning">Εργασίες</a>
                 </div>
             </div>

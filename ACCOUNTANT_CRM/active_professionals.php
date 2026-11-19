@@ -10,9 +10,9 @@ require_once "includes/functions.php";
 /* ============================================================
    ΣΤΑΤΙΣΤΙΚΑ ΠΛΗΘΟΥΣ
 ============================================================ */
-$count_total    = $mysqli->query("SELECT COUNT(*) AS c FROM active_professionals")->fetch_assoc()['c'];
-$count_active   = $mysqli->query("SELECT COUNT(*) AS c FROM active_professionals WHERE is_active = 1")->fetch_assoc()['c'];
-$count_inactive = $mysqli->query("SELECT COUNT(*) AS c FROM active_professionals WHERE is_active = 0")->fetch_assoc()['c'];
+$count_total    = $mysqli->query("SELECT COUNT(*) AS c FROM clients WHERE has_professional_profile = 1")->fetch_assoc()['c'];
+$count_active   = $mysqli->query("SELECT COUNT(*) AS c FROM clients WHERE has_professional_profile = 1 AND professional_is_active = 1")->fetch_assoc()['c'];
+$count_inactive = $mysqli->query("SELECT COUNT(*) AS c FROM clients WHERE has_professional_profile = 1 AND professional_is_active = 0")->fetch_assoc()['c'];
 
 /* ============================================================
    ΦΙΛΤΡΑ
@@ -34,33 +34,32 @@ if (!array_key_exists('is_active', $_GET)) {
     $is_active = is_string($activeInput) ? $activeInput : '';
 }
 
-$conditions = [];
+$conditions = ['c.has_professional_profile = 1'];
 $params = [];
 
 if ($search !== "") {
-    $conditions[] = '(fullname LIKE ? OR code LIKE ?)';
+    $conditions[] = '(c.name LIKE ? OR c.professional_code LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
     $searchPattern = '%' . $search . '%';
-    $params[] = $searchPattern;
-    $params[] = $searchPattern;
+    array_push($params, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
 }
 
 if ($is_active !== "") {
-    $conditions[] = 'is_active = ?';
+    $conditions[] = 'c.professional_is_active = ?';
     $params[] = (int)$is_active;
 }
 
 if ($has_vat !== "") {
-    $conditions[] = 'has_vat = ?';
+    $conditions[] = 'c.professional_has_vat = ?';
     $params[] = (int)$has_vat;
 }
 
 if ($vat_type !== "") {
-    $conditions[] = 'vat_type = ?';
+    $conditions[] = 'c.professional_vat_type = ?';
     $params[] = $vat_type;
 }
 
 if ($payroll !== "") {
-    $conditions[] = 'has_payroll = ?';
+    $conditions[] = 'c.professional_has_payroll = ?';
     $params[] = (int)$payroll;
 }
 
@@ -70,10 +69,13 @@ $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
    QUERY
 ============================================================ */
 $sql = "
-    SELECT *
-    FROM active_professionals
+    SELECT c.id, c.professional_code AS code, c.name AS fullname, c.afm, c.category, c.phone, c.email,
+           c.professional_is_active AS is_active, c.professional_start_date AS start_date,
+           c.professional_end_date AS end_date, c.professional_has_vat AS has_vat,
+           c.professional_vat_type AS vat_type, c.professional_has_payroll AS has_payroll
+    FROM clients c
     $where
-    ORDER BY code ASC
+    ORDER BY c.professional_code ASC
 ";
 $stmt = $mysqli->prepare($sql);
 $stmt->execute($params);
@@ -252,6 +254,10 @@ require "includes/header.php";
                 <tr>
                     <th>Κωδικός</th>
                     <th>Ονοματεπώνυμο</th>
+                    <th>ΑΦΜ</th>
+                    <th>Κατηγορία</th>
+                    <th>Τηλέφωνο</th>
+                    <th>Email</th>
                     <th>Ενεργός</th>
                     <th>Έναρξη</th>
                     <th>Διακοπή</th>
@@ -268,6 +274,10 @@ require "includes/header.php";
                 <tr>
                     <td><?= htmlspecialchars($row["code"]) ?></td>
                     <td><?= htmlspecialchars($row["fullname"]) ?></td>
+                    <td><?= htmlspecialchars((string)($row['afm'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($row['category'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($row['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
+                    <td><?= htmlspecialchars((string)($row['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
 
                     <td>
                         <span class="task-status-square" style="background: <?= $statusColor ?>;"></span>
@@ -287,7 +297,8 @@ require "includes/header.php";
                         <form method="post" action="active_professional_form.php" style="display:inline;">
                             <?= csrf_field() ?>
                             <button class="icon-btn red" type="submit" name="delete_professional" value="<?= (int)$row['id'] ?>"
-                                    onclick="return confirm('Διαγραφή επαγγελματία;')">🗑</button>
+                                    aria-label="Αφαίρεση επαγγελματικού προφίλ"
+                                    onclick="return confirm('Αφαίρεση του επαγγελματικού προφίλ; Τα στοιχεία πελάτη και οι εργασίες θα διατηρηθούν.')">🗑</button>
                         </form>
                     </td>
                 </tr>
@@ -312,6 +323,12 @@ require "includes/header.php";
                         <?= $row["is_active"] ? "Ενεργός" : "Ανενεργός" ?>
                     </div>
                 </div>
+
+                <?php foreach (['ΑΦΜ' => 'afm', 'Κατηγορία' => 'category', 'Τηλέφωνο' => 'phone', 'Email' => 'email'] as $label => $field): ?>
+                    <?php if (!empty($row[$field])): ?>
+                        <div class="mobile-card-row"><span class="mobile-card-label"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?>:</span><span><?= htmlspecialchars((string)$row[$field], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span></div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
 
                 <div class="mobile-card-row">
                     <span class="mobile-card-label">Έναρξη:</span>
@@ -345,7 +362,8 @@ require "includes/header.php";
                     <form method="post" action="active_professional_form.php" style="display:inline;">
                         <?= csrf_field() ?>
                         <button class="icon-btn red" type="submit" name="delete_professional" value="<?= (int)$row['id'] ?>"
-                                onclick="return confirm('Διαγραφή επαγγελματία;')">🗑</button>
+                                aria-label="Αφαίρεση επαγγελματικού προφίλ"
+                                onclick="return confirm('Αφαίρεση του επαγγελματικού προφίλ; Τα στοιχεία πελάτη και οι εργασίες θα διατηρηθούν.')">🗑</button>
                     </form>
                 </div>
 

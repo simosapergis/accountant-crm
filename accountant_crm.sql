@@ -58,8 +58,19 @@ CREATE TABLE IF NOT EXISTS `clients` (
   `category` enum('Ιδιώτης','Επιχείρηση','Λοιπά') DEFAULT 'Ιδιώτης',
   `phone` varchar(50) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
+  `has_professional_profile` tinyint(1) NOT NULL DEFAULT 0,
+  `professional_code` varchar(50) DEFAULT NULL,
+  `professional_is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `professional_start_date` date DEFAULT NULL,
+  `professional_end_date` date DEFAULT NULL,
+  `professional_has_vat` tinyint(1) NOT NULL DEFAULT 0,
+  `professional_vat_type` enum('Μηνιαίο','Τριμηνιαίο') DEFAULT NULL,
+  `professional_has_payroll` tinyint(1) NOT NULL DEFAULT 0,
+  `legacy_professional_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_clients_professional_code` (`professional_code`),
+  UNIQUE KEY `uq_clients_legacy_professional_id` (`legacy_professional_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
