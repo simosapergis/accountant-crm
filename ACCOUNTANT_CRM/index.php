@@ -57,10 +57,12 @@ require 'includes/header.php';
         <div class="card-value"><?= formatMoney($stats['total_collected']) ?></div>
     </div>
 
-    <div class="card card-dark">
+    <a class="card card-dark dashboard-balance-link"
+       href="clients.php?balance=positive&amp;sort=balance"
+       aria-label="Προβολή πελατών με υπόλοιπο">
         <h3>Υπόλοιπο</h3>
         <div class="card-value"><?= formatMoney($balance) ?></div>
-    </div>
+    </a>
 </div>
 
 <!-- ===========================================================

@@ -128,6 +128,22 @@ body {
 .card-teal    { background: #20c997; }
 .card-dark    { background: #343a40; }
 
+.dashboard-balance-link {
+    color: #fff;
+    text-decoration: none;
+}
+
+.dashboard-balance-link:hover {
+    color: #fff;
+    text-decoration: none;
+    filter: brightness(1.12);
+}
+
+.dashboard-balance-link:focus-visible {
+    outline: 3px solid #007bff;
+    outline-offset: 3px;
+}
+
 /* ----------------------------------------------------
    ΠΙΝΑΚΕΣ & WRAPPER (RESPONSIVE)
 ---------------------------------------------------- */
