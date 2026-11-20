@@ -171,10 +171,15 @@ body .page-container :focus-visible {
 .card-yellow  { background: #ffca28; color: #000; }
 .card-purple  { background: #6f42c1; }
 .card-teal    { background: #20c997; }
-.card-dark    { background: #343a40; }
+.card-dark    { background: #6c757d; }
 
 .dashboard-balance-link {
     color: #fff;
+    text-decoration: none;
+}
+
+.dashboard-pending-link {
+    color: #000;
     text-decoration: none;
 }
 
@@ -184,7 +189,14 @@ body .page-container :focus-visible {
     filter: brightness(1.12);
 }
 
-.dashboard-balance-link:focus-visible {
+.dashboard-pending-link:hover {
+    color: #000;
+    text-decoration: none;
+    filter: brightness(1.12);
+}
+
+.dashboard-balance-link:focus-visible,
+.dashboard-pending-link:focus-visible {
     outline: 3px solid #007bff;
     outline-offset: 3px;
 }

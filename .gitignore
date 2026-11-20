@@ -13,6 +13,7 @@
 /ACCOUNTANT_CRM/exports/*.csv
 /ACCOUNTANT_CRM/exports/*.xlsx
 /ACCOUNTANT_CRM/exports/*.pdf
+/dummy-active-professionals-import.xlsx
 
 # Logs and local databases
 *.log

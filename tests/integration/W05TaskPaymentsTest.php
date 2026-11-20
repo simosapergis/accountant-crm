@@ -9,6 +9,9 @@ final class W05TaskPaymentsTest extends TestCase
     private const TASK_ID = 910020;
     private const CLIENT_ID = 910020;
     private const METHOD_ID = 910020;
+    private const OTHER_TASK_ID = 910082;
+    private const NO_METHOD_TASK_ID = 910083;
+    private const ZERO_BALANCE_CLIENT_ID = 910081;
 
     protected function setUp(): void
     {
@@ -32,9 +35,11 @@ final class W05TaskPaymentsTest extends TestCase
     {
         if (isset($this->db) && $this->db->connect_errno === 0 && $this->db->query('SELECT DATABASE()')->fetch_row()[0] === CRM_TEST_DATABASE) {
             $this->db->query('DELETE FROM tasks WHERE id = 910020');
+            $this->db->query('DELETE FROM tasks WHERE id IN (910082, 910083)');
             $this->db->query("DELETE FROM task_title_templates WHERE normalized_name LIKE 'w05 %'");
             $this->db->query('DELETE FROM payment_methods WHERE id = 910020');
             $this->db->query('DELETE FROM clients WHERE id = 910020');
+            $this->db->query('DELETE FROM clients WHERE id = 910081');
             $this->db->close();
         }
     }
@@ -66,6 +71,58 @@ final class W05TaskPaymentsTest extends TestCase
         ]), $session['cookie']);
         self::assertSame(302, $saved['status']);
         self::assertSame('W05 Ελεύθερος τίτλος', $this->db->query('SELECT title FROM tasks WHERE id=910020')->fetch_row()[0]);
+    }
+
+    public function testTaskListFiltersByStoredTitleAndPaymentMethodSnapshots(): void
+    {
+        $this->db->query("UPDATE payment_methods SET name='W05 Renamed Card',is_active=0 WHERE id=910020");
+        $this->db->query("UPDATE tasks SET payment_method_id=910020,payment_method_label='W05 Card' WHERE id=910020");
+        $this->putAdditionalTask(self::OTHER_TASK_ID, 'W05 Other Snapshot', 'W05 Cash');
+        $this->putAdditionalTask(self::NO_METHOD_TASK_ID, 'W05 No Method Snapshot', null);
+        $session = $this->login();
+
+        $filtered = $this->request('/tasks.php?' . http_build_query([
+            'task_title' => 'W05 Payment fixture',
+            'payment_method' => 'label:' . bin2hex('W05 Card'),
+        ]), 'GET', [], $session['cookie']);
+
+        self::assertSame(200, $filtered['status']);
+        self::assertStringContainsString('href="task_form.php?id=910020"', $filtered['body']);
+        self::assertStringNotContainsString('href="task_form.php?id=910082"', $filtered['body']);
+        self::assertStringNotContainsString('href="task_form.php?id=910083"', $filtered['body']);
+        self::assertStringContainsString('value="W05 Payment fixture" selected', $filtered['body']);
+        self::assertStringContainsString('value="label:' . bin2hex('W05 Card') . '" selected', $filtered['body']);
+        self::assertStringContainsString('value="W05 Other Snapshot"', $filtered['body'], 'Title options include stored values outside the active catalog.');
+        self::assertStringContainsString('value="label:' . bin2hex('W05 Cash') . '"', $filtered['body'], 'Payment options include stored snapshots outside the current catalog.');
+
+        $withoutMethod = $this->request('/tasks.php?payment_method=none%3A', 'GET', [], $session['cookie']);
+        self::assertSame(200, $withoutMethod['status']);
+        self::assertStringContainsString('href="task_form.php?id=910083"', $withoutMethod['body']);
+        self::assertStringNotContainsString('href="task_form.php?id=910020"', $withoutMethod['body']);
+        self::assertStringNotContainsString('href="task_form.php?id=910082"', $withoutMethod['body']);
+        self::assertStringContainsString('value="none:" selected', $withoutMethod['body']);
+    }
+
+    public function testDashboardPendingSettlementCardOpensClientsWithPositiveBalances(): void
+    {
+        $clientId = self::ZERO_BALANCE_CLIENT_ID;
+        $clientName = 'W05 Zero Balance Client';
+        $stmt = $this->db->prepare("INSERT INTO clients (id,name,category) VALUES (?,?,'Ιδιώτης')");
+        $stmt->bind_param('is', $clientId, $clientName);
+        $stmt->execute();
+        $session = $this->login();
+
+        $home = $this->request('/index.php', 'GET', [], $session['cookie']);
+        self::assertSame(200, $home['status']);
+        self::assertStringContainsString('href="clients.php?balance=positive&amp;sort=balance"', $home['body']);
+        self::assertStringContainsString('dashboard-pending-link', $home['body']);
+
+        $clients = $this->request('/clients.php?balance=positive&sort=balance', 'GET', [], $session['cookie']);
+        self::assertSame(200, $clients['status']);
+        self::assertStringContainsString('W05 Fictional Payment Client', $clients['body']);
+        self::assertStringNotContainsString('W05 Zero Balance Client', $clients['body']);
+        self::assertStringContainsString('value="positive" selected', $clients['body']);
+        self::assertStringContainsString('value="balance" selected', $clients['body']);
     }
 
     public function testUnchangedTitleSelectionPreservesSnapshotWhenTemplateIsRenamedWhileFormIsOpen(): void
@@ -226,6 +283,18 @@ final class W05TaskPaymentsTest extends TestCase
         $notes = '';
         $stmt = $this->db->prepare('INSERT INTO tasks (id,task_date,title,client_id,status,fee,collected,payment_method_id,payment_method_label,notes) VALUES (?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE task_date=VALUES(task_date),title=VALUES(title),client_id=VALUES(client_id),status=VALUES(status),fee=VALUES(fee),collected=VALUES(collected),payment_method_id=VALUES(payment_method_id),payment_method_label=VALUES(payment_method_label),notes=VALUES(notes)');
         $stmt->bind_param('ississsiss', $id, $date, $title, $client, $status, $fee, $collected, $methodId, $label, $notes);
+        $stmt->execute();
+    }
+
+    private function putAdditionalTask(int $id, string $title, ?string $paymentMethodLabel): void
+    {
+        $date = '2026-11-19';
+        $client = self::CLIENT_ID;
+        $status = 'Ολοκληρωμένη';
+        $fee = '40.00';
+        $collected = '40.00';
+        $stmt = $this->db->prepare('INSERT INTO tasks (id,task_date,title,client_id,status,fee,collected,payment_method_label) VALUES (?,?,?,?,?,?,?,?)');
+        $stmt->bind_param('ississss', $id, $date, $title, $client, $status, $fee, $collected, $paymentMethodLabel);
         $stmt->execute();
     }
 
