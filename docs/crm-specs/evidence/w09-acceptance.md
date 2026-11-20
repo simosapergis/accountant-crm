@@ -1,5 +1,55 @@
 # W09 acceptance execution
 
+## AT-54 AFM and long-list completion - 19 November 2026
+
+Starting checkout was `codex/crm-remaining-tasks` at `7f83ed7525084efa318c1ff5ad80b49eb09647a5`, matching the requested remote HEAD; the worktree was clean before changes.
+This host is macOS with PHP 8.3.36, Composer 2.11.2 and MariaDB 10.11.19.
+The existing `crm_test_w09_20261119` target contained the known active `W01 Mobile Recurring Filing` browser fixture, so it was left untouched.
+A new `crm_test_at54_20261119` schema was confirmed absent, then created on the local test-owned server identified as `MM25M0JH20T`, MariaDB 10.11.19 and `/tmp/accountant-crm-preview-20261118/data/`.
+A restricted non-root user was created for this schema, and its generated password was stored in a 0600 temporary file outside the repository.
+The new database had zero tables before import; the repository SQL dump was checked to contain no `INSERT INTO` rows and imported schema only.
+The target was checked with `php tests/bin/assert-test-db.php` before schema import, migrations, fixture setup and test execution.
+
+Commands, with the isolated target environment values supplied privately by the shell and never printed:
+
+```sh
+php tests/bin/assert-test-db.php
+mariadb --no-defaults --socket=/tmp/accountant-crm-preview-20261118/mysql.sock -u root crm_test_at54_20261119 < accountant_crm.sql
+php ACCOUNTANT_CRM/bin/migrate.php
+php tests/bin/assert-test-db.php && php tests/bin/seed-w01-fixtures.php
+php tests/vendor/bin/phpunit -c tests/phpunit.xml --no-progress
+php tests/bin/seed-at54-client-picker.php
+php tests/bin/seed-w01-mobile-recurrence.php
+CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' CRM_BASE_URL=http://127.0.0.1:18120/crm npm --prefix tests/e2e --cache /tmp/crm-w01-native-npm-cache test
+node --check tests/e2e/login-page.test.cjs
+php -l tests/bin/seed-at54-client-picker.php
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+The first complete PHPUnit invocation happened before the browser recurrence fixture was seeded, but initially failed with 135 HTTP/session-dependent failures because the loopback server was not running.
+The recurrence tables remained empty after that invalid-environment attempt.
+After starting the same-configuration PHP server on `127.0.0.1:18120`, a guarded recount confirmed zero recurring rules and occurrences.
+The complete PHPUnit suite then passed: **210 tests / 1,282 assertions**.
+Only after that pass did the guarded seeder add 250 fictional clients with reserved IDs 911000-911249, followed by the `W01 Mobile Recurring Filing` browser fixture.
+The E2E suite passed **14/14 checks**.
+
+The new AFM-only check queried `990000001`, whose fixture name does not contain that value, and found exactly `AT54 AFM Search Target`.
+Clearing the query restored all 252 client options.
+The real rendered list overflowed the result container, reached `scrollTop=15711px`, displayed its actual final API result after internal scrolling and selected that client into the task form.
+The observed full-list request/render path took **59 ms**, below the test's generous 8,000 ms bound.
+The existing unauthenticated endpoint denial check also passed with HTTP 302 and no client data in the response.
+The first browser attempt failed because the assertion hard-coded an AT-54 fixture name as the final sorted result, while the pre-existing W02 XSS fictional client sorts after it.
+The regression was corrected to assert against the actual final API result and verify that its ID and name populate the task form; the full E2E rerun passed.
+
+Added `tests/bin/seed-at54-client-picker.php`, which verifies the guarded database and refuses to overwrite any client ID in its reserved range unless the name and AFM exactly match the AT-54 fixture.
+Added the browser assertion in `tests/e2e/login-page.test.cjs`.
+No fixture cleanup was performed; the new database retains its identified fictional AT-54 fixtures and one browser recurrence fixture.
+AT-54 is PASS locally for the tested criteria.
+This macOS run does not verify Linux Compose, so the previously reported 87 Compose failures remain unresolved and are not inferred fixed.
+AT-56 remains PARTIAL; AT-43/44/45/48/50/51 remain open or partial without authorized pre-production access.
+No new G01 or W09 PASS is claimed.
+Next: run the corrected Compose harness on Linux, then continue the remaining local or authorized non-production acceptance checks.
+
 ## Current-head hosting availability check - 19 November 2026
 
 Current branch: `codex/crm-remaining-tasks`.
