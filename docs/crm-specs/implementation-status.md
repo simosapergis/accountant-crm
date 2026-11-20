@@ -14,6 +14,28 @@ Active-professional forms, listing, PDF and XLSX now read/write the shared `clie
 No tests or syntax checks were run, as requested. Feature acceptance AT-59..62 is therefore `NOT_RUN`; deployment/migration has not been executed against any database.
 Next: after explicit authorization and backup, run the migration in an isolated database, then manually inspect the feature and exercise both Excel layouts. Do not run it against production as part of this local implementation.
 
+### AT-54 local acceptance follow-up - 19 November 2026
+
+Verified starting branch `codex/crm-remaining-tasks`, exact HEAD `7f83ed7525084efa318c1ff5ad80b49eb09647a5`, matching the requested remote HEAD; the worktree was clean before this follow-up.
+The host is macOS with PHP 8.3.36, Composer 2.11.2 and MariaDB 10.11.19, so the Linux Compose harness and its reported 87 failures were not rerun and remain unresolved.
+The prior isolated database `crm_test_w09_20261119` contained the identified `W01 Mobile Recurring Filing` browser rule, so it was preserved and not used for the full-suite run.
+A new empty `crm_test_at54_20261119` database and restricted non-root user were created on the verified local test-owned MariaDB server; the root SQL dump contains no `INSERT` rows and imported schema only.
+The database guard confirmed the exact target before schema setup, migration and each fixture-seeding step.
+Applied migrations `20261118_001_catalogs`, `20261118_002_recurring_tasks`, `20261118_003_security_events` and `20261119_001_users_utf8mb4`, then seeded only the fictional W01 login/client fixtures.
+The first full PHPUnit attempt ran without the loopback application server and failed 135 HTTP/session-dependent checks; no such failure is treated as a product regression.
+After starting the loopback PHP server under `/crm/`, the recurrence tables were verified empty and the complete suite passed: **210 tests / 1,282 assertions**.
+Only after PHPUnit passed, seeded 250 fictional AT-54 picker clients in IDs 911000-911249 and the documented `W01 Mobile Recurring Filing` browser fixture.
+The browser suite passed **14/14 checks**; its new AT-54 check found a unique client by AFM without matching its name, restored all 252 results when cleared, scrolled the results container to its actual bottom, and selected the final returned client with the corresponding ID.
+The observed list rendered in 59 ms and reached an inner scroll position of 15,711 px; the regression allows up to 8 seconds to avoid treating a minor local timing variation as a failure.
+The first browser attempt failed only because the assertion assumed the last rendered client's name rather than the API's sorted final result; the test now compares against the returned final record and checks its selection.
+Added the idempotent, guarded fictional fixture seeder [seed-at54-client-picker.php](../../tests/bin/seed-at54-client-picker.php) and the AFM/long-list browser regression in `tests/e2e/login-page.test.cjs`.
+AT-54 is now PASS locally for the specified authenticated loading, AFM/name filtering, clear-to-all behavior, selected client ID/name, unauthenticated denial, long-list internal scrolling and measured render bound.
+No fixture rows were deleted; the new test database retains its clearly identified fictional client fixtures and one documented mobile browser recurrence fixture.
+AT-56 remains PARTIAL without authorized pre-production access; hosting-dependent AT-43/44/45/48/50/51 remain open or partial.
+No new G01 or W09 PASS is granted, and the historical G01 PASS remains scoped to its recorded earlier commit.
+Next: rerun the corrected Compose harness on Linux to investigate the 87 reported failures, then continue the remaining independent acceptance evidence without deployment or production access.
+Exact commands, first-run failures, fixture ordering and scope limits are recorded in [W09 acceptance evidence](evidence/w09-acceptance.md).
+
 ### DASH-01/DASH-02: dashboard shortcut and task list filters - 19 November 2026
 
 Updated the specification package to version 1.7 with DASH-01/AT-57 for the «Αναμονή εξόφλησης» card and DASH-02/AT-58 for exact task title/payment-method filtering.

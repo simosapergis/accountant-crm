@@ -137,6 +137,56 @@ async function runCheck(name, check) {
       assert.equal(await page.locator('#client_results').isVisible(), false);
       await context.close();
     }));
+    checks.push(await runCheck('AT-54 filters by AFM and scrolls through a performant long client list', async () => {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      const page = await context.newPage();
+      await page.goto(`${baseUrl}/login.php`);
+      await page.locator('input[name="username"]').fill('w01-fake-user');
+      await page.locator('input[name="password"]').fill('W01-Fictional-Password-2026');
+      await Promise.all([page.waitForNavigation(), page.locator('button').click()]);
+      await page.goto(`${baseUrl}/task_form.php`);
+
+      const listStartedAt = Date.now();
+      const response = page.waitForResponse(r => r.url().endsWith('/ajax/search_clients.php?all=1'));
+      await page.locator('#client_list_button').click();
+      const clients = await (await response).json();
+      await page.waitForFunction(count => document.querySelectorAll('#client_results .client-item').length === count, clients.length);
+      const renderDurationMs = Date.now() - listStartedAt;
+      assert.ok(clients.length >= 250, `long-list fixture should contain at least 250 clients, received ${clients.length}`);
+      assert.ok(renderDurationMs < 8000, `long-list render took ${renderDurationMs}ms`);
+
+      await page.locator('#client_search').fill('990000001');
+      const afmMatches = page.locator('#client_results .client-item');
+      await page.waitForFunction(() => document.querySelectorAll('#client_results .client-item').length === 1);
+      assert.equal(await afmMatches.count(), 1);
+      assert.match(await afmMatches.first().innerText(), /AT54 AFM Search Target/);
+
+      await page.locator('#client_search').fill('');
+      await page.waitForFunction(count => document.querySelectorAll('#client_results .client-item').length === count, clients.length);
+      const scrollState = await page.locator('#client_results').evaluate(el => {
+        el.scrollTop = el.scrollHeight;
+        const last = el.querySelector('.client-item:last-of-type');
+        const listRect = el.getBoundingClientRect();
+        const lastRect = last.getBoundingClientRect();
+        return {
+          scrollTop: el.scrollTop,
+          scrollHeight: el.scrollHeight,
+          clientHeight: el.clientHeight,
+          lastVisible: lastRect.bottom <= listRect.bottom && lastRect.top >= listRect.top,
+          lastName: last.innerText,
+        };
+      });
+      assert.ok(scrollState.scrollTop > 0, `client results should scroll internally: ${JSON.stringify(scrollState)}`);
+      assert.ok(scrollState.scrollHeight > scrollState.clientHeight, `client results should overflow: ${JSON.stringify(scrollState)}`);
+      assert.equal(scrollState.lastVisible, true, `last client should be reachable by scrolling: ${JSON.stringify(scrollState)}`);
+      const lastClient = clients[clients.length - 1];
+      assert.match(scrollState.lastName, new RegExp(lastClient.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      await page.locator('#client_results .client-item').last().click();
+      assert.equal(await page.locator('#client_id').inputValue(), String(lastClient.id));
+      assert.equal(await page.locator('#client_search').inputValue(), lastClient.name);
+      console.log(`INFO AT-54 rendered ${clients.length} clients in ${renderDurationMs}ms; inner scrollTop=${scrollState.scrollTop}px`);
+      await context.close();
+    }));
     checks.push(await runCheck('navigation fits desktop and keeps account controls available at compact widths', async () => {
       const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1280, height: 800 } });
       const page = await context.newPage();
