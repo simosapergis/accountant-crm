@@ -9,19 +9,30 @@ $search   = crm_export_string_filter('search');
 $category = crm_export_string_filter('category');
 $balance  = crm_export_string_filter('balance');
 $sort     = crm_export_string_filter('sort');
+$entity = crm_export_string_filter('entity');
+$isActive = crm_export_string_filter('is_active');
+$vat = crm_export_string_filter('vat');
+$vatType = crm_export_string_filter('vat_type');
+$payroll = crm_export_string_filter('payroll');
 
 $conditions = [];
 $params = [];
 
 if ($search !== '') {
-    $conditions[] = '(c.name LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
+    $conditions[] = '(c.name LIKE ? OR c.professional_code LIKE ? OR c.afm LIKE ? OR c.phone LIKE ? OR c.email LIKE ?)';
     $pattern = '%' . $search . '%';
-    array_push($params, $pattern, $pattern, $pattern, $pattern);
+    for ($i = 0; $i < 5; $i++) $params[] = $pattern;
 }
 if ($category !== '') {
     $conditions[] = 'c.category = ?';
     $params[] = $category;
 }
+if ($entity === 'private') $conditions[] = 'c.has_professional_profile = 0';
+elseif ($entity === 'professional') $conditions[] = 'c.has_professional_profile = 1';
+if ($isActive === '1' || $isActive === '0') { $conditions[] = 'c.has_professional_profile = 1 AND c.professional_is_active = ?'; $params[] = (int)$isActive; }
+if ($vat === 'yes' || $vat === 'no') { $conditions[] = 'c.has_professional_profile = 1 AND c.professional_has_vat = ?'; $params[] = $vat === 'yes' ? 1 : 0; }
+if ($vatType !== '' && in_array($vatType, ['Μηνιαίο','Τριμηνιαίο'], true)) { $conditions[] = 'c.has_professional_profile = 1 AND c.professional_vat_type = ?'; $params[] = $vatType; }
+if ($payroll === 'yes' || $payroll === 'no') { $conditions[] = 'c.has_professional_profile = 1 AND c.professional_has_payroll = ?'; $params[] = $payroll === 'yes' ? 1 : 0; }
 $where = $conditions ? ' WHERE ' . implode(' AND ', $conditions) : '';
 $having = match ($balance) {
     'positive', 'with' => ' HAVING balance > 0',
@@ -63,7 +74,7 @@ echo "<tr>
         <th>ΑΦΜ</th>
         <th>Κατηγορία</th>
         <th>Τηλέφωνο</th>
-        <th>Email</th>
+        <th>Email</th><th>Κωδικός</th><th>Ενεργός</th><th>Έναρξη</th><th>Διακοπή</th><th>ΦΠΑ</th><th>Τύπος ΦΠΑ</th><th>Μισθοδοσία</th>
         <th>Αμοιβές</th>
         <th>Εισπράξεις</th>
         <th>Υπόλοιπο</th>
@@ -77,6 +88,9 @@ while ($c = $res->fetch_assoc()) {
     echo "<td>".crm_excel_html_text($c['category'])."</td>";
     echo "<td>".crm_excel_html_text($c['phone'])."</td>";
     echo "<td>".crm_excel_html_text($c['email'])."</td>";
+    echo "<td>".crm_excel_html_text($c['professional_code'])."</td><td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_is_active']) ? 'Ναι' : 'Όχι') : '')."</td>";
+    echo "<td>".crm_excel_html_text($c['professional_start_date'])."</td><td>".crm_excel_html_text($c['professional_end_date'])."</td>";
+    echo "<td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_has_vat']) ? 'Ναι' : 'Όχι') : '')."</td><td>".crm_excel_html_text($c['professional_vat_type'])."</td><td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_has_payroll']) ? 'Ναι' : 'Όχι') : '')."</td>";
     echo "<td>".formatMoney($c['total_fees'])."</td>";
     echo "<td>".formatMoney($c['total_collected'])."</td>";
     echo "<td>".formatMoney($c['balance'])."</td>";

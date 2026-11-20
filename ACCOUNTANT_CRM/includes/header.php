@@ -186,7 +186,6 @@ if (!isset($pageTitle)) $pageTitle = "ELMICO CRM";
             <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/clients.php" class="<?= $pageTitle=='Πελάτες' ? 'active':'' ?>">Πελάτες</a>
             <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/partners.php" class="<?= $pageTitle=='Συνεργάτες' ? 'active':'' ?>">Συνεργάτες</a>
             <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/calendar.php" class="<?= $pageTitle=='Ημερολόγιο Εργασιών' ? 'active':'' ?>">Ημερολόγιο</a>
-            <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/active_professionals.php" class="<?= $pageTitle=='Ενεργοί Επαγγελματίες' ? 'active':'' ?>">Ενεργοί Επαγγελματίες</a>
                 <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/mydiary.php" class="<?= $pageTitle=='MyDiary' ? 'active':'' ?>">MyDiary</a>
             <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
                 <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/payment_methods.php" class="<?= $pageTitle=='Μέσα είσπραξης' ? 'active':'' ?>">Μέσα είσπραξης</a>
@@ -218,7 +217,6 @@ if (!isset($pageTitle)) $pageTitle = "ELMICO CRM";
         <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/clients.php">Πελάτες</a>
         <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/partners.php">Συνεργάτες</a>
         <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/calendar.php">Ημερολόγιο</a>
-        <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/active_professionals.php">Ενεργοί Επαγγελματίες</a>
         <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/mydiary.php">MyDiary</a>
         <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
             <a href="<?= htmlspecialchars(crm_base_path(), ENT_QUOTES, 'UTF-8') ?>/payment_methods.php">Μέσα είσπραξης</a>
