@@ -581,6 +581,10 @@ textarea {
     background: #0b5ed7;
 }
 
+.client-export-btn {
+    border: 1px solid #0d6efd;
+}
+
 /* ----------------------------------------------------
    ΕΙΔΙΚΑ ΓΙΑ ACTIVE PROFESSIONALS
 ---------------------------------------------------- */

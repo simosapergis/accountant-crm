@@ -54,6 +54,7 @@ $sql = "
 $stmt = $mysqli->prepare($sql);
 $stmt->execute($params);
 $res = $stmt->get_result();
+ob_start();
 ?>
 <!doctype html>
 <html lang="el">
@@ -61,7 +62,8 @@ $res = $stmt->get_result();
     <meta charset="utf-8">
     <title>Αναφορά Πελατών</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 9px; margin: 0; }
         h2 { margin-bottom: 10px; }
         table { width:100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border:1px solid #000; padding:4px 6px; }
@@ -80,7 +82,7 @@ $res = $stmt->get_result();
             <th>ΑΦΜ</th>
             <th>Κατηγορία</th>
             <th>Τηλέφωνο</th>
-            <th>Email</th><th>Κωδικός</th><th>Ενεργός</th><th>Έναρξη</th><th>Διακοπή</th><th>ΦΠΑ</th><th>Τύπος ΦΠΑ</th><th>Μισθοδοσία</th>
+            <th>Email</th><th>Ενεργός</th><th>Έναρξη</th><th>Διακοπή</th><th>Μισθοδοσία</th>
             <th>Αμοιβές</th>
             <th>Εισπράξεις</th>
             <th>Υπόλοιπο</th>
@@ -104,9 +106,9 @@ $res = $stmt->get_result();
             <td><?= htmlspecialchars((string)($c['category'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= htmlspecialchars((string)($c['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
             <td><?= htmlspecialchars((string)($c['email'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
-            <td><?= htmlspecialchars((string)($c['professional_code'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td><td><?= !empty($c['has_professional_profile']) ? (!empty($c['professional_is_active']) ? 'Ναι' : 'Όχι') : '' ?></td>
+            <td><?= !empty($c['has_professional_profile']) ? (!empty($c['professional_is_active']) ? 'Ναι' : 'Όχι') : '' ?></td>
             <td><?= htmlspecialchars((string)($c['professional_start_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td><td><?= htmlspecialchars((string)($c['professional_end_date'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td>
-            <td><?= !empty($c['has_professional_profile']) ? (!empty($c['professional_has_vat']) ? 'Ναι' : 'Όχι') : '' ?></td><td><?= htmlspecialchars((string)($c['professional_vat_type'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></td><td><?= !empty($c['has_professional_profile']) ? (!empty($c['professional_has_payroll']) ? 'Ναι' : 'Όχι') : '' ?></td>
+            <td><?= !empty($c['has_professional_profile']) ? (!empty($c['professional_has_payroll']) ? 'Ναι' : 'Όχι') : '' ?></td>
             <td><?= formatMoney($c['total_fees']) ?></td>
             <td><?= formatMoney($c['total_collected']) ?></td>
             <td><?= formatMoney($balance) ?></td>
@@ -116,7 +118,7 @@ $res = $stmt->get_result();
 
     <tfoot>
         <tr>
-            <td colspan="12" style="font-weight:bold;">Σύνολα</td>
+            <td colspan="9" style="font-weight:bold;">Σύνολα</td>
             <td><?= formatMoney($total_fee) ?></td>
             <td><?= formatMoney($total_col) ?></td>
             <td><?= formatMoney($total_fee - $total_col) ?></td>
@@ -125,9 +127,13 @@ $res = $stmt->get_result();
 
 </table>
 
-<p class="note">
-    Για αποθήκευση σε PDF: <strong>Αρχείο → Εκτύπωση → Αποθήκευση ως PDF</strong>
-</p>
-
 </body>
 </html>
+<?php
+$html = ob_get_clean();
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+$dompdf = new \Dompdf\Dompdf();
+$dompdf->setPaper('A4', 'landscape');
+$dompdf->loadHtml($html, 'UTF-8');
+$dompdf->render();
+$dompdf->stream('clients_' . date('Ymd_His') . '.pdf', ['Attachment' => true]);

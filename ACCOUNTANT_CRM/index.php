@@ -147,6 +147,36 @@ require 'includes/header.php';
             <option>Επιχείρηση</option>
         </select>
 
+        <select name="entity">
+            <option value="">Τύπος πελάτη</option>
+            <option value="private">Ιδιώτης</option>
+            <option value="professional">Επαγγελματίας</option>
+        </select>
+
+        <select name="is_active">
+            <option value="">Κατάσταση πελάτη</option>
+            <option value="1">Ενεργός</option>
+            <option value="0">Ανενεργός</option>
+        </select>
+
+        <select name="vat">
+            <option value="">ΦΠΑ</option>
+            <option value="yes">Με ΦΠΑ</option>
+            <option value="no">Χωρίς ΦΠΑ</option>
+        </select>
+
+        <select name="vat_type">
+            <option value="">Τύπος ΦΠΑ</option>
+            <option value="Μηνιαίο">Μηνιαίο</option>
+            <option value="Τριμηνιαίο">Τριμηνιαίο</option>
+        </select>
+
+        <select name="payroll">
+            <option value="">Μισθοδοσία</option>
+            <option value="yes">Με μισθοδοσία</option>
+            <option value="no">Χωρίς μισθοδοσία</option>
+        </select>
+
         <select name="balance">
             <option value="">Υπόλοιπο</option>
             <option value="positive">Με Υπόλοιπο</option>
@@ -161,7 +191,7 @@ require 'includes/header.php';
             <option value="tasks">Αριθμός εργασιών</option>
         </select>
 
-        <button type="submit" formaction="exports/export_clients_excel.php" formtarget="_blank" class="filter-btn">
+        <button type="submit" formaction="exports/export_clients_excel.php" formtarget="_blank" class="filter-btn client-export-btn">
             ⬇ Excel
         </button>
 

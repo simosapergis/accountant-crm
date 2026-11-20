@@ -3,6 +3,11 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/export_filters.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/functions.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 
 $search   = crm_export_string_filter('search');
@@ -64,37 +69,35 @@ $stmt = $mysqli->prepare($sql);
 $stmt->execute($params);
 $res = $stmt->get_result();
 
-header("Content-Type: application/vnd.ms-excel; charset=utf-8");
-header("Content-Disposition: attachment; filename=clients_" . date('Ymd_His') . ".xls");
-echo "<meta charset='UTF-8'>";
-
-echo "<table border='1'>";
-echo "<tr>
-        <th>Επωνυμία</th>
-        <th>ΑΦΜ</th>
-        <th>Κατηγορία</th>
-        <th>Τηλέφωνο</th>
-        <th>Email</th><th>Κωδικός</th><th>Ενεργός</th><th>Έναρξη</th><th>Διακοπή</th><th>ΦΠΑ</th><th>Τύπος ΦΠΑ</th><th>Μισθοδοσία</th>
-        <th>Αμοιβές</th>
-        <th>Εισπράξεις</th>
-        <th>Υπόλοιπο</th>
-        <th># Εργασιών</th>
-      </tr>";
-
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
+$sheet->setTitle('Πελάτες');
+$headers = ['Επωνυμία', 'ΑΦΜ', 'Κατηγορία', 'Τηλέφωνο', 'Email', 'Ενεργός', 'Έναρξη', 'Διακοπή', 'Μισθοδοσία', 'Αμοιβές', 'Εισπράξεις', 'Υπόλοιπο'];
+$sheet->fromArray($headers, null, 'A1');
+$sheet->getStyle('A1:L1')->getFont()->setBold(true);
+$sheet->getStyle('A1:L1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FFE2E3E5');
+$rowNumber = 2;
 while ($c = $res->fetch_assoc()) {
-    echo "<tr>";
-    echo "<td>".crm_excel_html_text($c['name'])."</td>";
-    echo "<td>".crm_excel_html_text($c['afm'])."</td>";
-    echo "<td>".crm_excel_html_text($c['category'])."</td>";
-    echo "<td>".crm_excel_html_text($c['phone'])."</td>";
-    echo "<td>".crm_excel_html_text($c['email'])."</td>";
-    echo "<td>".crm_excel_html_text($c['professional_code'])."</td><td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_is_active']) ? 'Ναι' : 'Όχι') : '')."</td>";
-    echo "<td>".crm_excel_html_text($c['professional_start_date'])."</td><td>".crm_excel_html_text($c['professional_end_date'])."</td>";
-    echo "<td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_has_vat']) ? 'Ναι' : 'Όχι') : '')."</td><td>".crm_excel_html_text($c['professional_vat_type'])."</td><td>".(!empty($c['has_professional_profile']) ? (!empty($c['professional_has_payroll']) ? 'Ναι' : 'Όχι') : '')."</td>";
-    echo "<td>".formatMoney($c['total_fees'])."</td>";
-    echo "<td>".formatMoney($c['total_collected'])."</td>";
-    echo "<td>".formatMoney($c['balance'])."</td>";
-    echo "<td>".(int)$c['task_count']."</td>";
-    echo "</tr>";
+    $values = [
+        $c['name'], $c['afm'] ?? '', $c['category'] ?? '', $c['phone'] ?? '', $c['email'] ?? '',
+        !empty($c['has_professional_profile']) ? (!empty($c['professional_is_active']) ? 'Ναι' : 'Όχι') : '—',
+        $c['professional_start_date'] ?? '', $c['professional_end_date'] ?? '',
+        !empty($c['has_professional_profile']) ? (!empty($c['professional_has_payroll']) ? 'Ναι' : 'Όχι') : '—',
+        (float)$c['total_fees'], (float)$c['total_collected'], (float)$c['balance'],
+    ];
+    foreach ($values as $index => $value) {
+        $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+        if ($index <= 8) $sheet->setCellValueExplicit($column . $rowNumber, (string)$value, DataType::TYPE_STRING);
+        else $sheet->setCellValue($column . $rowNumber, $value);
+    }
+    $rowNumber++;
 }
-echo "</table>";
+$lastRow = max(1, $rowNumber - 1);
+$sheet->getStyle("J2:L$lastRow")->getNumberFormat()->setFormatCode('#,##0.00');
+foreach (range('A', 'L') as $column) $sheet->getColumnDimension($column)->setAutoSize(true);
+$sheet->setAutoFilter("A1:L$lastRow");
+$sheet->freezePane('A2');
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment; filename="clients_' . date('Ymd_His') . '.xlsx"');
+(new Xlsx($spreadsheet))->save('php://output');
+exit;
